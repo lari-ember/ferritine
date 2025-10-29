@@ -1,0 +1,109 @@
+# Configuração do Release Drafter
+#
+# Este arquivo configura como o Release Drafter gera automaticamente
+# changelogs e notas de release baseadas nos PRs merged.
+#
+# Funcionalidades:
+# - Agrupa PRs por categoria baseado em labels
+# - Gera changelog formatado automaticamente
+# - Cria draft releases que podem ser revisados antes da publicação
+# - Sugere o próximo número de versão baseado nos labels dos PRs
+
+# Template para o nome da release (será atualizado quando publicar)
+name-template: 'v$RESOLVED_VERSION'
+
+# Template para a tag (será criada quando publicar)
+tag-template: 'v$RESOLVED_VERSION'
+
+# Categorias de mudanças (baseadas em labels dos PRs)
+categories:
+  - title: '🚀 Features'
+    labels:
+      - 'feature'
+      - 'enhancement'
+      - 'feat'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'bug'
+      - 'fix'
+      - 'bugfix'
+  - title: '📚 Documentation'
+    labels:
+      - 'documentation'
+      - 'docs'
+  - title: '🧹 Maintenance'
+    labels:
+      - 'chore'
+      - 'maintenance'
+      - 'refactor'
+  - title: '⚡ Performance'
+    labels:
+      - 'performance'
+      - 'perf'
+  - title: '🧪 Tests'
+    labels:
+      - 'test'
+      - 'tests'
+  - title: '🔧 Dependencies'
+    labels:
+      - 'dependencies'
+      - 'deps'
+
+# Template do corpo da release
+template: |
+  ## Changes
+  
+  $CHANGES
+  
+  ## Contributors
+  
+  Obrigado a todos que contribuíram para esta release! 🎉
+  
+  $CONTRIBUTORS
+
+# Regras para determinar a próxima versão
+version-resolver:
+  major:
+    labels:
+      - 'major'
+      - 'breaking'
+  minor:
+    labels:
+      - 'minor'
+      - 'feature'
+      - 'enhancement'
+  patch:
+    labels:
+      - 'patch'
+      - 'bug'
+      - 'fix'
+      - 'bugfix'
+      - 'chore'
+      - 'dependencies'
+  default: patch
+
+# PRs sem label aparecem como "Other Changes"
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+
+# Template para mudanças sem categoria
+change-title-escapes: '\<*_&'
+
+# Exclude labels - PRs com estes labels não aparecem no changelog
+exclude-labels:
+  - 'skip-changelog'
+  - 'invalid'
+  - 'duplicate'
+  - 'wontfix'
+
+# Exclude contributors (bots, etc)
+exclude-contributors:
+  - 'dependabot'
+
+# Substituições de texto no changelog
+replacers:
+  - search: '/\[bot\]/g'
+    replace: ''
+
+# Auto-labeler não configurado aqui (pode ser adicionado posteriormente)
+# Para auto-labeling, considere usar o pr-labeler action
+

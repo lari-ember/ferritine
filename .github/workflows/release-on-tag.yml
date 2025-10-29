@@ -1,0 +1,81 @@
+name: Release on Tag
+
+# Workflow para publicar release quando uma tag é criada.
+#
+# Este workflow complementa o Release Drafter seguindo o fluxo recomendado:
+# 1. Release Drafter mantém um draft atualizado automaticamente
+# 2. Quando você está pronto, cria uma tag v* (ex: v0.2.0)
+# 3. Este workflow publica o draft release ou cria uma nova release
+# 4. Pode ser usado para gerar artefatos, publicar pacotes, etc.
+#
+# Fluxo recomendado:
+#   1. Desenvolva e merge PRs (com labels apropriados)
+#   2. Release Drafter atualiza o draft automaticamente
+#   3. Quando pronto para release, crie a tag: git tag v0.2.0 && git push origin v0.2.0
+#   4. Este workflow publica a release automaticamente
+
+on:
+  push:
+    tags:
+      - 'v*'  # Qualquer tag começando com 'v' (ex: v1.0.0, v0.2.1)
+
+permissions:
+  contents: write  # necessário para publicar releases
+
+jobs:
+  publish-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # necessário para histórico completo
+
+      - name: Get tag name
+        id: tag
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Se existe script de changelog, usa ele
+          if [ -f .github/scripts/generate_changelog.sh ]; then
+            .github/scripts/generate_changelog.sh "${{ steps.tag.outputs.tag }}" > changelog.md
+          else
+            # Fallback: gera changelog básico com git log
+            PREV_TAG=$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1) 2>/dev/null || echo "")
+            if [ -z "$PREV_TAG" ]; then
+              echo "## Changes" > changelog.md
+              git log --oneline --pretty=format:"- %s (%h)" >> changelog.md
+            else
+              echo "## Changes since $PREV_TAG" > changelog.md
+              git log ${PREV_TAG}..HEAD --oneline --pretty=format:"- %s (%h)" >> changelog.md
+            fi
+          fi
+          cat changelog.md
+
+      - name: Create/Update GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Release ${{ steps.tag.outputs.tag }}
+          body_path: changelog.md
+          draft: false
+          prerelease: ${{ contains(steps.tag.outputs.tag, '-alpha') || contains(steps.tag.outputs.tag, '-beta') || contains(steps.tag.outputs.tag, '-rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Adicione aqui steps adicionais como:
+      # - Construir artefatos
+      # - Publicar no PyPI
+      # - Enviar notificações
+      # - Deploy automático
+

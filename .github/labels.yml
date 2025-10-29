@@ -1,0 +1,171 @@
+# Configuração de Labels para o Repositório Ferritine
+#
+# Este arquivo define os labels padrão do projeto.
+# Você pode sincronizar esses labels com o repositório GitHub usando:
+# - GitHub CLI: gh label sync --file .github/labels.yml
+# - Actions: use a action 'crazy-max/ghaction-github-labeler'
+#
+# Os labels são usados pelo Release Drafter para categorizar mudanças automaticamente.
+
+# ===== TIPO DE MUDANÇA =====
+- name: feature
+  description: Nova funcionalidade ou melhoria
+  color: 'a2eeef'
+
+- name: enhancement
+  description: Melhoria em funcionalidade existente
+  color: 'a2eeef'
+
+- name: bug
+  description: Correção de bug
+  color: 'd73a4a'
+
+- name: fix
+  description: Correção de bug (alias)
+  color: 'd73a4a'
+
+- name: documentation
+  description: Melhorias ou adições na documentação
+  color: '0075ca'
+
+- name: docs
+  description: Melhorias ou adições na documentação (alias)
+  color: '0075ca'
+
+- name: chore
+  description: Tarefas de manutenção, refatoração
+  color: 'fef2c0'
+
+- name: maintenance
+  description: Tarefas de manutenção
+  color: 'fef2c0'
+
+- name: refactor
+  description: Refatoração de código
+  color: 'fef2c0'
+
+- name: test
+  description: Adição ou correção de testes
+  color: 'fff59d'
+
+- name: performance
+  description: Melhorias de performance
+  color: 'ff6f00'
+
+- name: perf
+  description: Melhorias de performance (alias)
+  color: 'ff6f00'
+
+- name: dependencies
+  description: Atualização de dependências
+  color: '0366d6'
+
+# ===== SEVERIDADE / VERSÃO =====
+- name: breaking
+  description: Mudança que quebra compatibilidade (major version)
+  color: 'b60205'
+
+- name: major
+  description: Mudança major (breaking)
+  color: 'b60205'
+
+- name: minor
+  description: Nova funcionalidade (minor version)
+  color: 'fbca04'
+
+- name: patch
+  description: Correção de bug (patch version)
+  color: '0e8a16'
+
+# ===== PRIORIDADE =====
+- name: priority:critical
+  description: Prioridade crítica - resolver imediatamente
+  color: 'b60205'
+
+- name: priority:high
+  description: Prioridade alta
+  color: 'd93f0b'
+
+- name: priority:medium
+  description: Prioridade média
+  color: 'fbca04'
+
+- name: priority:low
+  description: Prioridade baixa
+  color: '0e8a16'
+
+# ===== STATUS =====
+- name: wip
+  description: Trabalho em progresso
+  color: 'ffeb3b'
+
+- name: ready-for-review
+  description: Pronto para revisão
+  color: '0e8a16'
+
+- name: needs-review
+  description: Necessita revisão
+  color: 'fbca04'
+
+- name: blocked
+  description: Bloqueado por outro issue ou dependência
+  color: 'b60205'
+
+- name: on-hold
+  description: Em espera
+  color: '795548'
+
+# ===== ESPECIAIS =====
+- name: good first issue
+  description: Bom para iniciantes
+  color: '7057ff'
+
+- name: help wanted
+  description: Precisa de ajuda da comunidade
+  color: '008672'
+
+- name: question
+  description: Dúvida ou pergunta
+  color: 'd876e3'
+
+- name: duplicate
+  description: Issue ou PR duplicado
+  color: 'cfd3d7'
+
+- name: invalid
+  description: Issue ou PR inválido
+  color: 'e4e669'
+
+- name: wontfix
+  description: Não será corrigido/implementado
+  color: 'ffffff'
+
+- name: skip-changelog
+  description: Não incluir no changelog
+  color: 'ededed'
+
+# ===== ÁREA / COMPONENTE =====
+- name: area:simulation
+  description: Sistema de simulação
+  color: 'c5def5'
+
+- name: area:agents
+  description: Sistema de agentes
+  color: 'c5def5'
+
+- name: area:ui
+  description: Interface do usuário
+  color: 'c5def5'
+
+- name: area:core
+  description: Core do sistema
+  color: 'c5def5'
+
+- name: area:tests
+  description: Infraestrutura de testes
+  color: 'c5def5'
+
+- name: area:ci-cd
+  description: CI/CD e automação
+  color: 'c5def5'
+
