@@ -1,39 +1,51 @@
 ---
 name: Feature Request
-description: Sugira uma nova funcionalidade
+about: Sugira uma nova funcionalidade para o Ferritine
+title: '[FEATURE] '
 labels: enhancement
+assignees: ''
 ---
 
-**Descrição da Funcionalidade**
-Descreva a funcionalidade desejada de forma clara e concisa.
----
-**Motivação**
-Explique por que essa funcionalidade seria útil para o projeto.
+## Descrição da Funcionalidade
+<!-- Uma descrição clara e concisa da funcionalidade que você gostaria de ver -->
 
-**Soluções Alternativas**
-Se aplicável, descreva soluções ou funcionalidades alternativas que você considerou.
+## Problema Relacionado
+<!-- Opcional: Esta funcionalidade está relacionada a algum problema? Ex: "Estou sempre frustrado quando..." -->
 
-**Informações Adicionais**
-Adicione qualquer outra informação ou contexto sobre a solicitação aqui.
-name: Bug Report
-description: Relate um problema no projeto
-labels: bug
----
+## Solução Proposta
+<!-- Uma descrição clara e concisa do que você quer que aconteça -->
 
-**Descrição do Bug**
-Uma descrição clara e concisa do problema.
+## Alternativas Consideradas
+<!-- Uma descrição clara e concisa de quaisquer soluções alternativas ou funcionalidades que você considerou -->
 
-**Passos para Reproduzir**
-1. Vá para '...'
-2. Clique em '...'
-3. Role para '...'
-4. Veja o erro
+## Benefícios
+<!-- Como esta funcionalidade beneficiaria o projeto e seus usuários? -->
 
-**Comportamento Esperado**
-Descreva o que era esperado que acontecesse.
+## Possível Implementação
+<!-- Opcional: Se você tem ideias sobre como implementar, compartilhe aqui -->
 
-**Capturas de Tela**
-Se aplicável, adicione capturas de tela para ajudar a explicar o problema.
+## Exemplos de Uso
+<!-- Forneça exemplos de como esta funcionalidade seria usada -->
+```python
+# Exemplo de código mostrando como a funcionalidade seria usada
+```
 
-**Informações Adicionais**
-Adicione qualquer outra informação sobre o problema aqui.
+## Mockups/Diagramas
+<!-- Se aplicável, adicione mockups, diagramas ou screenshots para ajudar a explicar a funcionalidade -->
+
+## Contexto Adicional
+<!-- Adicione qualquer outro contexto, screenshots ou exemplos sobre a solicitação de funcionalidade aqui -->
+
+## Prioridade
+<!-- Na sua opinião, qual a prioridade desta funcionalidade? -->
+- [ ] Crítica
+- [ ] Alta
+- [ ] Média
+- [ ] Baixa
+
+## Checklist
+- [ ] Verifiquei se já existe uma issue similar
+- [ ] Esta funcionalidade está alinhada com os objetivos do projeto
+- [ ] Incluí exemplos de uso
+- [ ] Considerei alternativas e possíveis impactos
+

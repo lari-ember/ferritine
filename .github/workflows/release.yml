@@ -1,0 +1,85 @@
+name: Release (bump & create)
+
+# Workflow para automatizar o processo de release do projeto.
+#
+# Este workflow é acionado manualmente através da interface do GitHub Actions
+# e realiza as seguintes tarefas:
+# 1. Incrementa a versão no arquivo VERSION (patch/minor/major)
+# 2. Faz commit e push da nova versão
+# 3. Cria uma tag Git com a nova versão
+# 4. Gera um changelog com base nos commits desde a última tag
+# 5. Cria uma Release no GitHub com o changelog gerado
+#
+# Uso:
+#   1. Acesse a aba "Actions" no GitHub
+#   2. Selecione "Release (bump & create)"
+#   3. Clique em "Run workflow"
+#   4. Escolha o nível de incremento (patch, minor ou major)
+#   5. Confirme a execução
+
+on:
+  workflow_dispatch:
+    inputs:
+      level:
+        description: 'Bump level: patch, minor or major'
+        required: true
+        default: 'patch'
+
+permissions:
+  contents: write  # necessário para criar tags e releases
+
+jobs:
+  bump-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # precisamos do histórico para gerar changelog & tags
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      
+      - name: Bump VERSION
+        id: bump
+        run: |
+          python .github/scripts/bump_version.py --level "${{ github.event.inputs.level }}" > new_version
+          version=$(cat new_version)
+          echo "new_version=$version" >> $GITHUB_OUTPUT
+      
+      - name: Commit VERSION file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add VERSION
+          git commit -m "chore(release): bump VERSION to ${{ steps.bump.outputs.new_version }}" || echo "no changes to commit"
+          git push origin HEAD:main
+      
+      - name: Create tag
+        id: tag
+        run: |
+          version="${{ steps.bump.outputs.new_version }}"
+          tag="v${version}"
+          git tag -a "${tag}" -m "release ${tag}"
+          git push origin "${tag}"
+          echo "tag=${tag}" >> $GITHUB_OUTPUT
+      
+      - name: Generate changelog fragment
+        id: changelog
+        run: |
+          tag="${{ steps.tag.outputs.tag }}"
+          .github/scripts/generate_changelog.sh "${tag}" > changelog_fragment.md
+          cat changelog_fragment.md
+          echo "changelog_path=changelog_fragment.md" >> $GITHUB_OUTPUT
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          body_path: changelog_fragment.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

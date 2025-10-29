@@ -1,0 +1,14 @@
+---
+name: Configuração do GitHub Issues
+about: Este arquivo configura o comportamento dos templates de issue
+---
+
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 Discussões
+    url: https://github.com/ferritine/ferritine/discussions
+    about: Para perguntas gerais, discussões e ideias, use as Discussões do GitHub
+  - name: 📚 Documentação
+    url: https://github.com/ferritine/ferritine/blob/main/README.md
+    about: Veja a documentação completa do projeto
+
