@@ -1,8 +1,14 @@
 # 🏙️ Ferritine
 
+<div align="center">
+
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/release/python-380/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/github/actions/workflow/status/ferritine/tests.yml?branch=main)]
+[![Tests](https://github.com/ferritine/ferritine/workflows/Tests/badge.svg)](https://github.com/ferritine/ferritine/actions/workflows/tests.yml)
+[![Release](https://github.com/ferritine/ferritine/workflows/Release%20Drafter/badge.svg)](https://github.com/ferritine/ferritine/actions/workflows/release-drafter.yml)
+[![Code Coverage](https://img.shields.io/badge/coverage-check%20codecov-brightgreen.svg)](https://codecov.io)
+
+</div>
 
 **Ferritine** é um projeto de maquete híbrida físico-digital que combina agentes inteligentes, simulação temporal e integração com hardware para criar um ambiente urbano interativo e dinâmico.
 
@@ -13,10 +19,12 @@ O projeto simula uma cidade com agentes que possuem rotinas diárias realistas, 
 - 🤖 **Simulação de Agentes**: Agentes autônomos com rotinas diárias (casa ↔ trabalho)
 - 🏗️ **Arquitetura Modular**: Código organizado e fácil de estender
 - ⏰ **Simulação Temporal**: Sistema de tempo discreto (horas do dia)
-- 🧪 **Testes Automatizados**: Cobertura de testes unitários com pytest
+- 🧪 **Testes Automatizados**: Cobertura de testes unitários com pytest e CI/CD
 - 📊 **Snapshots de Estado**: Visualização do estado da cidade a qualquer momento
-- 🔄 **Sistema de Versionamento**: Versionamento semântico automatizado
-- 🚀 **CI/CD**: Workflows automatizados para releases e testes
+- 🔄 **Versionamento Semântico**: Sistema automatizado de releases e changelogs
+- 🚀 **CI/CD Completo**: Workflows GitHub Actions para testes, releases e qualidade
+- 📝 **Release Drafter**: Geração automática de changelogs organizados por categoria
+- 🏷️ **Sistema de Labels**: Organização de PRs e issues com labels semânticos
 
 ## 📋 Pré-requisitos
 
@@ -34,6 +42,8 @@ As dependências são gerenciadas através do `requirements.txt`:
 - Outras dependências serão listadas conforme o projeto evolui
 
 ## 🚀 Instalação e Uso
+
+> 📖 **Guia Completo**: Para instruções detalhadas, consulte o [Guia de Início Rápido](docs/QUICKSTART.md)
 
 ### 1. Clone o Repositório
 ```bash
@@ -85,12 +95,18 @@ ferritine/
 ├── .github/                      # Configurações do GitHub
 │   ├── ISSUE_TEMPLATE/           # Templates para issues
 │   │   ├── bug_report.md         # Template para reportar bugs
-│   │   └── feature_request.md    # Template para solicitar funcionalidades
+│   │   ├── feature_request.md    # Template para solicitar funcionalidades
+│   │   └── config.yml            # Configuração dos templates
 │   ├── scripts/                  # Scripts de automação
 │   │   ├── bump_version.py       # Script para atualizar versão
 │   │   └── generate_changelog.sh # Script para gerar changelog
-│   └── workflows/                # GitHub Actions workflows
-│       └── release.yml           # Workflow de release automatizado
+│   ├── workflows/                # GitHub Actions workflows
+│   │   ├── tests.yml             # Testes automatizados em múltiplas versões Python
+│   │   ├── release.yml           # Release automatizado (bump & create)
+│   │   ├── release-drafter.yml   # Mantém draft releases atualizados
+│   │   └── release-on-tag.yml    # Publica release quando tag é criada
+│   ├── labels.yml                # Definição de labels do projeto
+│   └── release-drafter.yml       # Configuração do Release Drafter
 ├── app/                          # Código principal da aplicação
 │   ├── __init__.py               # Inicialização do pacote
 │   ├── models/                   # Modelos de domínio
@@ -99,12 +115,26 @@ ferritine/
 │   │   └── cidade.py             # Classe Cidade (mundo da simulação)
 │   └── tests/                    # Testes automatizados
 │       └── test_sim.py           # Testes de simulação
+├── docs/                         # 📚 Documentação completa
+│   ├── README.md                 # Índice da documentação
+│   ├── QUICKSTART.md             # Guia rápido de início
+│   ├── CONTRIBUTING.md           # Guia de contribuição
+│   ├── WORKFLOWS_GUIDE.md        # Guia completo dos workflows GitHub Actions
+│   ├── CHANGELOG.md              # Histórico de mudanças
+│   ├── IMPLEMENTATION_CHANGES.md # Resumo das alterações recentes
+│   ├── IMPLEMENTATION_SUMMARY.md # Resumo da implementação atual
+│   ├── GDD_FERRITINE.md          # Game Design Document
+│   ├── MAQUETE_TECH_DOCS.md      # Documentação técnica da maquete
+│   ├── TROUBLESHOOTING.md        # Resolução de problemas
+│   ├── PYTHONPATH_FIX.md         # Informações sobre configuração do PYTHONPATH
+│   └── NEXT_STEPS.md             # Próximos passos do desenvolvimento
 ├── scripts/                      # Scripts auxiliares
 │   └── bump_version.py           # Script local de versionamento
 ├── main.py                       # Ponto de entrada da aplicação
 ├── requirements.txt              # Dependências do projeto
+├── pytest.ini                    # Configuração do pytest
 ├── VERSION                       # Versão atual (semantic versioning)
-├── README.md                     # Documentação principal
+├── README.md                     # Documentação principal (este arquivo)
 └── LICENSE                       # Licença do projeto
 ```
 
@@ -115,7 +145,9 @@ ferritine/
 - **`app/tests/`**: Contém testes unitários para validar o comportamento do sistema
 - **`main.py`**: Script de demonstração que executa uma simulação de 24 horas
 - **`VERSION`**: Arquivo que armazena a versão atual usando versionamento semântico (MAJOR.MINOR.PATCH)
-- **`.github/`**: Configurações e automações do GitHub (CI/CD, templates)
+- **`.github/workflows/`**: Workflows de CI/CD automatizados (testes, releases, changelog)
+- **`.github/release-drafter.yml`**: Configuração para geração automática de changelogs
+- **`docs/`**: Toda a documentação do projeto organizada em um único lugar ([ver índice](docs/README.md))
 
 ## 💡 Exemplos de Uso
 
@@ -219,6 +251,50 @@ Contribuições são muito bem-vindas! Este projeto segue boas práticas de dese
    - Vá para o repositório original no GitHub
    - Clique em "New Pull Request"
    - Descreva suas mudanças detalhadamente
+   - **Adicione labels apropriados** ao PR:
+     - `feature` - para novas funcionalidades
+     - `bug` - para correções de bugs
+     - `documentation` - para melhorias na documentação
+     - `chore` - para tarefas de manutenção
+     - `test` - para melhorias em testes
+   - Os labels ajudam o Release Drafter a organizar o changelog automaticamente!
+
+### 🏷️ Sistema de Labels
+
+Este projeto usa labels para organizar PRs e issues. Quando criar um PR, adicione labels apropriados:
+
+**Tipo de Mudança:**
+- `feature`, `enhancement` - Nova funcionalidade
+- `bug`, `fix` - Correção de bug
+- `documentation`, `docs` - Documentação
+- `chore`, `maintenance`, `refactor` - Manutenção
+- `test` - Testes
+- `performance` - Melhorias de performance
+- `dependencies` - Atualização de dependências
+
+**Impacto na Versão:**
+- `major`, `breaking` - Mudança breaking (v2.0.0)
+- `minor` - Nova funcionalidade (v1.1.0)
+- `patch` - Correção de bug (v1.0.1)
+
+**Prioridade:**
+- `priority:critical` - Urgente
+- `priority:high` - Alta
+- `priority:medium` - Média
+- `priority:low` - Baixa
+
+Ver arquivo [`.github/labels.yml`](.github/labels.yml) para a lista completa de labels.
+
+### 🚀 Fluxo de Release Automatizado
+
+Este projeto usa **Release Drafter** para gerar changelogs automaticamente:
+
+1. **Você cria um PR** e adiciona labels apropriados
+2. **Merge do PR** → Release Drafter atualiza o draft automaticamente
+3. **Quando pronto** → Você publica o release (manualmente ou com tag)
+4. **Changelog gerado** → Organizado por categoria baseado nos labels!
+
+📖 **Leia o guia completo**: [docs/WORKFLOWS_GUIDE.md](docs/WORKFLOWS_GUIDE.md)
 
 ### Reportando Bugs
 
@@ -240,6 +316,8 @@ Use o [template de feature request](.github/ISSUE_TEMPLATE/feature_request.md) p
 - **Idioma**: Código e comentários em português
 - **Type Hints**: Use type hints quando possível
 
+📖 **Leia mais**: [Guia Completo de Contribuição](docs/CONTRIBUTING.md)
+
 ## 🔖 Versionamento
 
 Este projeto usa [Versionamento Semântico (SemVer)](https://semver.org/lang/pt-BR/):
@@ -250,7 +328,55 @@ Este projeto usa [Versionamento Semântico (SemVer)](https://semver.org/lang/pt-
 
 A versão atual está no arquivo `VERSION` na raiz do projeto.
 
-### Atualizando a Versão Localmente
+### 🤖 Releases Automatizados (Recomendado)
+
+O projeto possui **3 formas de criar releases**, sendo a forma **2** a mais recomendada:
+
+#### **Forma 1: Automático ao Mergear PRs**
+- Quando PRs são merged para `main`, o workflow `release.yml` pode criar releases automaticamente
+- Útil para projetos que querem release a cada merge
+- Requer configuração no workflow
+
+#### **Forma 2: Release Drafter + Tag (RECOMENDADO) 🌟**
+Este é o fluxo mais moderno e recomendado:
+
+1. **Desenvolva normalmente** - Crie PRs e adicione labels apropriados
+2. **Merge PRs** - O Release Drafter atualiza o draft automaticamente
+3. **Revise o draft** - Vá em "Releases" e veja o changelog gerado
+4. **Crie uma tag quando pronto**:
+   ```bash
+   git tag v0.2.0 -m "Release v0.2.0"
+   git push origin v0.2.0
+   ```
+5. **Release publicado automaticamente!** 🎉
+
+**Vantagens:**
+- ✅ Changelog organizado por categorias
+- ✅ Controle sobre quando publicar
+- ✅ Revisão antes de publicar
+- ✅ Versionamento sugerido automaticamente
+
+#### **Forma 3: Manual via GitHub Actions**
+1. Acesse a aba **Actions** no GitHub
+2. Selecione o workflow **"Release (bump & create)"**
+3. Clique em **"Run workflow"**
+4. Escolha o nível de incremento (patch/minor/major)
+5. Confirme a execução
+
+O workflow irá:
+- ✅ Incrementar a versão no arquivo `VERSION`
+- ✅ Fazer commit e push da nova versão
+- ✅ Criar uma tag Git (`vX.Y.Z`)
+- ✅ Gerar changelog automaticamente
+- ✅ Criar uma Release no GitHub com o changelog
+
+### 📚 Documentação Completa de Workflows
+
+Para entender todos os workflows, como funcionam os labels, e o fluxo completo de desenvolvimento:
+
+📖 **Leia**: [docs/WORKFLOWS_GUIDE.md](docs/WORKFLOWS_GUIDE.md)
+
+### Atualizando a Versão Localmente (para desenvolvimento)
 
 Use o script de bump de versão:
 
@@ -265,26 +391,27 @@ python .github/scripts/bump_version.py --level minor
 python .github/scripts/bump_version.py --level major
 ```
 
-### Criando Releases
-
-O projeto possui um workflow automatizado para criar releases:
-
-1. Acesse a aba **Actions** no GitHub
-2. Selecione o workflow **"Release (bump & create)"**
-3. Clique em **"Run workflow"**
-4. Escolha o nível de incremento (patch/minor/major)
-5. Confirme a execução
-
-O workflow irá:
-- ✅ Incrementar a versão no arquivo `VERSION`
-- ✅ Fazer commit e push da nova versão
-- ✅ Criar uma tag Git (`vX.Y.Z`)
-- ✅ Gerar changelog automaticamente
-- ✅ Criar uma Release no GitHub com o changelog
-
 ## 📝 Changelog
 
 O changelog é gerado automaticamente durante o processo de release, baseado nos commits entre as tags. Para melhores resultados, use [Conventional Commits](https://www.conventionalcommits.org/pt-br/) nas mensagens de commit.
+
+📖 **Ver histórico completo**: [CHANGELOG.md](docs/CHANGELOG.md)
+
+## 📚 Documentação
+
+Toda a documentação do projeto está organizada na pasta `docs/`. Consulte o [índice da documentação](docs/README.md) para navegação completa.
+
+### Documentos Principais
+
+- 📖 [Guia de Início Rápido](docs/QUICKSTART.md) - Comece a usar em 5 minutos
+- 🤝 [Guia de Contribuição](docs/CONTRIBUTING.md) - Como contribuir para o projeto
+- 🔧 [Guia de Workflows](docs/WORKFLOWS_GUIDE.md) - CI/CD e automações
+- 📝 [Changelog](docs/CHANGELOG.md) - Histórico de mudanças
+- 🐛 [Troubleshooting](docs/TROUBLESHOOTING.md) - Resolução de problemas
+- 📊 [Game Design Document](docs/GDD_FERRITINE.md) - Conceito e design
+- 🏗️ [Documentação Técnica da Maquete](docs/MAQUETE_TECH_DOCS.md) - Specs técnicas
+
+📂 **[Ver todos os documentos →](docs/README.md)**
 
 ## 📄 Licença
 Este projeto está licenciado sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.

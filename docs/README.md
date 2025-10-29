@@ -69,6 +69,11 @@ Bem-vindo à documentação completa do projeto Ferritine! Todos os documentos e
   - Solução aplicada
   - Como funciona
 
+- **[REQUIREMENTS_FIX.md](REQUIREMENTS_FIX.md)** - Correção de dependências incompatíveis
+  - Erro iniconfig==2.3.0
+  - Compatibilidade Python 3.8-3.11
+  - Boas práticas de requirements.txt
+
 ## 🗺️ Planejamento
 
 - **[NEXT_STEPS.md](NEXT_STEPS.md)** - Próximos passos do desenvolvimento
@@ -103,6 +108,7 @@ docs/
 └── 🐛 Resolução de Problemas
     ├── TROUBLESHOOTING.md         # Guia de troubleshooting
     ├── PYTHONPATH_FIX.md          # Fix do PYTHONPATH
+    ├── REQUIREMENTS_FIX.md        # Fix de dependências Python 3.8+
     └── NEXT_STEPS.md              # Próximos passos
 ```
 

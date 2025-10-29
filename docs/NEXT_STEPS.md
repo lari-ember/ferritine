@@ -203,7 +203,7 @@ Se tiver dúvidas sobre o commit:
 
 1. Revise as mudanças: `git diff`
 2. Veja o que será commitado: `git status`
-3. Consulte [CONTRIBUTING.md](../CONTRIBUTING.md)
+3. Consulte [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
