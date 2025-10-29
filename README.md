@@ -291,17 +291,49 @@ Este projeto está licenciado sob a licença MIT. Veja o arquivo [LICENSE](LICEN
 
 ## 🗺️ Roadmap
 
-Funcionalidades planejadas para futuras versões:
+O projeto está organizado em **fases bem definidas** com issues e milestones detalhados:
 
-- [ ] Interface gráfica para visualização da simulação
-- [ ] Integração com hardware (Arduino/Raspberry Pi)
-- [ ] Múltiplos tipos de agentes (estudantes, trabalhadores, etc.)
-- [ ] Sistema de eventos aleatórios
+### 📋 Planejamento Completo
+
+Consulte os seguintes documentos para ver o plano completo de desenvolvimento:
+
+- **[ISSUES_MILESTONES_TAGS.md](ISSUES_MILESTONES_TAGS.md)** - 55 issues detalhadas organizadas em milestones
+- **[docs/QUICK_ISSUE_GUIDE.md](docs/QUICK_ISSUE_GUIDE.md)** - Guia rápido para criar issues no GitHub
+- **[gdd_ferritine.md](gdd_ferritine.md)** - Game Design Document completo (3600+ linhas)
+
+### Fases do Projeto
+
+- **Fase 0**: Fundamentos e Infraestrutura (Mês 1-2)
+- **Fase 1**: Simulação Digital Básica (Mês 3-4)
+  - 1.1: Mundo Estático
+  - 1.2: Agentes Simples
+  - 1.3: Economia Básica
+  - 1.4: Transporte Ferroviário Virtual
+- **Fase 2**: Hardware Básico (Mês 5-7)
+  - 2.1: Circuito de Iluminação
+  - 2.2: Sensor de Trem
+  - 2.3: Controle de Desvio
+- **Fase 3**: Maquete Física Inicial (Mês 8-12)
+  - 3.1: Base e Topografia
+  - 3.2: Trilhos e Primeiro Trem
+  - 3.3: Primeiros Edifícios
+  - 3.4: Integração Física-Digital
+- **Fase 4**: Expansão e Refinamento (Ano 2+)
+
+### Funcionalidades Planejadas
+
+- [ ] Interface gráfica 2D/3D para visualização da simulação
+- [ ] Integração com hardware (Arduino/ESP32/Raspberry Pi)
+- [ ] Múltiplos tipos de agentes com IA comportamental
+- [ ] Sistema econômico completo (oferta, demanda, inflação)
+- [ ] Sistema político (eleições, políticas públicas)
+- [ ] Eventos aleatórios e emergentes
 - [ ] Persistência de estado (salvar/carregar simulações)
 - [ ] API REST para controle remoto
 - [ ] Dashboard web em tempo real
-- [ ] Suporte a múltiplas cidades
-- [ ] Sistema de transporte público
+- [ ] Realidade Aumentada (AR) via mobile
+- [ ] Sistema de transporte multimodal (trens, ônibus, carros)
+- [ ] Geração de notícias com IA
 
 ## 🙏 Agradecimentos
 
