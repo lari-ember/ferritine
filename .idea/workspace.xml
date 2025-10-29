@@ -4,27 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4f159fe7-1983-460e-879d-a5f99dded4ba" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.agent.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.ask.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.ask2agent.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.edit.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/ferritine.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/models/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/models/agente.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/models/cidade.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/tests/test_sim.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+    <list default="true" id="4f159fe7-1983-460e-879d-a5f99dded4ba" name="Changes" comment="fix: gdd e desing">
+      <change beforePath="$PROJECT_DIR$/.github/workflows/release.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/release.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.github/workflows/tests.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/tests.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CHANGELOG.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/CONTRIBUTING.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/IMPLEMENTATION_CHANGES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/IMPLEMENTATION_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QUICKSTART.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/NEXT_STEPS.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/NEXT_STEPS.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/TROUBLESHOOTING.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/TROUBLESHOOTING.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gdd_ferritine.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/maquete_tech_docs.md" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,6 +34,43 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;lari-ember&quot;
+  }
+}</component>
+  <component name="GitToolBoxStore">
+    <option name="recentBranches">
+      <RecentBranches>
+        <option name="branchesForRepo">
+          <list>
+            <RecentBranchesForRepo>
+              <option name="branches">
+                <list>
+                  <RecentBranch>
+                    <option name="branchName" value="test/release-flow" />
+                    <option name="lastUsedInstant" value="1761780253" />
+                  </RecentBranch>
+                  <RecentBranch>
+                    <option name="branchName" value="main" />
+                    <option name="lastUsedInstant" value="1761677595" />
+                  </RecentBranch>
+                </list>
+              </option>
+              <option name="repositoryRootUrl" value="file://$PROJECT_DIR$" />
+            </RecentBranchesForRepo>
+          </list>
+        </option>
+      </RecentBranches>
+    </option>
+  </component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/lari-ember/ferritine.git&quot;,
+    &quot;accountId&quot;: &quot;5f6e3fbf-179f-46d3-8184-49426e6abd4c&quot;
+  }
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 2
 }</component>
@@ -59,7 +89,7 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "master",
+    "git-widget-placeholder": "test/release-flow",
     "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
@@ -83,6 +113,55 @@
       <option name="presentableId" value="Default" />
       <updated>1761676048408</updated>
     </task>
+    <task id="LOCAL-00001" summary="add initial implementation of Agente and Cidade classes with simulation demo">
+      <option name="closed" value="true" />
+      <created>1761677696734</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1761677696734</updated>
+    </task>
+    <task id="LOCAL-00002" summary="feat: add bug report and feature request templates">
+      <option name="closed" value="true" />
+      <created>1761679470710</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1761679470710</updated>
+    </task>
+    <task id="LOCAL-00003" summary="feat: improve project documentation and add automation scripts&#10;&#10;- Enhance README.md with installation instructions, usage examples, and project structure&#10;- Create CONTRIBUTING.md with contribution guidelines and code of conduct&#10;- Add CHANGELOG.md for tracking notable changes&#10;- Implement bump_version.py script for semantic versioning&#10;- Add generate_changelog.sh script for automatic changelog generation&#10;- Create GitHub Actions workflows for automated releases and testing&#10;- Improve .gitignore to include additional patterns&#10;- Add issue templates for bug reports and feature requests&#10;- Expand test coverage with new test cases for agent and city behavior">
+      <option name="closed" value="true" />
+      <created>1761751970381</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1761751970381</updated>
+    </task>
+    <task id="LOCAL-00004" summary="fix: add configuration for pytest and update documentation&#10;&#10;- Introduced pytest.ini to configure PYTHONPATH and test discovery&#10;- Added setup.py for development installation&#10;- Created .env.example for environment variable templates&#10;- Updated README.md and CONTRIBUTING.md with installation instructions&#10;- Added PYTHONPATH configuration to GitHub Actions workflow&#10;- Created troubleshooting documentation for common issues">
+      <option name="closed" value="true" />
+      <created>1761753054299</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1761753054299</updated>
+    </task>
+    <task id="LOCAL-00005" summary="fix: gdd e desing">
+      <option name="closed" value="true" />
+      <created>1761779076250</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1761779076250</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="add initial implementation of Agente and Cidade classes with simulation demo" />
+    <MESSAGE value="feat: add bug report and feature request templates" />
+    <MESSAGE value="feat: improve project documentation and add automation scripts&#10;&#10;- Enhance README.md with installation instructions, usage examples, and project structure&#10;- Create CONTRIBUTING.md with contribution guidelines and code of conduct&#10;- Add CHANGELOG.md for tracking notable changes&#10;- Implement bump_version.py script for semantic versioning&#10;- Add generate_changelog.sh script for automatic changelog generation&#10;- Create GitHub Actions workflows for automated releases and testing&#10;- Improve .gitignore to include additional patterns&#10;- Add issue templates for bug reports and feature requests&#10;- Expand test coverage with new test cases for agent and city behavior" />
+    <MESSAGE value="fix: add configuration for pytest and update documentation&#10;&#10;- Introduced pytest.ini to configure PYTHONPATH and test discovery&#10;- Added setup.py for development installation&#10;- Created .env.example for environment variable templates&#10;- Updated README.md and CONTRIBUTING.md with installation instructions&#10;- Added PYTHONPATH configuration to GitHub Actions workflow&#10;- Created troubleshooting documentation for common issues" />
+    <MESSAGE value="fix: gdd e desing" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix: gdd e desing" />
   </component>
 </project>

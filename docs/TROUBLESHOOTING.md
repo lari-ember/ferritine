@@ -359,7 +359,7 @@ python -m pytest -v 2>&1 | grep -i error
 
 3. **Consulte a documentação:**
    - [README.md](../README.md)
-   - [CONTRIBUTING.md](../CONTRIBUTING.md)
+   - [CONTRIBUTING.md](CONTRIBUTING.md)
    - [docs/PYTHONPATH_FIX.md](PYTHONPATH_FIX.md)
 
 4. **Último recurso - Reset completo:**
