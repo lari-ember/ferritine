@@ -56,6 +56,9 @@ source .venv/bin/activate
 ### 3. Instale as Dependências
 ```bash
 pip install -r requirements.txt
+
+# Opcional: Instale em modo desenvolvimento (recomendado para contribuidores)
+pip install -e .
 ```
 
 ### 4. Execute o Programa

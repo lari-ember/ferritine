@@ -84,6 +84,9 @@ source .venv/bin/activate  # Linux/macOS
 # Instale dependências de desenvolvimento
 pip install -r requirements.txt
 pip install pytest pytest-cov black flake8 mypy
+
+# Instale o pacote em modo desenvolvimento (recomendado)
+pip install -e .
 ```
 
 ### 2. Criando uma Branch
