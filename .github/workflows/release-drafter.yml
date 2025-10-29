@@ -1,0 +1,38 @@
+name: Release Drafter
+
+# Workflow que mantém automaticamente um draft da próxima release.
+#
+# Este workflow:
+# 1. É acionado quando um PR é merged para main
+# 2. Atualiza o draft release com informações do PR
+# 3. Organiza as mudanças por categoria baseado nos labels
+# 4. Sugere a próxima versão baseado nos tipos de mudanças
+#
+# O draft release pode ser:
+# - Revisado manualmente na página de Releases do GitHub
+# - Publicado manualmente quando estiver pronto
+# - Usado pelo workflow de release para criar a release final
+
+on:
+  push:
+    branches:
+      - main
+  # Também atualiza quando um release é publicado ou editado
+  release:
+    types: [published, created, edited]
+  # Permite execução manual para atualizar o draft
+  workflow_dispatch:
+
+permissions:
+  contents: write  # necessário para criar e atualizar releases
+  pull-requests: read  # necessário para ler informações dos PRs
+
+jobs:
+  update_release_draft:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update release draft
+        uses: release-drafter/release-drafter@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
