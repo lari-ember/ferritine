@@ -4,20 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4f159fe7-1983-460e-879d-a5f99dded4ba" name="Changes" comment="fix: gdd e desing">
-      <change beforePath="$PROJECT_DIR$/.github/workflows/release.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/release.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/workflows/tests.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/tests.yml" afterDir="false" />
+    <list default="true" id="4f159fe7-1983-460e-879d-a5f99dded4ba" name="Changes" comment="fix: update links in documentation and enhance README with CI/CD details">
+      <change afterPath="$PROJECT_DIR$/docs/REQUIREMENTS_FIX.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CHANGELOG.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/CONTRIBUTING.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/IMPLEMENTATION_CHANGES.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/IMPLEMENTATION_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/QUICKSTART.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/NEXT_STEPS.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/NEXT_STEPS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/TROUBLESHOOTING.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/TROUBLESHOOTING.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gdd_ferritine.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/maquete_tech_docs.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -65,12 +56,22 @@
       </RecentBranches>
     </option>
   </component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/lari-ember/ferritine.git&quot;,
-    &quot;accountId&quot;: &quot;5f6e3fbf-179f-46d3-8184-49426e6abd4c&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/lari-ember/ferritine.git",
+    "accountId": "5f6e3fbf-179f-46d3-8184-49426e6abd4c"
+  },
+  "recentNewPullRequestHead": {
+    "server": {
+      "useHttp": false,
+      "host": "github.com",
+      "port": null,
+      "suffix": null
+    },
+    "owner": "lari-ember",
+    "repository": "ferritine"
   }
-}</component>
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 2
 }</component>
@@ -153,7 +154,15 @@
       <option name="project" value="LOCAL" />
       <updated>1761779076250</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="fix: update links in documentation and enhance README with CI/CD details">
+      <option name="closed" value="true" />
+      <created>1761780604742</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1761780604743</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -162,6 +171,7 @@
     <MESSAGE value="feat: improve project documentation and add automation scripts&#10;&#10;- Enhance README.md with installation instructions, usage examples, and project structure&#10;- Create CONTRIBUTING.md with contribution guidelines and code of conduct&#10;- Add CHANGELOG.md for tracking notable changes&#10;- Implement bump_version.py script for semantic versioning&#10;- Add generate_changelog.sh script for automatic changelog generation&#10;- Create GitHub Actions workflows for automated releases and testing&#10;- Improve .gitignore to include additional patterns&#10;- Add issue templates for bug reports and feature requests&#10;- Expand test coverage with new test cases for agent and city behavior" />
     <MESSAGE value="fix: add configuration for pytest and update documentation&#10;&#10;- Introduced pytest.ini to configure PYTHONPATH and test discovery&#10;- Added setup.py for development installation&#10;- Created .env.example for environment variable templates&#10;- Updated README.md and CONTRIBUTING.md with installation instructions&#10;- Added PYTHONPATH configuration to GitHub Actions workflow&#10;- Created troubleshooting documentation for common issues" />
     <MESSAGE value="fix: gdd e desing" />
-    <option name="LAST_COMMIT_MESSAGE" value="fix: gdd e desing" />
+    <MESSAGE value="fix: update links in documentation and enhance README with CI/CD details" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix: update links in documentation and enhance README with CI/CD details" />
   </component>
 </project>
