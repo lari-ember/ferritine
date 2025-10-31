@@ -80,42 +80,119 @@ pytest --cov=app
 
 ## 📁 Estrutura do Projeto
 
+Após a **Issue #1 - Reorganização da Estrutura** (fase concluída), o projeto segue uma arquitetura modular e escalável:
+
 ```
 ferritine/
-├── .github/                      # Configurações do GitHub
-│   ├── ISSUE_TEMPLATE/           # Templates para issues
-│   │   ├── bug_report.md         # Template para reportar bugs
-│   │   └── feature_request.md    # Template para solicitar funcionalidades
-│   ├── scripts/                  # Scripts de automação
-│   │   ├── bump_version.py       # Script para atualizar versão
-│   │   └── generate_changelog.sh # Script para gerar changelog
-│   └── workflows/                # GitHub Actions workflows
-│       └── release.yml           # Workflow de release automatizado
-├── app/                          # Código principal da aplicação
-│   ├── __init__.py               # Inicialização do pacote
-│   ├── models/                   # Modelos de domínio
+├── .github/                              # Configurações do GitHub
+│   ├── ISSUE_TEMPLATE/                   # Templates para issues
+│   │   ├── bug_report.md                 # Template para reportar bugs
+│   │   └── feature_request.md            # Template para solicitar funcionalidades
+│   ├── scripts/                          # Scripts de automação
+│   │   ├── bump_version.py               # Script para atualizar versão
+│   │   └── generate_changelog.sh         # Script para gerar changelog
+│   └── workflows/                        # GitHub Actions workflows
+│       ├── python-app.yml                # CI/CD para testes
+│       ├── release.yml                   # Workflow de release automatizado
+│       └── tests.yml                     # Testes automatizados
+│
+├── backend/                              # Lógica do backend
+│   ├── __init__.py
+│   ├── simulation/                       # Motor de simulação (antes: app/)
 │   │   ├── __init__.py
-│   │   ├── agente.py             # Classe Agente (habitantes)
-│   │   └── cidade.py             # Classe Cidade (mundo da simulação)
-│   └── tests/                    # Testes automatizados
-│       └── test_sim.py           # Testes de simulação
-├── scripts/                      # Scripts auxiliares
-│   └── bump_version.py           # Script local de versionamento
-├── main.py                       # Ponto de entrada da aplicação
-├── requirements.txt              # Dependências do projeto
-├── VERSION                       # Versão atual (semantic versioning)
-├── README.md                     # Documentação principal
-└── LICENSE                       # Licença do projeto
+│   │   └── models/                       # Modelos de domínio
+│   │       ├── __init__.py
+│   │       ├── agente.py                 # Classe Agente (habitantes)
+│   │       └── cidade.py                 # Classe Cidade (mundo)
+│   ├── database/                         # Modelos e queries do banco (futuro)
+│   │   └── __init__.py
+│   ├── api/                              # API REST/WebSocket (futuro)
+│   │   └── __init__.py
+│   └── utils/                            # Utilitários e configurações
+│       ├── __init__.py
+│       └── config.py                     # Configurações centralizadas
+│
+├── frontend/                             # Interface web (futuro)
+│   └── __init__.py
+│
+├── visualization/                        # Visualização 2D/3D (futuro)
+│   └── __init__.py
+│
+├── hardware/                             # Código para Arduino/ESP32 (futuro)
+│   └── __init__.py
+│
+├── data/                                 # Banco de dados, logs, configs
+│   ├── logs/                             # Arquivos de log
+│   ├── db/                               # Banco de dados SQLite
+│   └── config/                           # Arquivos de configuração
+│
+├── tests/                                # Testes automatizados
+│   ├── __init__.py
+│   ├── unit/                             # Testes unitários
+│   │   ├── __init__.py
+│   │   └── simulation/                   # Testes do motor de simulação
+│   │       ├── __init__.py
+│   │       └── test_sim.py               # Testes das classes Agente e Cidade
+│   └── integration/                      # Testes de integração (futuro)
+│       └── __init__.py
+│
+├── docs/                                 # Documentação do projeto
+│   ├── README.md                         # Documentação detalhada
+│   ├── MIGRATION_REPORT.md               # Relatório de migrações
+│   └── *.md                              # Outros documentos
+│
+├── scripts/                              # Scripts locais
+│   ├── bump_version.py                   # Script local de versionamento
+│   └── create_github_structure.py        # Script de setup do GitHub
+│
+├── main.py                               # Ponto de entrada da aplicação
+├── requirements.txt                      # Dependências organizadas por categoria
+├── setup.py                              # Configuração de instalação
+├── VERSION                               # Versão atual (semantic versioning)
+├── pytest.ini                            # Configuração do pytest
+├── README.md                             # Documentação principal
+├── QUICKSTART.md                         # Guia rápido de início
+├── LICENSE                               # Licença do projeto (MIT)
+└── .env.example                          # Exemplo de variáveis de ambiente
 ```
+
+### ✨ Destaques da Nova Arquitetura
+
+**Modularidade**:
+- `backend/` contém toda a lógica do servidor
+- `frontend/`, `visualization/`, `hardware/` prontos para expansão
+- `data/` centraliza logs, banco de dados e configurações
+- `tests/` segue a mesma estrutura do código
+
+**Escalabilidade**:
+- Estrutura preparada para múltiplos subsistemas
+- Importações relativas dentro de módulos
+- Configuração centralizada em `backend/utils/config.py`
+
+**Manutenibilidade**:
+- Todos os pacotes possuem `__init__.py` adequados
+- Documentação de string em cada módulo
+- Testes co-localizados com a estrutura
 
 ### Descrição dos Componentes
 
-- **`app/models/agente.py`**: Define a classe `Agente` que representa habitantes da cidade com rotinas diárias
-- **`app/models/cidade.py`**: Define a classe `Cidade` que gerencia os agentes e a simulação
-- **`app/tests/`**: Contém testes unitários para validar o comportamento do sistema
+**Core Simulation**:
+- **`backend/simulation/models/agente.py`**: Classe `Agente` que representa habitantes com rotinas diárias
+- **`backend/simulation/models/cidade.py`**: Classe `Cidade` que gerencia agentes e executa simulações
+
+**Configuration & Utilities**:
+- **`backend/utils/config.py`**: Gerenciamento centralizado de configurações
+  - Carrega variáveis de ambiente
+  - Define paths para dados, logs e config
+  - Suporta múltiplos ambientes (development, production, testing)
+
+**Testing**:
+- **`tests/unit/simulation/test_sim.py`**: Testes unitários para agentes e cidade
+- Estrutura pronta para expandir com testes de integração
+
+**Entry Points**:
 - **`main.py`**: Script de demonstração que executa uma simulação de 24 horas
-- **`VERSION`**: Arquivo que armazena a versão atual usando versionamento semântico (MAJOR.MINOR.PATCH)
-- **`.github/`**: Configurações e automações do GitHub (CI/CD, templates)
+- **`setup.py`**: Configuração para instalação do pacote
 
 ## 💡 Exemplos de Uso
 
@@ -135,8 +212,8 @@ Ao executar `python main.py`, você verá uma simulação de 24 horas:
 ### Criando Seus Próprios Agentes
 
 ```python
-from app.models.agente import Agente
-from app.models.cidade import Cidade
+from backend.simulation.models.agente import Agente
+from backend.simulation.models.cidade import Cidade
 
 # Criar uma cidade
 cidade = Cidade()
@@ -156,6 +233,8 @@ for hora in range(24):
 Você pode estender a classe `Agente` para customizar horários:
 
 ```python
+from backend.simulation.models.agente import Agente
+
 class AgentePersonalizado(Agente):
     def step(self, hora: int):
         # Trabalha das 9h às 18h
@@ -164,6 +243,65 @@ class AgentePersonalizado(Agente):
         else:
             self.local = self.casa
 ```
+
+### Usando a Configuração Centralizada
+
+```python
+from backend.utils.config import Config, get_config
+
+# Obter configuração do ambiente atual
+config = get_config()
+
+# Acessar configurações
+print(f"Project root: {config.PROJECT_ROOT}")
+print(f"Log file: {config.LOG_FILE}")
+print(f"Database URL: {config.DATABASE_URL}")
+print(f"Agent work hours: {config.AGENT_WORK_START_HOUR}h - {config.AGENT_WORK_END_HOUR}h")
+
+# Garantir que os diretórios necessários existem
+config.ensure_directories()
+```
+
+## 📝 TODOs e Issues Prioritárias
+
+O projeto possui **arquivos TODO detalhados** para as issues prioritárias da **Fase 0** (Infraestrutura Crítica).
+
+### 🎯 Issues com TODOs Prontos
+
+Criamos arquivos com código, templates e instruções completas para implementar:
+
+1. **Issue #1**: Estrutura do projeto (`TODO_ISSUE_01_project_structure.py`)
+2. **Issue #2**: Sistema de logging (`TODO_ISSUE_02_logging_system.py`)
+3. **Issue #3**: Configuração YAML (`TODO_ISSUE_03_config_system.py`)
+4. **Issue #4**: Banco de dados SQLite (`TODO_ISSUE_04_database.py`)
+5. **Issue #5**: Documentação de arquitetura (`TODO_ISSUE_05_architecture_docs.py`)
+
+### 📚 Guia de Uso
+
+Consulte [README_TODOS.md](README_TODOS.md) para:
+- Descrição de cada issue
+- Ordem recomendada de implementação
+- Como usar os arquivos TODO
+- Dicas e exemplos
+
+### 💡 Para Começar
+
+```bash
+# Ver TODOs disponíveis
+ls TODO_ISSUE_*.py
+
+# Ler guia completo
+cat README_TODOS.md
+
+# Exemplo: Revisar Issue #1
+cat TODO_ISSUE_01_project_structure.py
+```
+
+Cada arquivo TODO contém:
+- ✅ Código pronto para adaptar
+- ✅ Estruturas de dados completas
+- ✅ Exemplos de uso
+- ✅ Instruções passo a passo
 
 ## 🤝 Contribuição
 
