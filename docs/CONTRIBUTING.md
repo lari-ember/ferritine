@@ -120,7 +120,7 @@ python -m pytest -v
 python -m pytest --cov=app --cov-report=html
 
 # Execute testes específicos
-python -m pytest app/tests/test_sim.py -v
+python -m pytest tests/test_sim.py -v
 
 # Verifique o estilo do código
 flake8 app/ --max-line-length=100
