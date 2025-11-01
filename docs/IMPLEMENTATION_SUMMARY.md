@@ -191,7 +191,7 @@ python -m pytest -v
 python -m pytest --cov=app --cov-report=html
 
 # Testes específicos
-python -m pytest app/tests/test_sim.py -v
+python -m pytest tests/test_sim.py -v
 ```
 
 ### 4. Reportar Bug

@@ -4,6 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
+    <list default="true" id="4f159fe7-1983-460e-879d-a5f99dded4ba" name="Changes" comment="feat: add initial project structure and core modules for simulation" />
     <list default="true" id="4f159fe7-1983-460e-879d-a5f99dded4ba" name="Changes" comment="fix: update links in documentation and enhance README with CI/CD details">
       <change afterPath="$PROJECT_DIR$/docs/REQUIREMENTS_FIX.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
@@ -23,8 +24,76 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="issues/issue_001" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="UPDATE_TYPE" value="REBASE" />
   </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;lari-ember&quot;
+  }
+}</component>
+  <component name="GitHubPullRequestState">{
+  &quot;prStates&quot;: [
+    {
+      &quot;id&quot;: {
+        &quot;id&quot;: &quot;PR_kwDOQK9Hus6wf3gj&quot;,
+        &quot;number&quot;: 4
+      },
+      &quot;lastSeen&quot;: 1761783396721
+    }
+  ]
+}</component>
+  <component name="GitToolBoxStore">
+    <option name="recentBranches">
+      <RecentBranches>
+        <option name="branchesForRepo">
+          <list>
+            <RecentBranchesForRepo>
+              <option name="branches">
+                <list>
+                  <RecentBranch>
+                    <option name="branchName" value="issues/issue_001" />
+                    <option name="lastUsedInstant" value="1761952026" />
+                  </RecentBranch>
+                  <RecentBranch>
+                    <option name="branchName" value="test/release-flow" />
+                    <option name="lastUsedInstant" value="1761780253" />
+                  </RecentBranch>
+                  <RecentBranch>
+                    <option name="branchName" value="main" />
+                    <option name="lastUsedInstant" value="1761677595" />
+                  </RecentBranch>
+                </list>
+              </option>
+              <option name="repositoryRootUrl" value="file://$PROJECT_DIR$" />
+            </RecentBranchesForRepo>
+          </list>
+        </option>
+      </RecentBranches>
+    </option>
+  </component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/lari-ember/ferritine.git&quot;,
+    &quot;accountId&quot;: &quot;5f6e3fbf-179f-46d3-8184-49426e6abd4c&quot;
+  },
+  &quot;recentNewPullRequestHead&quot;: {
+    &quot;server&quot;: {
+      &quot;useHttp&quot;: false,
+      &quot;host&quot;: &quot;github.com&quot;,
+      &quot;port&quot;: null,
+      &quot;suffix&quot;: null
+    },
+    &quot;owner&quot;: &quot;lari-ember&quot;,
+    &quot;repository&quot;: &quot;ferritine&quot;
+  }
+}</component>
   <component name="GitHubPullRequestSearchHistory">{
   &quot;lastFilter&quot;: {
     &quot;state&quot;: &quot;OPEN&quot;,
@@ -90,12 +159,14 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "git-widget-placeholder": "#6 on issues/issue__001",
     "git-widget-placeholder": "test/release-flow",
     "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/docs" />
       <recent name="$PROJECT_DIR$/app" />
     </key>
   </component>
@@ -162,6 +233,15 @@
       <option name="project" value="LOCAL" />
       <updated>1761780604743</updated>
     </task>
+    <task id="LOCAL-00007" summary="feat: add initial project structure and core modules for simulation">
+      <option name="closed" value="true" />
+      <created>1761952145675</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1761952145675</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <option name="localTasksCounter" value="7" />
     <servers />
   </component>
@@ -172,6 +252,8 @@
     <MESSAGE value="fix: add configuration for pytest and update documentation&#10;&#10;- Introduced pytest.ini to configure PYTHONPATH and test discovery&#10;- Added setup.py for development installation&#10;- Created .env.example for environment variable templates&#10;- Updated README.md and CONTRIBUTING.md with installation instructions&#10;- Added PYTHONPATH configuration to GitHub Actions workflow&#10;- Created troubleshooting documentation for common issues" />
     <MESSAGE value="fix: gdd e desing" />
     <MESSAGE value="fix: update links in documentation and enhance README with CI/CD details" />
+    <MESSAGE value="feat: add initial project structure and core modules for simulation" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: add initial project structure and core modules for simulation" />
     <option name="LAST_COMMIT_MESSAGE" value="fix: update links in documentation and enhance README with CI/CD details" />
   </component>
 </project>

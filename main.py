@@ -1,7 +1,7 @@
 # main.py
 from time import sleep
-from app.models.agente import Agente
-from app.models.cidade import Cidade
+from backend.simulation.models.agente import Agente
+from backend.simulation.models.cidade import Cidade
 
 # Função principal que executa a demonstração da simulação
 # Cria uma cidade, adiciona agentes e simula suas rotinas ao longo de 24 horas

@@ -463,6 +463,18 @@ Reorganizar estrutura do projeto seguindo arquitetura definida no GDD.
 2. **Criar Milestone 0** (2 minutos)
 3. **Criar Issues #1-#5** (Fase 0 - Infraestrutura crítica)
 
+> 💡 **IMPORTANTE**: As Issues #1-#5 já têm arquivos TODO detalhados no repositório!
+> 
+> Consulte:
+> - `TODO_ISSUE_01_project_structure.py`
+> - `TODO_ISSUE_02_logging_system.py`
+> - `TODO_ISSUE_03_config_system.py`
+> - `TODO_ISSUE_04_database.py`
+> - `TODO_ISSUE_05_architecture_docs.py`
+> - `README_TODOS.md` - Guia de uso dos TODOs
+>
+> Estes arquivos contêm código, templates e instruções detalhadas para implementação!
+
 ### Prioridade 2 (Primeira Semana)
 1. **Criar Issues #6-#10** (Fase 0 - Documentação de aprendizado)
 2. **Criar Milestone 1.1**

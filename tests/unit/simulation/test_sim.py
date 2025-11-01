@@ -11,8 +11,8 @@ Autor: Equipe Ferritine
 Data: 2025-10-29
 """
 
-from app.models.agente import Agente
-from app.models.cidade import Cidade
+from backend.simulation.models.agente import Agente
+from backend.simulation.models.cidade import Cidade
 
 
 def test_agente_move_para_trabalho():

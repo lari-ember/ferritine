@@ -250,7 +250,7 @@ ERROR: VERSION must be MAJOR.MINOR.PATCH
 
 2. **Execute apenas testes modificados:**
    ```bash
-   python -m pytest app/tests/test_sim.py -v
+   python -m pytest tests/test_sim.py -v
    ```
 
 3. **Desabilite cobertura:**
