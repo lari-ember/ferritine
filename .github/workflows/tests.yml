@@ -46,7 +46,9 @@ jobs:
 
     - name: Executar testes com pytest
       run: |
-        PYTHONPATH=$PYTHONPATH:. python -m pytest -v --cov=app --cov-report=xml --cov-report=term
+        python -m pytest -v --cov=app --cov-report=xml --cov-report=term
+      env:
+        PYTHONPATH: ${{ github.workspace }}
 
     - name: Upload de cobertura para Codecov
       uses: codecov/codecov-action@v3
