@@ -4,12 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4f159fe7-1983-460e-879d-a5f99dded4ba" name="Changes" comment="feat: add initial project structure and core modules for simulation" />
-    <list default="true" id="4f159fe7-1983-460e-879d-a5f99dded4ba" name="Changes" comment="fix: update links in documentation and enhance README with CI/CD details">
-      <change afterPath="$PROJECT_DIR$/docs/REQUIREMENTS_FIX.md" afterDir="false" />
+    <list default="true" id="4f159fe7-1983-460e-879d-a5f99dded4ba" name="Changes" comment="feat: implement centralized logging system with detailed logging in agent and city modules">
+      <change afterPath="$PROJECT_DIR$/backend/utils/logger.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/ISSUE_02_LOGGING_COMPLETE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/LOGGING_GUIDE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/examples/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/examples/simulation_with_logging.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/integration/test_logging.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TODO_ISSUE_02_logging_system.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/simulation/models/agente.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/simulation/models/agente.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/simulation/models/cidade.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/simulation/models/cidade.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -58,10 +63,6 @@
               <option name="branches">
                 <list>
                   <RecentBranch>
-                    <option name="branchName" value="issues/issue_001" />
-                    <option name="lastUsedInstant" value="1761952026" />
-                  </RecentBranch>
-                  <RecentBranch>
                     <option name="branchName" value="test/release-flow" />
                     <option name="lastUsedInstant" value="1761780253" />
                   </RecentBranch>
@@ -94,53 +95,6 @@
     &quot;repository&quot;: &quot;ferritine&quot;
   }
 }</component>
-  <component name="GitHubPullRequestSearchHistory">{
-  &quot;lastFilter&quot;: {
-    &quot;state&quot;: &quot;OPEN&quot;,
-    &quot;assignee&quot;: &quot;lari-ember&quot;
-  }
-}</component>
-  <component name="GitToolBoxStore">
-    <option name="recentBranches">
-      <RecentBranches>
-        <option name="branchesForRepo">
-          <list>
-            <RecentBranchesForRepo>
-              <option name="branches">
-                <list>
-                  <RecentBranch>
-                    <option name="branchName" value="test/release-flow" />
-                    <option name="lastUsedInstant" value="1761780253" />
-                  </RecentBranch>
-                  <RecentBranch>
-                    <option name="branchName" value="main" />
-                    <option name="lastUsedInstant" value="1761677595" />
-                  </RecentBranch>
-                </list>
-              </option>
-              <option name="repositoryRootUrl" value="file://$PROJECT_DIR$" />
-            </RecentBranchesForRepo>
-          </list>
-        </option>
-      </RecentBranches>
-    </option>
-  </component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/lari-ember/ferritine.git",
-    "accountId": "5f6e3fbf-179f-46d3-8184-49426e6abd4c"
-  },
-  "recentNewPullRequestHead": {
-    "server": {
-      "useHttp": false,
-      "host": "github.com",
-      "port": null,
-      "suffix": null
-    },
-    "owner": "lari-ember",
-    "repository": "ferritine"
-  }
-}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 2
 }</component>
@@ -149,21 +103,20 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python tests.Python tests in test_sim.py.executor": "Run",
-    "Python.main.executor": "Run",
-    "Python.test_sim.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "#6 on issues/issue__001",
-    "git-widget-placeholder": "test/release-flow",
-    "settings.editor.selected.configurable": "preferences.pluginManager"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python tests.Python tests in test_sim.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_sim.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/docs" />
@@ -242,7 +195,6 @@
       <updated>1761952145675</updated>
     </task>
     <option name="localTasksCounter" value="8" />
-    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -254,6 +206,5 @@
     <MESSAGE value="fix: update links in documentation and enhance README with CI/CD details" />
     <MESSAGE value="feat: add initial project structure and core modules for simulation" />
     <option name="LAST_COMMIT_MESSAGE" value="feat: add initial project structure and core modules for simulation" />
-    <option name="LAST_COMMIT_MESSAGE" value="fix: update links in documentation and enhance README with CI/CD details" />
   </component>
 </project>

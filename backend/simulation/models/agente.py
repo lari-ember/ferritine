@@ -1,4 +1,8 @@
 # agente.py
+from backend.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class Agente:
     """
@@ -15,6 +19,7 @@ class Agente:
         self.casa = casa
         self.trabalho = trabalho
         self.local = casa  # Estado inicial: o agente começa em casa
+        logger.debug("Criando agente: %s (casa=%s, trabalho=%s)", nome, casa, trabalho)
 
     def step(self, hora: int):
         """
@@ -30,6 +35,7 @@ class Agente:
             self.local = self.trabalho
         else:
             self.local = self.casa
+        logger.debug("Agente %s movido para %s (hora=%d)", self.nome, self.local, hora)
 
     def __repr__(self):
         """
