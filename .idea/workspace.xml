@@ -4,23 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4f159fe7-1983-460e-879d-a5f99dded4ba" name="Changes" comment="feat: add initial project structure and core modules for simulation">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CHANGELOG.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/CHANGELOG.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CONTRIBUTING.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/CONTRIBUTING.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/IMPLEMENTATION_CHANGES.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/IMPLEMENTATION_CHANGES.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/IMPLEMENTATION_SUMMARY.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/IMPLEMENTATION_SUMMARY.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ISSUES_MILESTONES_TAGS.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/ISSUES_MILESTONES_TAGS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ISSUE_01_CHECKLIST.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PLANNING_INDEX.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/PLANNING_INDEX.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/QUICKSTART.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/QUICKSTART.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TEST_FLOW.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/TEST_FLOW.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TODO_ISSUE_01_project_structure.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/tests/test_sim.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/TROUBLESHOOTING.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/TROUBLESHOOTING.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gdd_ferritine.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gdd_ferritine.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/maquete_tech_docs.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/maquete_tech_docs.md" afterDir="false" />
-    </list>
+    <list default="true" id="4f159fe7-1983-460e-879d-a5f99dded4ba" name="Changes" comment="feat: add initial project structure and core modules for simulation" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -36,7 +20,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="copilot/create-issues-and-milestones" />
+        <entry key="$PROJECT_DIR$" value="issues/issue_001" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -122,7 +106,7 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "issues/issue__001",
+    "git-widget-placeholder": "#6 on issues/issue__001",
     "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
