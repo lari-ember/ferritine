@@ -22,6 +22,7 @@ mypy==1.13.0
 
 # Utilities
 python-dotenv==1.0.1
+PyYAML==6.0.1
 
 # Dependencies from previous installation
 exceptiongroup==1.3.0

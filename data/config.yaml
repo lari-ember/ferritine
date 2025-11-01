@@ -1,0 +1,61 @@
+# Configuração do Ferritine
+# Sistema centralizado de configuração
+# Data: 2025-01-11
+
+# Configurações da simulação
+simulation:
+  # Velocidade da simulação (1.0 = tempo real, 2.0 = 2x mais rápido)
+  speed: 1.0
+  # Hora inicial da simulação (0-23, onde 0 = meia-noite)
+  start_time: 6
+  # Taxa de atualização em ticks por segundo
+  tick_rate: 60
+  # Intervalo de auto-save em segundos (300 = 5 minutos)
+  auto_save_interval: 300
+
+# Configurações do banco de dados
+database:
+  # Caminho para o arquivo SQLite do banco de dados
+  path: "data/db/city.db"
+  # Mostrar todas as queries SQL no console (útil para debug)
+  echo_sql: false
+  # Tamanho do pool de conexões com o banco
+  pool_size: 10
+
+# Configurações de IoT e hardware
+iot:
+  # Porta serial do Arduino/hardware (Linux: /dev/ttyUSB0, Windows: COM3, macOS: /dev/tty.usbserial)
+  serial_port: "/dev/ttyUSB0"
+  # Velocidade de comunicação serial em bauds
+  baud_rate: 115200
+  # Endereço do broker MQTT
+  mqtt_broker: "localhost"
+  # Porta do broker MQTT
+  mqtt_port: 1883
+  # Prefixo dos tópicos MQTT para este projeto
+  mqtt_topic_prefix: "ferritine"
+
+# Parâmetros econômicos da simulação
+economy:
+  # Salário base dos agentes (em unidades monetárias)
+  base_salary: 1000.0
+  # Multiplicador do aluguel em relação ao salário (0.3 = 30% do salário)
+  rent_multiplier: 0.3
+  # Custo diário de alimento por agente
+  food_cost_per_day: 20.0
+  # Custo de transporte por viagem/dia
+  transport_cost: 5.0
+
+# Configurações de visualização
+visualization:
+  # Largura da janela em pixels
+  window_width: 1280
+  # Altura da janela em pixels
+  window_height: 720
+  # Taxa de atualização de frames por segundo
+  fps: 60
+  # Tamanho de cada célula do grid em pixels
+  grid_size: 32
+  # Ativar modo debug (mostra mais informações na tela)
+  show_debug: false
+
