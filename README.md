@@ -4,6 +4,8 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/release/python-380/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
+[![PostgreSQL](https://img.shields.io/badge/postgresql-15-blue.svg)](https://www.postgresql.org/)
 [![Tests](https://github.com/ferritine/ferritine/workflows/Tests/badge.svg)](https://github.com/ferritine/ferritine/actions/workflows/tests.yml)
 [![Release](https://github.com/ferritine/ferritine/workflows/Release%20Drafter/badge.svg)](https://github.com/ferritine/ferritine/actions/workflows/release-drafter.yml)
 [![Code Coverage](https://img.shields.io/badge/coverage-check%20codecov-brightgreen.svg)](https://codecov.io)
@@ -17,9 +19,11 @@ O projeto simula uma cidade com agentes que possuem rotinas diárias realistas, 
 ## ✨ Recursos
 
 - 🤖 **Simulação de Agentes**: Agentes autônomos com rotinas diárias (casa ↔ trabalho)
+- 🗄️ **Banco de Dados PostgreSQL**: Persistência completa com 8 modelos e 30+ campos no Agent
+- 🐳 **Docker Ready**: Containerização completa com PostgreSQL, auto-inicialização e PgAdmin
 - 🏗️ **Arquitetura Modular**: Código organizado e fácil de estender
 - ⏰ **Simulação Temporal**: Sistema de tempo discreto (horas do dia)
-- 🧪 **Testes Automatizados**: Cobertura de testes unitários com pytest e CI/CD
+- 🧪 **Testes Automatizados**: 16+ testes de banco de dados (100% passing)
 - 📊 **Snapshots de Estado**: Visualização do estado da cidade a qualquer momento
 - 🔄 **Versionamento Semântico**: Sistema automatizado de releases e changelogs
 - 🚀 **CI/CD Completo**: Workflows GitHub Actions para testes, releases e qualidade
@@ -28,9 +32,18 @@ O projeto simula uma cidade com agentes que possuem rotinas diárias realistas, 
 
 ## 📋 Pré-requisitos
 
-Antes de começar, certifique-se de ter instalado:
+### Opção 1: Docker (Recomendado) 🐳
+
+- **Docker** 20.10+ ([Instalar Docker](https://docs.docker.com/get-docker/))
+- **Docker Compose** 2.0+ (incluído no Docker Desktop)
+- **git** (para clonar o repositório)
+
+📖 **Quick Start Docker**: Ver [DOCKER_README.md](DOCKER_README.md)
+
+### Opção 2: Instalação Local
 
 - **Python 3.8 ou superior** ([Download](https://www.python.org/downloads/))
+- **PostgreSQL 15+** (ou SQLite para desenvolvimento)
 - **pip** (gerenciador de pacotes do Python)
 - **git** (para clonar o repositório)
 - **Sistema operacional**: Linux, macOS ou Windows com WSL
@@ -44,6 +57,38 @@ As dependências são gerenciadas através do `requirements.txt`:
 ## 🚀 Instalação e Uso
 
 > 📖 **Guia Completo**: Para instruções detalhadas, consulte o [Guia de Início Rápido](docs/QUICKSTART.md)
+
+### Opção A: Usando Docker 🐳 (Recomendado)
+
+```bash
+# 1. Clone o repositório
+git clone https://github.com/ferritine/ferritine.git
+cd ferritine
+
+# 2. Copie a configuração
+cp .env.example .env
+
+# 3. Inicie tudo com um comando
+chmod +x docker-manage.sh
+./docker-manage.sh start
+
+# Pronto! PostgreSQL + Aplicação rodando
+```
+
+**Comandos Docker Úteis:**
+```bash
+./docker-manage.sh status      # Ver status
+./docker-manage.sh logs        # Ver logs
+./docker-manage.sh exec        # Shell no container
+./docker-manage.sh db          # PostgreSQL CLI
+./docker-manage.sh stop        # Parar tudo
+```
+
+📖 **Guia Docker**: [DOCKER_README.md](DOCKER_README.md) | [docs/DOCKER_GUIDE.md](docs/DOCKER_GUIDE.md)
+
+---
+
+### Opção B: Instalação Local
 
 ### 1. Clone o Repositório
 ```bash
@@ -200,6 +245,16 @@ ferritine/
 - **`tests/unit/simulation/test_sim.py`**: Testes unitários para agentes e cidade
 - Estrutura pronta para expandir com testes de integração
 
+**Database & Persistence** ✨ **NOVO**:
+- **`backend/database/models.py`**: Modelos completos de banco de dados (PostgreSQL/SQLite)
+  - Agent (Agente) com 30+ campos (genética, personalidade, humor, objetivos)
+  - Building, Profession, Routine, Vehicle, Event, EconomicStat, NamePool
+- **`backend/database/connection.py`**: Gerenciamento de conexões e sessões
+- **`backend/database/queries.py`**: 40+ queries otimizadas para CRUD e estatísticas
+- **`scripts/init_database.py`**: CLI para gerenciar banco (init, seed, stats, drop)
+- **`migrations/`**: Migrations com Alembic para versionamento do schema
+- **`examples/database_demo.py`**: Demonstração completa do sistema de banco
+
 **Entry Points**:
 - **`main.py`**: Script de demonstração que executa uma simulação de 24 horas
 - **`setup.py`**: Configuração para instalação do pacote
@@ -269,6 +324,52 @@ config = get_config()
 # Acessar configurações
 print(f"Project root: {config.PROJECT_ROOT}")
 print(f"Log file: {config.LOG_FILE}")
+```
+
+### Usando o Banco de Dados ✨ **NOVO**
+
+```python
+from backend.database import session_scope, DatabaseQueries
+from backend.database.models import Agent, CreatedBy, Gender
+from datetime import datetime
+from decimal import Decimal
+
+# Criar um agente com dados complexos
+with session_scope() as session:
+    queries = DatabaseQueries(session)
+    
+    agent = queries.agents.create(
+        name="Dr. Ana Silva",
+        created_by=CreatedBy.IA,
+        birth_date=datetime(1990, 3, 15),
+        gender=Gender.FEMALE,
+        wallet=Decimal("15000.00"),
+        energy_level=85,
+        version="0.1.0",
+        skills={"programming": 95, "leadership": 80},
+        personality={"openness": 0.8, "conscientiousness": 0.9},
+        genetics={"hair_color": "brown", "intelligence_factor": 1.1}
+    )
+    
+    print(f"Agente criado: {agent.name}, {agent.age} anos")
+    print(f"Carteira: R$ {agent.wallet}")
+
+# Ver exemplo completo
+# python examples/database_demo.py
+```
+
+**Quick Start do Banco:**
+```bash
+# Inicializar banco SQLite (desenvolvimento)
+python scripts/init_database.py --sqlite init
+python scripts/init_database.py --sqlite seed
+
+# Ou PostgreSQL (produção)
+python scripts/init_database.py init
+python scripts/init_database.py seed
+```
+
+📖 **Documentação Completa**: [Database Guide](docs/DATABASE_GUIDE.md) | [Quick Start](docs/QUICKSTART_DATABASE.md)
 print(f"Database URL: {config.DATABASE_URL}")
 print(f"Agent work hours: {config.AGENT_WORK_START_HOUR}h - {config.AGENT_WORK_END_HOUR}h")
 

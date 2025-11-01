@@ -11,9 +11,10 @@ flake8==7.1.1
 isort==5.13.2
 mypy==1.13.0
 
-# Database (when needed)
-# sqlalchemy==2.0.23
-# psycopg2-binary==2.9.9
+# Database
+sqlalchemy>=2.0.23
+psycopg2-binary>=2.9.9
+alembic>=1.12.0
 
 # API (when needed)
 # fastapi==0.109.0

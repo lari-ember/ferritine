@@ -1,0 +1,57 @@
+# Ignore Docker
+.dockerignore
+Dockerfile
+docker-compose*.yml
+docker-manage.sh
+
+# Ignore Python cache
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Ignore virtual environment
+.venv/
+venv/
+ENV/
+env/
+
+# Ignore data and logs
+data/db/*
+data/logs/*
+*.log
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore documentation
+docs/
+*.md
+LICENSE
+
+# Ignore tests (comentar se quiser incluir)
+tests/
+pytest.ini
+.pytest_cache/
+
+# Ignore backups
+backups/
+*.sql
+*.dump
+
+# Ignore migrations (se quiser recriá-las no container)
+# migrations/versions/*.py
+

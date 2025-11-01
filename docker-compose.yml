@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # Banco de Dados PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: ferritine-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ferritine}
+      POSTGRES_USER: ${DB_USER:-ferritine_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ferritine_pass}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    networks:
+      - ferritine-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ferritine_user} -d ${DB_NAME:-ferritine}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Aplicação Ferritine
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ferritine-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-ferritine}
+      DB_USER: ${DB_USER:-ferritine_user}
+      DB_PASSWORD: ${DB_PASSWORD:-ferritine_pass}
+      DB_ECHO: ${DB_ECHO:-False}
+      # Application
+      PYTHONUNBUFFERED: 1
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - ferritine-network
+    command: python main.py
+
+  # PgAdmin (opcional, para gerenciamento visual)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ferritine-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@ferritine.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - ferritine-network
+    depends_on:
+      - postgres
+    profiles:
+      - admin
+
+volumes:
+  postgres_data:
+    name: ferritine-postgres-data
+  pgadmin_data:
+    name: ferritine-pgadmin-data
+
+networks:
+  ferritine-network:
+    name: ferritine-network
+    driver: bridge
+
