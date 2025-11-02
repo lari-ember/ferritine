@@ -6,7 +6,7 @@ import pytest
 from datetime import datetime, timedelta
 
 from backend.simulation.models.vehicle import (
-    Vehicle, Train, Bus, Tram, Taxi, Truck,
+    Vehicle, Train, Bus, BRT, Tram, Taxi, Truck,
     VehicleStatus, FuelType
 )
 from backend.database.vehicle_db import VehicleDatabase
@@ -451,6 +451,34 @@ class TestVehicleTypes:
         bus.enable_express_mode()
         
         assert bus.speed_kmh > initial_speed
+    
+    def test_create_brt(self, mock_db):
+        """Test creating a BRT."""
+        brt = BRT(mock_db, name="BRT Linha Verde")
+        
+        assert brt.type == 'brt'
+        assert brt.max_passengers == 250  # Biarticulado
+        assert brt.fuel_type == FuelType.DIESEL
+        assert brt.is_biarticulado is True
+        assert brt.has_dedicated_lane is True
+    
+    def test_brt_enter_dedicated_lane(self, mock_db):
+        """Test BRT entering dedicated lane."""
+        brt = BRT(mock_db, name="BRT Express")
+        brt.speed_kmh = 30.0
+        
+        brt.enter_dedicated_lane()
+        
+        assert brt.speed_kmh == 60.0  # Velocidade na canaleta
+    
+    def test_brt_platform_boarding(self, mock_db):
+        """Test BRT platform level boarding."""
+        brt = BRT(mock_db, name="BRT Curitiba")
+        
+        boarding_time = brt.platform_boarding(passengers_count=100)
+        
+        # Embarque rápido: 0.5s por passageiro
+        assert boarding_time == 50.0
     
     def test_create_tram(self, mock_db):
         """Test creating a tram."""

@@ -517,6 +517,48 @@ class Bus(Vehicle):
         print(f"{self.name}: Modo expresso ativado")
 
 
+class BRT(Vehicle):
+    """
+    BRT Biarticulado - Bus Rapid Transit
+    Sistema de transporte rápido em canaleta exclusiva, similar ao de Curitiba
+    """
+
+    def __init__(self, db, **kwargs):
+        kwargs.setdefault("type", "brt")
+        kwargs.setdefault("max_passengers", 250)  # Capacidade biarticulado
+        kwargs.setdefault("fuel_type", "diesel")
+        kwargs.setdefault("crew_size", 2)  # Motorista + Cobrador
+        kwargs.setdefault("speed_kmh", 60.0)  # Mais rápido que ônibus comum
+        super().__init__(db, **kwargs)
+
+        # Atributos específicos de BRT
+        self.is_biarticulado = kwargs.get("is_biarticulado", True)
+        self.has_dedicated_lane = kwargs.get("has_dedicated_lane", True)  # Canaleta exclusiva
+        self.has_platform_level_boarding = kwargs.get("has_platform_level_boarding", True)  # Embarque em nível
+        self.has_air_conditioning = kwargs.get("has_air_conditioning", True)
+        self.accessibility_features = kwargs.get("accessibility_features", ["rampa", "piso_baixo", "espaço_cadeirante"])
+        self.station_type = kwargs.get("station_type", "tubo")  # Estação tipo "tubo" de Curitiba
+
+    def enter_dedicated_lane(self):
+        """
+        Entra na canaleta exclusiva do BRT
+        """
+        if self.has_dedicated_lane:
+            self.speed_kmh = 60.0  # Velocidade máxima na canaleta
+            print(f"{self.name}: Entrando na canaleta exclusiva do BRT")
+
+    def platform_boarding(self, passengers_count: int):
+        """
+        Embarque rápido em nível (sistema de estação tubo)
+        """
+        if self.has_platform_level_boarding:
+            # Embarque mais rápido que ônibus convencional
+            boarding_time = passengers_count * 0.5  # segundos por passageiro
+            print(f"{self.name}: Embarque rápido de {passengers_count} passageiros em {boarding_time:.1f}s")
+            return boarding_time
+        return passengers_count * 2.0  # Embarque normal
+
+
 class Tram(Vehicle):
     """
     Bonde - Elétrico, trilhos urbanos

@@ -60,6 +60,14 @@ A comprehensive base class that manages all aspects of vehicle operation:
    - Fuel: Diesel
    - Special: Trailer attachment (2x capacity)
 
+6. **BRT (Bus Rapid Transit)**
+   - Capacity: 250 passengers (bi-articulated)
+   - Fuel: Diesel
+   - Crew: 2 (driver + conductor)
+   - Special: Dedicated lane (canaleta exclusiva), platform-level boarding (embarque em nível)
+   - Inspired by Curitiba's BRT system with tube stations
+   - Higher speed (60 km/h) in dedicated lanes
+
 ### 2. AI Systems
 
 #### Route Optimizer (`backend/ai/route_optimizer.py`)
@@ -180,6 +188,32 @@ print(bus.get_status_summary())
 
 # Complete trip
 bus.complete_trip()
+```
+
+### Creating and Operating a BRT
+```python
+from backend.simulation.models.vehicle import BRT
+
+# Create a BRT (bi-articulated bus for rapid transit)
+brt = BRT(
+    db,
+    name="BRT Linha Verde",
+    model="Volvo Biarticulado",
+    year_built=2010
+)
+
+# Enter dedicated BRT lane
+brt.enter_dedicated_lane()  # Speed increases to 60 km/h
+
+# Start trip on BRT route
+trip_id = brt.start_trip(route_id=10, station_id=1)
+
+# Platform-level boarding (faster than conventional bus)
+boarding_time = brt.platform_boarding(passengers_count=150)
+print(f"Boarding time: {boarding_time}s")  # 75s (0.5s per passenger)
+
+# Complete trip
+brt.complete_trip()
 ```
 
 ### Using Route Optimizer
