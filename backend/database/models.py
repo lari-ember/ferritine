@@ -73,22 +73,145 @@ class HealthStatus(str, enum.Enum):
 
 
 class AgentStatus(str, enum.Enum):
-    """Status atual do agente."""
-    IDLE = 'idle'  # Parado
-    MOVING = 'moving'  # Movendo
-    WORKING = 'working'  # Trabalhando
-    SLEEPING = 'sleeping'  # Dormindo
-    SICK = 'sick'  # Doente
-    EATING = 'eating'  # Comendo
-    SOCIALIZING = 'socializing'  # Socializando
+    """Status atual do agente.
+
+    Lista expandida para suportar uma simulação complexa com estados de
+    mobilidade, trabalho, social, manutenção, emergência e lifecycle.
+
+    Exemplos de uso na simulação:
+    - `CONSTRUCTING` para agentes que estão construindo/participando da construção
+    - `WAITING` / `QUEUED` para agentes em filas ou aguardando um evento
+    - `RESPONDING_EMERGENCY` para serviços de emergência ou agentes que reagem
+    - `AT_HOME` / `AT_WORK` para estados estáticos de localização/ocupação
+    - `TRAVELING` / `COMMUTING` para deslocamentos de longa duração
+    """
+
+    # Estados básicos / mobilidade
+    IDLE = 'idle'                 # Parado, sem tarefa ativa
+    MOVING = 'moving'             # Movendo-se (curto percurso)
+    TRAVELING = 'traveling'       # Em viagem (deslocamento mais longo)
+    COMMUTING = 'commuting'       # Deslocando-se entre trabalho/casa (pendular)
+
+    # Localização ocupacional
+    AT_HOME = 'at_home'           # Em casa
+    AT_WORK = 'at_work'           # No local de trabalho
+
+    # Trabalho / atividades produtivas
+    WORKING = 'working'           # Trabalhando em sua profissão
+    CONSTRUCTING = 'constructing' # Construindo/obras/obras civis
+    MAINTENANCE = 'maintenance'   # Manutenção preventiva
+    REPAIRING = 'repairing'       # Reparo de objetos/infraestrutura
+    HARVESTING = 'harvesting'     # Colhendo recursos (para jogos/sims rurais)
+    FARMING = 'farming'           # Agricultura / plantio
+    STUDYING = 'studying'         # Estudando / aprendendo
+
+    # Filas / espera / sincronização
+    WAITING = 'waiting'           # Aguardando por algo (transporte, atendimento)
+    QUEUED = 'queued'             # Em fila especificamente
+    IDLE_WAIT = 'idle_wait'       # Parado porque espera para sincronizar
+
+    # Social / lazer / consumição
+    EATING = 'eating'             # Comendo
+    SLEEPING = 'sleeping'         # Dormindo
+    RESTING = 'resting'           # Descansando (não dormindo)
+    SOCIALIZING = 'socializing'   # Socializando
+    SHOPPING = 'shopping'         # Comprando
+    ENTERTAINING = 'entertaining' # Assistindo/participando de entretenimento
+    ATTENDING_EVENT = 'attending_event'  # Em evento público/privado
+    PARENTING = 'parenting'       # Cuidando de filhos
+    CARING = 'caring'             # Cuidados (idosos, doentes)
+
+    # Saúde / emergência
+    SICK = 'sick'                 # Doente (comportamento reduzido)
+    SEEKING_MEDICAL = 'seeking_medical'  # Procura atendimento médico
+    RESPONDING_EMERGENCY = 'responding_emergency'  # Respondendo a emergência
+    FLEEING = 'fleeing'           # Fugindo de perigo
+    SEEKING_SHELTER = 'seeking_shelter'  # Buscando abrigo
+
+    # Eventos de infraestrutura / backend
+    IN_MEETING = 'in_meeting'     # Reunião / compromisso
+    PERFORMING_JOB_TASK = 'performing_job_task'  # Tarefa específica do trabalho
+    IDLE_TASK = 'idle_task'       # Aguardando próxima tarefa designada
+
+    # Estados transitórios e utilitários
+    QUEUED_FOR_RESOURCE = 'queued_for_resource'  # Em fila por recurso (p.ex. energia/água)
+    CHARGING = 'charging'         # Recarregando (bateria / veículo)
+    RECHARGING = 'recharging'     # Sinônimo alternativo (se necessário)
 
 
+# Enumeração de Gênero
 class Gender(str, enum.Enum):
-    """Gênero do agente."""
-    MALE = 'M'
-    FEMALE = 'F'
-    NON_BINARY = 'NB'
-    OTHER = 'O'
+    """Gênero do agente.
+
+    Lista extensa (não exaustiva) de identidades de gênero, com códigos curtos
+    para armazenamento. Comentários explicam nuances: cis/trans, não-binário como
+    guarda-chuva, inclusão de intersexo e estados de questionamento/inscerteza.
+    """
+
+    CIS_MALE = 'CM'            # Cisgênero homem
+    CIS_FEMALE = 'CF'          # Cisgênero mulher
+
+    TRANS_MALE = 'TM'          # Homem trans / trans man
+    TRANS_FEMALE = 'TF'        # Mulher trans / trans woman
+    TRANS_NONBINARY = 'TN'     # Pessoa trans não-binária
+
+    NON_BINARY = 'NB'          # Guarda-chuva: não-binário
+    GENDERQUEER = 'GQ'         # Genderqueer
+    GENDERFLUID = 'GF'         # Genderfluid
+    AGENDER = 'AG'             # Sem gênero
+    BIGENDER = 'BG'            # Dois gêneros
+    DEMIBOY = 'DB'             # demiboy
+    DEMIGIRL = 'DG'           # demigirl
+    ANDROGYNE = 'AN'           # Andrógeno
+    PANGENDER = 'PG'           # Multigênero / pangênero
+    TWO_SPIRIT = 'TS'          # Conceito indígena norte-americano (two-spirit)
+    TRAVESTI = 'TR'        # travesti / reconhecido culturalmente
+
+    INTERSEX = 'IS'            # Intersexo (variação biológica do sexo)
+
+    QUESTIONING = 'Q'          # Questionando / em dúvida
+    UNSURE = 'U'               # Não sabe / incerto
+
+
+# Estimativas aproximadas de prevalência global (valores de exemplo, em porcentagem).
+# Fonte: compilações públicas e estudos variados; valores devem ser ajustados conforme a população alvo.
+GENDER_PREVALENCE = {
+    Gender.CIS_MALE: 49.0,          # Aproximadamente metade da população
+    Gender.CIS_FEMALE: 49.0,
+
+    # Trans (estimativas conservadoras; variações grandes entre estudos):
+    Gender.TRANS_MALE: 0.2,
+    Gender.TRANS_FEMALE: 0.2,
+    Gender.TRANS_NONBINARY: 0.1,
+
+    # Não-binário e variações (estimativas para uso em simulação — podem ser maiores em populações jovens):
+    Gender.NON_BINARY: 0.5,
+    Gender.GENDERQUEER: 0.1,
+    Gender.GENDERFLUID: 0.1,
+    Gender.AGENDER: 0.05,
+    Gender.BIGENDER: 0.03,
+    Gender.DEMIBOY: 0.02,
+    Gender.DEMIGIRL: 0.02,
+    Gender.ANDROGYNE: 0.01,
+    Gender.PANGENDER: 0.01,
+    Gender.TWO_SPIRIT: 0.01,
+    Gender.TRAVESTI: 0.01,
+
+    # Intersexo (estimativas amplas; inclui várias condições):
+    Gender.INTERSEX: 1.7,
+
+    # Questionando / incerto (mais comum entre jovens; valor ilustrativo):
+    Gender.QUESTIONING: 0.5,
+    Gender.UNSURE: 0.5,
+}
+
+
+def get_gender_prevalence(gender: "Gender") -> float:
+    """Retorna a estimativa de prevalência (porcentagem) para um gênero dado.
+
+    Se o gênero não estiver mapeado, retorna 0.0. Use isto apenas como heurística para geração.
+    """
+    return GENDER_PREVALENCE.get(gender, 0.0)
 
 
 # Modelo principal: Agent (Agente)
@@ -189,6 +312,20 @@ class Agent(Base):
     version = Column(String(20), nullable=False, comment="Versão do programa quando criado/nasceu")
 
     # Soft delete
+    # TODO: Implementar lógica de soft delete para agentes mortos.
+    # Recomendação/descrição:
+    # - Quando um agente tiver `health_status == HealthStatus.DEAD`, marcar `is_deleted = True`
+    #   em vez de removê-lo fisicamente do banco. Isso mantém histórico e relações.
+    # - Adicionar um campo `deleted_at = Column(DateTime, nullable=True)` para registrar quando
+    #   ocorreu o soft-delete (opcional, útil para auditoria e políticas de retenção).
+    # - Garantir que todas as consultas de leitura (queries) ignorem por padrão agentes com
+    #   `is_deleted == True`, por exemplo adicionando filtros no nível de query/ORM ou usando
+    #   um mixin/QueryBase que aplique o filtro automaticamente.
+    # - Decidir políticas adicionais: cascata lógica para relacionamentos, anonimização de dados
+    #   pessoais ao marcar como deletado, gravação em tabela de arquivo (archive) se necessário.
+    # - Fornecer funções utilitárias: `soft_delete()`, `restore()`, e `hard_delete()` (irreversível).
+    # - Garantir testes que validem transição de estado (alive -> dead -> is_deleted) e que
+    #   agentes deletados não apareçam em listas ativas.
     is_deleted = Column(Boolean, default=False, index=True)
 
     # Histórico (eventos importantes, família, traumas, etc)
@@ -438,5 +575,4 @@ class NamePool(Base):
 
     def __repr__(self):
         return f"<NamePool(name='{self.name}', type='{self.name_type}', rarity={self.rarity})>"
-
 
