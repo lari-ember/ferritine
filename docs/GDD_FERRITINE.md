@@ -106,13 +106,19 @@ Cada "bloco" da maquete pode representar uma época ou estilo:
 ### Ônibus e BRT (Prioridade 2)
 **Físico**:
 - Miniaturas motorizadas (motores micro com baterias ou trilho slot car)
-- Canaletas/faixas exclusivas em certas ruas
+- Canaletas/faixas exclusivas em certas ruas para BRT
 - Pontos de parada com LEDs
+- Estações tubo (estilo Curitiba) para BRT biarticulado
 
 **Digital**:
 - Rotas programadas
 - Lotação simulada (agentes virtuais embarcam/desembarcam)
-- Biarticulados para rotas de alto fluxo
+- **BRT Biarticulado** para rotas de alto fluxo (250 passageiros)
+  - Canaleta exclusiva para maior velocidade (60 km/h)
+  - Embarque em nível (estações tubo)
+  - Sistema de transporte rápido inspirado em Curitiba
+- Ônibus convencionais (40 passageiros) para rotas locais
+- Modo expresso para linhas diretas
 
 ### Carros Particulares (Prioridade 3)
 **Físico**:
@@ -411,7 +417,7 @@ Cada era tem paleta e arquitetura própria:
 #### Linguagens e Frameworks
 - **Linguagem Principal**: Python 3.11+
 - **Simulação e Lógica**: Python (backend)
-- **Visualização 3D**: Pygame, Ursina Engine, ou Godot (exportar para Python)
+- **Visualização 3D**: Unity Engine com texturas voxel
 - **Interface Web**: Flask ou FastAPI (dashboard)
 - **Programação Embarcada**: Arduino IDE (C++), MicroPython (ESP32)
 
@@ -1426,7 +1432,7 @@ maquete_viva/
 │
 ├── visualization/
 │   ├── pygame_renderer.py      # Renderização 2D/isométrica
-│   ├── godot_export/           # (futuro: 3D em Godot)
+│   ├── unity_integration/      # Integração com Unity Engine (texturas voxel)
 │   └── ar_overlay/             # (futuro: AR)
 │
 ├── hardware/
