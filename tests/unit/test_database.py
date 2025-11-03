@@ -10,7 +10,7 @@ import uuid
 from backend.database.models import (
     Agent, Building, Vehicle, Event, EconomicStat,
     Profession, Routine, NamePool,
-    CreatedBy, HealthStatus, AgentStatus, Gender
+    CreatedBy, HealthStatus, AgentStatus, Gender, BuildingType
 )
 from backend.database.connection import DatabaseManager
 from backend.database.queries import DatabaseQueries
@@ -48,7 +48,7 @@ class TestAgentModel:
             name="João Silva",
             created_by=CreatedBy.IA,
             birth_date=datetime(2000, 1, 1),
-            gender=Gender.MALE,
+            gender=Gender.CIS_MALE,
             version="0.1.0"
         )
         session.add(agent)
@@ -57,7 +57,7 @@ class TestAgentModel:
         assert agent.id is not None
         assert agent.name == "João Silva"
         assert agent.created_by == CreatedBy.IA
-        assert agent.gender == Gender.MALE
+        assert agent.gender == Gender.CIS_MALE
         assert agent.wallet == Decimal('0.00')
         assert agent.is_deleted is False
 
@@ -68,7 +68,7 @@ class TestAgentModel:
             name="Maria Santos",
             created_by=CreatedBy.BIRTH,
             birth_date=birth_date,
-            gender=Gender.FEMALE,
+            gender=Gender.CIS_FEMALE,
             version="0.1.0"
         )
         session.add(agent)
@@ -90,7 +90,7 @@ class TestAgentModel:
             name="Carlos Tech",
             created_by=CreatedBy.ADMIN,
             birth_date=datetime(1995, 5, 15),
-            gender=Gender.MALE,
+            gender=Gender.CIS_MALE,
             skills=skills,
             version="0.1.0"
         )
@@ -114,7 +114,7 @@ class TestAgentModel:
             name="Ana Genetic",
             created_by=CreatedBy.BIRTH,
             birth_date=datetime(2020, 1, 1),
-            gender=Gender.FEMALE,
+            gender=Gender.CIS_FEMALE,
             genetics=genetics,
             version="0.1.0"
         )
@@ -131,7 +131,7 @@ class TestAgentModel:
             name="Rico Abastado",
             created_by=CreatedBy.ADMIN,
             birth_date=datetime(1980, 1, 1),
-            gender=Gender.MALE,
+            gender=Gender.CIS_MALE,
             wallet=Decimal('99999999999.99'),  # 11 dígitos
             version="0.1.0"
         )
@@ -142,7 +142,7 @@ class TestAgentModel:
             name="Pobre Endividado",
             created_by=CreatedBy.IA,
             birth_date=datetime(1990, 1, 1),
-            gender=Gender.FEMALE,
+            gender=Gender.CIS_FEMALE,
             wallet=Decimal('-100000.00'),
             version="0.1.0"
         )
@@ -176,19 +176,19 @@ class TestBuildingModel:
         """Testa criação de edifício."""
         building = Building(
             name="Casa Teste",
-            building_type="residential",
+            building_type=BuildingType.RESIDENTIAL_VILLA,
             x=10,
             y=20,
-            capacity=4,
-            rent_cost=Decimal('800.00')
+            max_occupancy=4,
+            rental_income=Decimal('800.00')
         )
         session.add(building)
         session.commit()
 
         assert building.id is not None
         assert building.name == "Casa Teste"
-        assert building.building_type == "residential"
-        assert building.capacity == 4
+        assert building.building_type == BuildingType.RESIDENTIAL_VILLA
+        assert building.max_occupancy == 4
         assert building.current_occupancy == 0
 
 
@@ -222,7 +222,7 @@ class TestAgentQueries:
             name="Teste Query",
             created_by=CreatedBy.IA,
             birth_date=datetime(2000, 1, 1),
-            gender=Gender.MALE,
+            gender=Gender.CIS_MALE,
             version="0.1.0"
         )
         session.add(agent)
@@ -239,7 +239,7 @@ class TestAgentQueries:
             name="Maria Unique Name",
             created_by=CreatedBy.IA,
             birth_date=datetime(2000, 1, 1),
-            gender=Gender.FEMALE,
+            gender=Gender.CIS_FEMALE,
             version="0.1.0"
         )
         session.add(agent)
@@ -255,7 +255,7 @@ class TestAgentQueries:
             name="Working Agent",
             created_by=CreatedBy.IA,
             birth_date=datetime(2000, 1, 1),
-            gender=Gender.MALE,
+            gender=Gender.CIS_MALE,
             current_status=AgentStatus.WORKING,
             version="0.1.0"
         )
@@ -263,7 +263,7 @@ class TestAgentQueries:
             name="Idle Agent",
             created_by=CreatedBy.IA,
             birth_date=datetime(2000, 1, 1),
-            gender=Gender.FEMALE,
+            gender=Gender.CIS_FEMALE,
             current_status=AgentStatus.IDLE,
             version="0.1.0"
         )
@@ -280,7 +280,7 @@ class TestAgentQueries:
             name="To Delete",
             created_by=CreatedBy.IA,
             birth_date=datetime(2000, 1, 1),
-            gender=Gender.MALE,
+            gender=Gender.CIS_MALE,
             version="0.1.0"
         )
         session.add(agent)
@@ -306,7 +306,7 @@ class TestAgentQueries:
                 name=f"Agent {i}",
                 created_by=CreatedBy.IA,
                 birth_date=datetime(2000, 1, 1),
-                gender=Gender.MALE,
+                gender=Gender.CIS_MALE,
                 wallet=Decimal(str(i * 1000)),
                 current_status=AgentStatus.IDLE if i % 2 == 0 else AgentStatus.WORKING,
                 version="0.1.0"
@@ -328,18 +328,18 @@ class TestBuildingQueries:
         """Testa busca de edifícios por tipo."""
         building1 = Building(
             name="Casa 1",
-            building_type="residential",
+            building_type=BuildingType.RESIDENTIAL_VILLA,
             x=0, y=0
         )
         building2 = Building(
             name="Loja 1",
-            building_type="commercial",
+            building_type=BuildingType.COMMERCIAL_STORE_SMALL,
             x=1, y=1
         )
         session.add_all([building1, building2])
         session.commit()
 
-        residential = queries.buildings.get_by_type("residential")
+        residential = queries.buildings.get_by_type(BuildingType.RESIDENTIAL_VILLA)
         assert len(residential) == 1
         assert residential[0].name == "Casa 1"
 
@@ -347,16 +347,16 @@ class TestBuildingQueries:
         """Testa busca de edifícios com vagas."""
         building1 = Building(
             name="Casa Cheia",
-            building_type="residential",
+            building_type=BuildingType.RESIDENTIAL_VILLA,
             x=0, y=0,
-            capacity=2,
+            max_occupancy=2,
             current_occupancy=2
         )
         building2 = Building(
             name="Casa com Vaga",
-            building_type="residential",
+            building_type=BuildingType.RESIDENTIAL_VILLA,
             x=1, y=1,
-            capacity=4,
+            max_occupancy=4,
             current_occupancy=2
         )
         session.add_all([building1, building2])
@@ -373,14 +373,14 @@ class TestNamePoolQueries:
     def test_get_random_name(self, session, queries):
         """Testa obtenção de nome aleatório."""
         names = [
-            NamePool(name="João", name_type="first", gender=Gender.MALE, rarity=1.0),
-            NamePool(name="Maria", name_type="first", gender=Gender.FEMALE, rarity=1.0),
+            NamePool(name="João", name_type="first", gender=Gender.CIS_MALE, rarity=1.0),
+            NamePool(name="Maria", name_type="first", gender=Gender.CIS_FEMALE, rarity=1.0),
             NamePool(name="Silva", name_type="last", rarity=1.0),
         ]
         session.add_all(names)
         session.commit()
 
-        first_name = queries.names.get_random_name("first", Gender.MALE)
+        first_name = queries.names.get_random_name("first", Gender.CIS_MALE)
         assert first_name is not None
         assert first_name.name_type == "first"
 

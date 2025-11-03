@@ -191,7 +191,7 @@ class BuildingQueries:
     def get_with_vacancy(self, building_type: str = None) -> List[Building]:
         """Retorna edifícios com vagas disponíveis."""
         query = self.session.query(Building).filter(
-            Building.current_occupancy < Building.capacity,
+            Building.current_occupancy < Building.max_occupancy,
             Building.is_active == True
         )
         if building_type:
