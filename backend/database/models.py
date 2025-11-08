@@ -19,6 +19,9 @@ from sqlalchemy import (
     JSON,
     CheckConstraint,
     TypeDecorator,
+    create_engine, Column, Integer, String, Float, Boolean,
+    DateTime, ForeignKey, Text, DECIMAL, CHAR, Enum as SQLEnum,
+    JSON, CheckConstraint, Index, TypeDecorator
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.declarative import declarative_base
@@ -373,6 +376,13 @@ class Agent(Base):
     )
     owned_buildings = relationship(
         "Building", foreign_keys="Building.owner_id", back_populates="owner"
+    )
+
+    # Veículos
+    driven_vehicles = relationship(
+        "Vehicle",
+        foreign_keys="Vehicle.current_driver_id",
+        back_populates="current_driver"
     )
 
     # Propriedades calculadas
@@ -927,6 +937,13 @@ class Building(Base):
         "Agent", foreign_keys="Agent.work_building_id", back_populates="workplace"
     )
 
+    # Veículos estacionados/garagem
+    parked_vehicles = relationship(
+        "Vehicle",
+        foreign_keys="Vehicle.home_building_id",
+        back_populates="home_building"
+    )
+
     # ==================== MÉTODOS ====================
 
     def calculate_monthly_costs(self) -> float:
@@ -1086,27 +1103,522 @@ class Vehicle(Base):
 
     __tablename__ = "vehicles"
 
+    # ==================== IDENTIFICAÇÃO ====================
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
-    name = Column(String(100), nullable=False)
-    vehicle_type = Column(String(50), nullable=False, comment="train, bus, car, etc")
+    name = Column(String(200), nullable=False, index=True)
+    vehicle_type = Column(String(50), nullable=False, comment="train, bus, car, truck, tram, etc")
+    license_plate = Column(String(20), unique=True, nullable=True)
 
-    # Localização
-    current_x = Column(Integer, default=0)
-    current_y = Column(Integer, default=0)
+    # ==================== FABRICAÇÃO ====================
+    manufacturer = Column(String(100), nullable=True, comment="Fabricante do veículo")
+    model = Column(String(100), nullable=True, comment="Modelo do veículo")
+    year = Column(Integer, nullable=True, comment="Ano de fabricação")
 
-    # Capacidade
-    passenger_capacity = Column(Integer, default=50)
-    current_passengers = Column(Integer, default=0)
-    cargo_capacity = Column(Float, default=0.0)
-    current_cargo = Column(Float, default=0.0)
+    # ==================== CAPACIDADE ====================
+    passenger_capacity = Column(Integer, default=0, comment="Capacidade máxima de passageiros")
+    cargo_capacity = Column(Float, default=0.0, comment="Capacidade de carga em toneladas")
+    current_passengers = Column(Integer, default=0, comment="Passageiros atuais")
+    current_cargo = Column(Float, default=0.0, comment="Carga atual em toneladas")
 
-    # Estado
-    is_moving = Column(Boolean, default=False)
-    speed = Column(Float, default=1.0)
+    # ==================== COMBUSTÍVEL ====================
+    fuel_type = Column(SQLEnum(FuelType), default=FuelType.DIESEL)
+    fuel_capacity = Column(Float, default=100.0, comment="Capacidade do tanque em litros")
+    current_fuel = Column(Float, default=100.0, comment="Combustível atual em litros")
+    fuel_consumption = Column(Float, default=10.0, comment="Consumo em litros por 100km")
+    fuel_cost_total = Column(DECIMAL(13, 2), default=0.00, comment="Custo total gasto com combustível")
 
-    # Timestamps
+    # ==================== STATUS E MANUTENÇÃO ====================
+    status = Column(SQLEnum(VehicleStatus), default=VehicleStatus.ACTIVE, index=True)
+    maintenance_status = Column(SQLEnum(MaintenanceStatus), default=MaintenanceStatus.GOOD)
+    condition_value = Column(Integer, default=100, comment="Condição geral do veículo (0-100)")
+
+    # ==================== ODÔMETRO E MANUTENÇÃO ====================
+    odometer = Column(Float, default=0.0, comment="Quilometragem total acumulada")
+    next_maintenance_km = Column(Float, default=10000.0, comment="Próxima manutenção em km")
+    last_maintenance_km = Column(Float, default=0.0, comment="Km da última manutenção")
+    last_maintenance_at = Column(DateTime, nullable=True)
+
+    # ==================== ECONOMIA ====================
+    purchase_price = Column(DECIMAL(13, 2), nullable=True, comment="Preço de compra")
+    current_value = Column(DECIMAL(13, 2), nullable=True, comment="Valor atual de mercado")
+    depreciation_rate = Column(Float, default=0.15, comment="Taxa anual de depreciação (0.15 = 15%)")
+    maintenance_cost_total = Column(DECIMAL(13, 2), default=0.00, comment="Custo total de manutenções")
+
+    # ==================== LOCALIZAÇÃO ====================
+    current_location_type = Column(String(50), nullable=True, comment="building, stop, route, tile")
+    current_location_id = Column(GUID(), nullable=True)
+    current_x = Column(Integer, nullable=True, comment="Coordenada X atual")
+    current_y = Column(Integer, nullable=True, comment="Coordenada Y atual")
+    current_tile_id = Column(GUID(), nullable=True, comment="Tile atual no mapa")
+
+    # ==================== RELACIONAMENTOS (Foreign Keys) ====================
+    route_id = Column(GUID(), ForeignKey('routes.id'), nullable=True)
+    company_id = Column(GUID(), ForeignKey('companies.id'), nullable=True)
+    current_driver_id = Column(GUID(), ForeignKey('agents.id'), nullable=True)
+    home_building_id = Column(GUID(), ForeignKey('buildings.id'), nullable=True,
+                             comment="Garagem/depósito onde fica quando inativo")
+
+
+    # ==================== OPERAÇÃO ====================
+    is_operational = Column(Boolean, default=True, comment="Se está operacional ou não")
+    is_moving = Column(Boolean, default=False, comment="Se está em movimento")
+    speed = Column(Float, default=0.0, comment="Velocidade atual em km/h")
+    max_speed = Column(Float, default=60.0, comment="Velocidade máxima em km/h")
+    last_trip_at = Column(DateTime, nullable=True, comment="Data/hora da última viagem")
+    total_trips = Column(Integer, default=0, comment="Total de viagens realizadas")
+    total_distance = Column(Float, default=0.0, comment="Distância total percorrida em km")
+
+    # ==================== SEGURANÇA ====================
+    has_insurance = Column(Boolean, default=False, comment="Possui seguro")
+    insurance_expiry = Column(DateTime, nullable=True, comment="Data de expiração do seguro")
+    accident_count = Column(Integer, default=0, comment="Número de acidentes")
+    last_accident_date = Column(DateTime, nullable=True, comment="Data do último acidente")
+
+    # ==================== VISUAL (IoT) ====================
+    has_led = Column(Boolean, default=False, comment="Tem LED físico na maquete")
+    led_pin = Column(Integer, nullable=True, comment="Pino do Arduino para LED")
+    model_id = Column(String(200), nullable=True, comment="ID do modelo 3D")
+
+    # ==================== METADATA ====================
+    purchase_date = Column(DateTime, nullable=True, comment="Data de aquisição")
+    retirement_date = Column(DateTime, nullable=True, comment="Data de aposentadoria")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    notes = Column(Text, default="", comment="Notas adicionais sobre o veículo")
+
+    # ==================== CONSTRAINTS E ÍNDICES ====================
+    __table_args__ = (
+        CheckConstraint('current_fuel >= 0 AND current_fuel <= fuel_capacity', name='check_fuel_range'),
+        CheckConstraint('condition_value >= 0 AND condition_value <= 100', name='check_vehicle_condition_range'),
+        CheckConstraint('current_passengers >= 0 AND current_passengers <= passenger_capacity', name='check_passengers'),
+        CheckConstraint('current_cargo >= 0 AND current_cargo <= cargo_capacity', name='check_cargo'),
+        CheckConstraint('odometer >= 0', name='check_odometer_positive'),
+        CheckConstraint('speed >= 0 AND speed <= max_speed', name='check_speed_range'),
+        CheckConstraint('total_distance >= 0', name='check_total_distance_positive'),
+        Index('idx_vehicle_status', 'status'),
+        Index('idx_vehicle_company', 'company_id'),
+        Index('idx_vehicle_route', 'route_id'),
+        Index('idx_vehicle_driver', 'current_driver_id'),
+        Index('idx_vehicle_type', 'vehicle_type'),
+        Index('idx_vehicle_location', 'current_location_type', 'current_location_id'),
+    )
+
+    # ==================== RELACIONAMENTOS ORM ====================
+
+    # Relacionamentos diretos
+    route = relationship('Route', foreign_keys=[route_id], back_populates='vehicles')
+    company = relationship('Company', foreign_keys=[company_id], back_populates='vehicles')
+    current_driver = relationship('Agent', foreign_keys=[current_driver_id], back_populates='driven_vehicles')
+    home_building = relationship('Building', foreign_keys=[home_building_id], back_populates='parked_vehicles')
+
+    # Relacionamentos polimórficos (viewonly para performance)
+    maintenance_records = relationship(
+        'MaintenanceRecord',
+        primaryjoin="and_(MaintenanceRecord.target_type=='vehicle', "
+                   "foreign(MaintenanceRecord.target_id)==Vehicle.id)",
+        viewonly=True,
+        lazy='dynamic'
+    )
+
+    inventory_items = relationship(
+        'Inventory',
+        primaryjoin="and_(Inventory.owner_type=='vehicle', "
+                   "foreign(Inventory.owner_id)==Vehicle.id)",
+        viewonly=True,
+        lazy='dynamic'
+    )
+
+    # ==================== VALIDAÇÕES ====================
+
+    from sqlalchemy.orm import validates
+
+    @validates('current_fuel')
+    def validate_fuel(self, key, value):
+        """Valida o combustível atual."""
+        if value < 0:
+            raise ValueError("Combustível não pode ser negativo")
+        if hasattr(self, 'fuel_capacity') and value > self.fuel_capacity:
+            raise ValueError(f"Combustível ({value}) excede capacidade do tanque ({self.fuel_capacity})")
+        return value
+
+    @validates('status')
+    def validate_status(self, key, value):
+        """Valida mudança de status."""
+        if value == VehicleStatus.RETIRED and not self.retirement_date:
+            self.retirement_date = datetime.utcnow()
+        return value
+
+    @validates('condition_value')
+    def validate_condition(self, key, value):
+        """Valida o valor de condição."""
+        if value < 0 or value > 100:
+            raise ValueError("Condição deve estar entre 0 e 100")
+
+        # Atualiza status de manutenção baseado na condição
+        if value < 30:
+            self.maintenance_status = MaintenanceStatus.CRITICAL
+        elif value < 50:
+            self.maintenance_status = MaintenanceStatus.POOR
+        elif value < 70:
+            self.maintenance_status = MaintenanceStatus.FAIR
+        else:
+            self.maintenance_status = MaintenanceStatus.GOOD
+
+        return value
+
+    # ==================== MÉTODOS DE NEGÓCIO ====================
+
+    def needs_maintenance(self) -> bool:
+        """Verifica se o veículo precisa de manutenção.
+
+        Returns:
+            bool: True se precisar de manutenção
+        """
+        return (
+            self.odometer >= self.next_maintenance_km or
+            self.maintenance_status in [MaintenanceStatus.POOR, MaintenanceStatus.CRITICAL] or
+            self.condition_value < 30
+        )
+
+    def consume_fuel(self, distance_km: float) -> bool:
+        """Consome combustível baseado na distância percorrida.
+
+        Args:
+            distance_km: Distância em quilômetros
+
+        Returns:
+            bool: True se havia combustível suficiente
+        """
+        consumption = (distance_km / 100) * self.fuel_consumption
+
+        if self.current_fuel >= consumption:
+            self.current_fuel -= consumption
+            self.odometer += distance_km
+            self.total_distance += distance_km
+
+            # Degrada condição baseado no uso
+            self.condition_value = max(0, self.condition_value - (distance_km / 1000))
+
+            return True
+        return False
+
+    def refuel(self, amount: float = None) -> float:
+        """Abastece o veículo.
+
+        Args:
+            amount: Quantidade de combustível (None = abastecer completamente)
+
+        Returns:
+            float: Quantidade efetivamente adicionada
+        """
+        if amount is None:
+            added = self.fuel_capacity - self.current_fuel
+            self.current_fuel = self.fuel_capacity
+        else:
+            added = min(amount, self.fuel_capacity - self.current_fuel)
+            self.current_fuel += added
+
+        return added
+
+    def calculate_depreciation(self) -> Optional[DECIMAL]:
+        """Calcula e atualiza a depreciação do veículo.
+
+        Returns:
+            DECIMAL: Novo valor do veículo ou None se não houver dados
+        """
+        if self.purchase_price and self.purchase_date:
+            years = (datetime.utcnow() - self.purchase_date).days / 365.25
+            self.current_value = self.purchase_price * ((1 - self.depreciation_rate) ** years)
+            return self.current_value
+        return None
+
+    def can_operate(self) -> bool:
+        """Verifica se o veículo pode operar.
+
+        Returns:
+            bool: True se pode operar
+        """
+        return (
+            self.status == VehicleStatus.ACTIVE and
+            self.is_operational and
+            self.current_fuel > 0 and
+            self.condition_value > 20 and
+            self.maintenance_status != MaintenanceStatus.CRITICAL
+        )
+
+    def board_passenger(self) -> bool:
+        """Embarca um passageiro.
+
+        Returns:
+            bool: True se conseguiu embarcar
+        """
+        if self.current_passengers < self.passenger_capacity:
+            self.current_passengers += 1
+            return True
+        return False
+
+    def board_passengers(self, count: int) -> bool:
+        """Embarca múltiplos passageiros.
+
+        Args:
+            count: Número de passageiros
+
+        Returns:
+            bool: True se conseguiu embarcar todos
+        """
+        if (self.current_passengers + count) <= self.passenger_capacity:
+            self.current_passengers += count
+            return True
+        return False
+
+    def disembark_passenger(self) -> bool:
+        """Desembarca um passageiro.
+
+        Returns:
+            bool: True se conseguiu desembarcar
+        """
+        if self.current_passengers > 0:
+            self.current_passengers -= 1
+            return True
+        return False
+
+    def disembark_passengers(self, count: int) -> bool:
+        """Desembarca múltiplos passageiros.
+
+        Args:
+            count: Número de passageiros
+
+        Returns:
+            bool: True se conseguiu desembarcar todos
+        """
+        if self.current_passengers >= count:
+            self.current_passengers -= count
+            return True
+        return False
+
+    def load_cargo(self, weight: float) -> bool:
+        """Carrega carga no veículo.
+
+        Args:
+            weight: Peso da carga em toneladas
+
+        Returns:
+            bool: True se conseguiu carregar
+        """
+        if (self.current_cargo + weight) <= self.cargo_capacity:
+            self.current_cargo += weight
+            return True
+        return False
+
+    def unload_cargo(self, weight: float) -> bool:
+        """Descarrega carga do veículo.
+
+        Args:
+            weight: Peso da carga em toneladas
+
+        Returns:
+            bool: True se conseguiu descarregar
+        """
+        if self.current_cargo >= weight:
+            self.current_cargo -= weight
+            return True
+        return False
+
+    def perform_maintenance(self, cost: DECIMAL = None):
+        """Realiza manutenção no veículo.
+
+        Args:
+            cost: Custo da manutenção (opcional)
+        """
+        self.last_maintenance_km = self.odometer
+        self.next_maintenance_km = self.odometer + 10000.0
+        self.last_maintenance_at = datetime.utcnow()
+        self.condition_value = min(100, self.condition_value + 30)
+        self.maintenance_status = MaintenanceStatus.GOOD
+
+        if cost:
+            self.maintenance_cost_total += cost
+
+    def start_trip(self):
+        """Inicia uma viagem."""
+        self.is_moving = True
+        self.last_trip_at = datetime.utcnow()
+
+    def end_trip(self):
+        """Finaliza uma viagem."""
+        self.is_moving = False
+        self.speed = 0.0
+        self.total_trips += 1
+
+    def register_accident(self):
+        """Registra um acidente."""
+        self.accident_count += 1
+        self.last_accident_date = datetime.utcnow()
+        self.condition_value = max(0, self.condition_value - 20)
+        self.status = VehicleStatus.MAINTENANCE
+
+    # ==================== PROPRIEDADES CALCULADAS ====================
+
+    @property
+    def age_years(self) -> float:
+        """Idade do veículo em anos.
+
+        Returns:
+            float: Anos desde a compra
+        """
+        if self.purchase_date:
+            return (datetime.utcnow() - self.purchase_date).days / 365.25
+        return 0.0
+
+    @property
+    def occupancy_rate(self) -> float:
+        """Taxa de ocupação de passageiros.
+
+        Returns:
+            float: Taxa de 0.0 a 1.0
+        """
+        if self.passenger_capacity == 0:
+            return 0.0
+        return min(1.0, self.current_passengers / self.passenger_capacity)
+
+    @property
+    def cargo_rate(self) -> float:
+        """Taxa de ocupação de carga.
+
+        Returns:
+            float: Taxa de 0.0 a 1.0
+        """
+        if self.cargo_capacity == 0:
+            return 0.0
+        return min(1.0, self.current_cargo / self.cargo_capacity)
+
+    @property
+    def fuel_percentage(self) -> float:
+        """Percentual de combustível.
+
+        Returns:
+            float: Percentual de 0.0 a 100.0
+        """
+        if self.fuel_capacity == 0:
+            return 0.0
+        return (self.current_fuel / self.fuel_capacity) * 100
+
+    @property
+    def needs_refuel(self) -> bool:
+        """Verifica se precisa reabastecer.
+
+        Returns:
+            bool: True se combustível está abaixo de 20%
+        """
+        return self.fuel_percentage < 20.0
+
+    @property
+    def average_km_per_trip(self) -> float:
+        """Média de quilômetros por viagem.
+
+        Returns:
+            float: Média de km/viagem
+        """
+        if self.total_trips == 0:
+            return 0.0
+        return self.total_distance / self.total_trips
+
+    # ==================== MÉTODOS ADICIONAIS ====================
+
+    def get_fuel_cost(self, fuel_price_per_liter: float) -> DECIMAL:
+        """Calcula custo total de combustível gasto.
+
+        Args:
+            fuel_price_per_liter: Preço por litro do combustível
+
+        Returns:
+            DECIMAL: Custo total estimado
+        """
+        from decimal import Decimal
+        total_fuel_used = (self.total_distance / 100) * self.fuel_consumption
+        return Decimal(str(total_fuel_used * fuel_price_per_liter))
+
+    def estimate_next_maintenance_date(self) -> Optional[datetime]:
+        """Estima data da próxima manutenção baseada no uso médio.
+
+        Returns:
+            datetime: Data estimada ou None se não for possível calcular
+        """
+        from datetime import timedelta
+
+        if self.total_trips == 0 or self.total_distance == 0:
+            return None
+
+        days_since_creation = max(1, (datetime.utcnow() - self.created_at).days)
+        avg_km_per_day = self.total_distance / days_since_creation
+
+        km_remaining = self.next_maintenance_km - self.odometer
+        if km_remaining <= 0:
+            return datetime.utcnow()  # Já passou
+
+        days_remaining = km_remaining / max(0.1, avg_km_per_day)
+        return datetime.utcnow() + timedelta(days=int(days_remaining))
+
+    def is_overdue_maintenance(self) -> bool:
+        """Verifica se está com manutenção atrasada.
+
+        Returns:
+            bool: True se passou do km de manutenção
+        """
+        return self.odometer > self.next_maintenance_km
+
+    def efficiency_rating(self) -> str:
+        """Retorna rating de eficiência A-F baseado em consumo.
+
+        Returns:
+            str: Rating de 'A' (melhor) a 'F' (pior)
+        """
+        if self.fuel_consumption <= 5:
+            return 'A'
+        elif self.fuel_consumption <= 8:
+            return 'B'
+        elif self.fuel_consumption <= 12:
+            return 'C'
+        elif self.fuel_consumption <= 15:
+            return 'D'
+        elif self.fuel_consumption <= 20:
+            return 'E'
+        return 'F'
+
+    def get_maintenance_history(self):
+        """Retorna histórico de manutenções.
+
+        Returns:
+            list: Lista de registros de manutenção
+        """
+        return list(self.maintenance_records.order_by('created_at'))
+
+    def get_total_maintenance_cost(self) -> DECIMAL:
+        """Calcula custo total de todas as manutenções.
+
+        Returns:
+            DECIMAL: Custo total
+        """
+        from decimal import Decimal
+        total = Decimal('0.00')
+        for record in self.maintenance_records:
+            if record.cost:
+                total += record.cost
+        return total
+
+    def calculate_total_operating_cost(self, fuel_price_per_liter: float = 5.0):
+        """Calcula custo operacional total.
+
+        Args:
+            fuel_price_per_liter: Preço do combustível
+
+        Returns:
+            Decimal: Custo total (combustível + manutenção)
+        """
+        from decimal import Decimal
+        fuel_cost = self.get_fuel_cost(fuel_price_per_liter)
+        maintenance_cost = self.get_total_maintenance_cost()
+        return Decimal(str(fuel_cost)) + Decimal(str(maintenance_cost))
 
     def __repr__(self):
         return (
