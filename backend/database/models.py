@@ -932,6 +932,103 @@ class Building(Base):
         return f"<Building(id={self.id}, name='{self.name}', type='{self.building_type.value}')>"
 
 
+# ============================================================================
+# ENUMS PARA STATION (ESTAÇÕES DE TRANSPORTE)
+# ============================================================================
+
+class StationType(str, enum.Enum):
+    """Tipos de estações de transporte."""
+    TRAIN_STATION = "train_station"      # Estação de trem
+    BUS_STOP = "bus_stop"                # Ponto de ônibus
+    BUS_TERMINAL = "bus_terminal"        # Terminal de ônibus
+    TRAM_STOP = "tram_stop"              # Ponto de bonde
+    TAXI_STAND = "taxi_stand"            # Ponto de táxi
+    TRUCK_DEPOT = "truck_depot"          # Depósito de caminhões
+    METRO_STATION = "metro_station"      # Estação de metrô
+    AIRPORT = "airport"                  # Aeroporto
+    PORT = "port"                        # Porto
+
+
+# ============================================================================
+# MODELO: STATION (ESTAÇÃO DE TRANSPORTE)
+# ============================================================================
+
+class Station(Base):
+    """
+    Estações de transporte da cidade.
+    Representa pontos onde passageiros aguardam e veículos param.
+    """
+    __tablename__ = 'stations'
+
+    # ==================== IDENTIFICAÇÃO ====================
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    building_id = Column(GUID(), ForeignKey('buildings.id'), nullable=True, comment="Edifício associado (opcional)")
+    name = Column(String(200), nullable=False, index=True)
+    type = Column(SQLEnum(StationType), nullable=False)
+
+    # ==================== CAPACIDADE ====================
+    platform_count = Column(Integer, default=1, comment="Número de plataformas")
+    max_vehicles_docked = Column(Integer, default=2, comment="Máximo de veículos simultaneamente")
+
+    # ==================== AMENIDADES ====================
+    has_shelter = Column(Boolean, default=False, comment="Tem abrigo/cobertura")
+    has_ticket_office = Column(Boolean, default=False, comment="Tem bilheteria")
+    has_restrooms = Column(Boolean, default=False, comment="Tem banheiros")
+
+    # ==================== CONDIÇÃO ====================
+    condition_percent = Column(Integer, default=100, comment="Condição 0-100%")
+    last_inspection_date = Column(DateTime, nullable=True, comment="Última inspeção")
+    __table_args__ = (
+        CheckConstraint('condition_percent >= 0 AND condition_percent <= 100', name='check_station_condition_range'),
+    )
+
+    # ==================== TIMESTAMPS ====================
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # ==================== RELACIONAMENTOS ====================
+    building = relationship(
+        "Building",
+        foreign_keys=[building_id],
+        backref="stations"
+    )
+
+    # ==================== MÉTODOS ====================
+
+    def can_dock_vehicle(self) -> bool:
+        """
+        Verifica se a estação pode acomodar mais um veículo.
+        
+        Returns:
+            bool: True se há capacidade, False caso contrário
+        """
+        # TODO: Quando Vehicle tiver current_station_id, contar veículos atracados
+        # Por enquanto, apenas verifica se há capacidade teórica
+        return True
+
+    def get_waiting_passengers(self) -> int:
+        """
+        Conta o número de passageiros aguardando na estação.
+        
+        Returns:
+            int: Número de agentes esperando
+        """
+        # TODO: Quando Agent tiver campo waiting_at_station_id, contar agentes
+        # Por enquanto, retorna 0
+        return 0
+
+    def perform_inspection(self) -> None:
+        """
+        Realiza inspeção da estação, atualizando data e condição.
+        Condição é restaurada para 100% após inspeção.
+        """
+        self.last_inspection_date = datetime.utcnow()
+        self.condition_percent = 100
+
+    def __repr__(self):
+        return f"<Station(id={self.id}, name='{self.name}', type='{self.type.value}')>"
+
+
 # Modelo: Vehicle (Veículo)
 class Vehicle(Base):
     """Veículos de transporte."""

@@ -9,8 +9,8 @@ import uuid
 
 from backend.database.models import (
     Agent, Building, Vehicle, Event, EconomicStat,
-    Profession, Routine, NamePool,
-    CreatedBy, HealthStatus, AgentStatus, Gender
+    Profession, Routine, NamePool, Station,
+    CreatedBy, HealthStatus, AgentStatus, Gender, StationType, BuildingType
 )
 from backend.database.connection import DatabaseManager
 from backend.database.queries import DatabaseQueries
@@ -387,4 +387,179 @@ class TestNamePoolQueries:
         last_name = queries.names.get_random_name("last")
         assert last_name is not None
         assert last_name.name_type == "last"
+
+
+class TestStationModel:
+    """Testes para modelo Station."""
+
+    def test_create_station(self, session):
+        """Testa criação de estação básica."""
+        station = Station(
+            name="Estação Central",
+            type=StationType.TRAIN_STATION,
+            platform_count=3,
+            max_vehicles_docked=4,
+            has_shelter=True,
+            has_ticket_office=True,
+            has_restrooms=True,
+            condition_percent=95
+        )
+        session.add(station)
+        session.commit()
+
+        assert station.id is not None
+        assert station.name == "Estação Central"
+        assert station.type == StationType.TRAIN_STATION
+        assert station.platform_count == 3
+        assert station.max_vehicles_docked == 4
+        assert station.has_shelter is True
+        assert station.has_ticket_office is True
+        assert station.has_restrooms is True
+        assert station.condition_percent == 95
+        assert station.building_id is None
+
+    def test_station_capacity(self, session):
+        """Testa validação de capacidade da estação."""
+        # Estação pequena
+        small_station = Station(
+            name="Ponto de Ônibus",
+            type=StationType.BUS_STOP,
+            platform_count=1,
+            max_vehicles_docked=1,
+            condition_percent=80
+        )
+        session.add(small_station)
+
+        # Estação grande
+        large_station = Station(
+            name="Terminal Rodoviário",
+            type=StationType.BUS_TERMINAL,
+            platform_count=10,
+            max_vehicles_docked=20,
+            condition_percent=90
+        )
+        session.add(large_station)
+        session.commit()
+
+        assert small_station.max_vehicles_docked == 1
+        assert large_station.max_vehicles_docked == 20
+
+    def test_dock_vehicle(self, session):
+        """Testa lógica de atracação de veículos."""
+        station = Station(
+            name="Estação de Metrô",
+            type=StationType.METRO_STATION,
+            max_vehicles_docked=2,
+            condition_percent=100
+        )
+        session.add(station)
+        session.commit()
+
+        # Por enquanto, can_dock_vehicle sempre retorna True
+        # pois não temos rastreamento de veículos atracados ainda
+        assert station.can_dock_vehicle() is True
+
+    def test_station_building_relationship(self, session):
+        """Testa relacionamento entre Station e Building."""
+        # Criar edifício
+        building = Building(
+            name="Terminal Principal",
+            building_type=BuildingType.TRANSPORT_BUS_TERMINAL,
+            x=100,
+            y=200
+        )
+        session.add(building)
+        session.commit()
+
+        # Criar estação associada ao edifício
+        station = Station(
+            name="Terminal de Ônibus Central",
+            type=StationType.BUS_TERMINAL,
+            building_id=building.id,
+            platform_count=8,
+            max_vehicles_docked=15,
+            has_shelter=True,
+            has_ticket_office=True,
+            has_restrooms=True,
+            condition_percent=100
+        )
+        session.add(station)
+        session.commit()
+
+        # Verificar relacionamento
+        assert station.building_id == building.id
+        assert station.building is not None
+        assert station.building.name == "Terminal Principal"
+        assert len(building.stations) == 1
+        assert building.stations[0].name == "Terminal de Ônibus Central"
+
+    def test_station_inspection(self, session):
+        """Testa método de inspeção da estação."""
+        station = Station(
+            name="Estação Degradada",
+            type=StationType.TRAIN_STATION,
+            condition_percent=60,
+            last_inspection_date=None
+        )
+        session.add(station)
+        session.commit()
+
+        # Realizar inspeção
+        assert station.last_inspection_date is None
+        assert station.condition_percent == 60
+
+        station.perform_inspection()
+        session.commit()
+
+        # Verificar que inspeção atualizou valores
+        assert station.last_inspection_date is not None
+        assert station.condition_percent == 100
+
+    def test_get_waiting_passengers(self, session):
+        """Testa contagem de passageiros esperando."""
+        station = Station(
+            name="Ponto de Táxi",
+            type=StationType.TAXI_STAND,
+            condition_percent=100
+        )
+        session.add(station)
+        session.commit()
+
+        # Por enquanto, get_waiting_passengers sempre retorna 0
+        # pois não temos rastreamento de passageiros ainda
+        assert station.get_waiting_passengers() == 0
+
+    def test_station_condition_constraint(self, session):
+        """Testa constraint de condição (0-100)."""
+        # Condição válida
+        station = Station(
+            name="Estação OK",
+            type=StationType.METRO_STATION,
+            condition_percent=50
+        )
+        session.add(station)
+        session.commit()
+
+        assert station.condition_percent == 50
+
+    def test_station_enum_types(self, session):
+        """Testa diferentes tipos de estação."""
+        stations = [
+            Station(name="Estação de Trem", type=StationType.TRAIN_STATION),
+            Station(name="Ponto de Ônibus", type=StationType.BUS_STOP),
+            Station(name="Terminal", type=StationType.BUS_TERMINAL),
+            Station(name="Ponto de Bonde", type=StationType.TRAM_STOP),
+            Station(name="Táxi", type=StationType.TAXI_STAND),
+            Station(name="Depósito", type=StationType.TRUCK_DEPOT),
+            Station(name="Metrô", type=StationType.METRO_STATION),
+            Station(name="Aeroporto", type=StationType.AIRPORT),
+            Station(name="Porto", type=StationType.PORT),
+        ]
+        session.add_all(stations)
+        session.commit()
+
+        assert len(stations) == 9
+        assert stations[0].type == StationType.TRAIN_STATION
+        assert stations[8].type == StationType.PORT
+
 
