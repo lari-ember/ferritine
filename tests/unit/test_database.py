@@ -8,9 +8,21 @@ from decimal import Decimal
 import uuid
 
 from backend.database.models import (
-    Agent, Building, Vehicle, Event, EconomicStat,
-    Profession, Routine, NamePool, Station,
-    CreatedBy, HealthStatus, AgentStatus, Gender, StationType, BuildingType
+    Agent,
+    Building,
+    Vehicle,
+    Event,
+    EconomicStat,
+    Profession,
+    Routine,
+    NamePool,
+    Station,
+    CreatedBy,
+    HealthStatus,
+    AgentStatus,
+    Gender,
+    StationType,
+    BuildingType,
 )
 from backend.database.connection import DatabaseManager
 from backend.database.queries import DatabaseQueries
@@ -20,7 +32,8 @@ from backend.database.queries import DatabaseQueries
 def db_manager():
     """Fixture que cria gerenciador de banco de dados em memória."""
     import os
-    os.environ['SQLITE_PATH'] = ':memory:'
+
+    os.environ["SQLITE_PATH"] = ":memory:"
     manager = DatabaseManager(use_sqlite=True)
     manager.init_database()
     yield manager
@@ -49,7 +62,7 @@ class TestAgentModel:
             created_by=CreatedBy.IA,
             birth_date=datetime(2000, 1, 1),
             gender=Gender.MALE,
-            version="0.1.0"
+            version="0.1.0",
         )
         session.add(agent)
         session.commit()
@@ -58,7 +71,7 @@ class TestAgentModel:
         assert agent.name == "João Silva"
         assert agent.created_by == CreatedBy.IA
         assert agent.gender == Gender.MALE
-        assert agent.wallet == Decimal('0.00')
+        assert agent.wallet == Decimal("0.00")
         assert agent.is_deleted is False
 
     def test_agent_age_property(self, session):
@@ -69,7 +82,7 @@ class TestAgentModel:
             created_by=CreatedBy.BIRTH,
             birth_date=birth_date,
             gender=Gender.FEMALE,
-            version="0.1.0"
+            version="0.1.0",
         )
         session.add(agent)
         session.commit()
@@ -80,11 +93,7 @@ class TestAgentModel:
 
     def test_agent_with_skills(self, session):
         """Testa agente com skills em JSON."""
-        skills = {
-            "programming": 80,
-            "communication": 60,
-            "leadership": 40
-        }
+        skills = {"programming": 80, "communication": 60, "leadership": 40}
 
         agent = Agent(
             name="Carlos Tech",
@@ -92,7 +101,7 @@ class TestAgentModel:
             birth_date=datetime(1995, 5, 15),
             gender=Gender.MALE,
             skills=skills,
-            version="0.1.0"
+            version="0.1.0",
         )
         session.add(agent)
         session.commit()
@@ -107,7 +116,7 @@ class TestAgentModel:
             "eye_color": "blue",
             "height_factor": 1.05,
             "parent1_id": str(uuid.uuid4()),
-            "parent2_id": str(uuid.uuid4())
+            "parent2_id": str(uuid.uuid4()),
         }
 
         agent = Agent(
@@ -116,7 +125,7 @@ class TestAgentModel:
             birth_date=datetime(2020, 1, 1),
             gender=Gender.FEMALE,
             genetics=genetics,
-            version="0.1.0"
+            version="0.1.0",
         )
         session.add(agent)
         session.commit()
@@ -132,8 +141,8 @@ class TestAgentModel:
             created_by=CreatedBy.ADMIN,
             birth_date=datetime(1980, 1, 1),
             gender=Gender.MALE,
-            wallet=Decimal('99999999999.99'),  # 11 dígitos
-            version="0.1.0"
+            wallet=Decimal("99999999999.99"),  # 11 dígitos
+            version="0.1.0",
         )
         session.add(rich_agent)
 
@@ -143,14 +152,14 @@ class TestAgentModel:
             created_by=CreatedBy.IA,
             birth_date=datetime(1990, 1, 1),
             gender=Gender.FEMALE,
-            wallet=Decimal('-100000.00'),
-            version="0.1.0"
+            wallet=Decimal("-100000.00"),
+            version="0.1.0",
         )
         session.add(poor_agent)
         session.commit()
 
-        assert rich_agent.wallet == Decimal('99999999999.99')
-        assert poor_agent.wallet == Decimal('-100000.00')
+        assert rich_agent.wallet == Decimal("99999999999.99")
+        assert poor_agent.wallet == Decimal("-100000.00")
 
     def test_agent_energy_level(self, session):
         """Testa níveis de energia incluindo negativos."""
@@ -161,7 +170,7 @@ class TestAgentModel:
             birth_date=datetime(2000, 1, 1),
             gender=Gender.NON_BINARY,
             energy_level=-50,  # Pode ser negativo
-            version="0.1.0"
+            version="0.1.0",
         )
         session.add(agent)
         session.commit()
@@ -180,7 +189,7 @@ class TestBuildingModel:
             x=10,
             y=20,
             capacity=4,
-            rent_cost=Decimal('800.00')
+            rent_cost=Decimal("800.00"),
         )
         session.add(building)
         session.commit()
@@ -200,16 +209,16 @@ class TestProfessionModel:
         profession = Profession(
             name="Programador",
             description="Desenvolve software",
-            base_salary=Decimal('5000.00'),
+            base_salary=Decimal("5000.00"),
             work_sector="commercial",
-            required_skills=["programming", "logic"]
+            required_skills=["programming", "logic"],
         )
         session.add(profession)
         session.commit()
 
         assert profession.id is not None
         assert profession.name == "Programador"
-        assert profession.base_salary == Decimal('5000.00')
+        assert profession.base_salary == Decimal("5000.00")
         assert "programming" in profession.required_skills
 
 
@@ -223,7 +232,7 @@ class TestAgentQueries:
             created_by=CreatedBy.IA,
             birth_date=datetime(2000, 1, 1),
             gender=Gender.MALE,
-            version="0.1.0"
+            version="0.1.0",
         )
         session.add(agent)
         session.commit()
@@ -240,7 +249,7 @@ class TestAgentQueries:
             created_by=CreatedBy.IA,
             birth_date=datetime(2000, 1, 1),
             gender=Gender.FEMALE,
-            version="0.1.0"
+            version="0.1.0",
         )
         session.add(agent)
         session.commit()
@@ -257,7 +266,7 @@ class TestAgentQueries:
             birth_date=datetime(2000, 1, 1),
             gender=Gender.MALE,
             current_status=AgentStatus.WORKING,
-            version="0.1.0"
+            version="0.1.0",
         )
         agent2 = Agent(
             name="Idle Agent",
@@ -265,7 +274,7 @@ class TestAgentQueries:
             birth_date=datetime(2000, 1, 1),
             gender=Gender.FEMALE,
             current_status=AgentStatus.IDLE,
-            version="0.1.0"
+            version="0.1.0",
         )
         session.add_all([agent1, agent2])
         session.commit()
@@ -281,7 +290,7 @@ class TestAgentQueries:
             created_by=CreatedBy.IA,
             birth_date=datetime(2000, 1, 1),
             gender=Gender.MALE,
-            version="0.1.0"
+            version="0.1.0",
         )
         session.add(agent)
         session.commit()
@@ -309,7 +318,7 @@ class TestAgentQueries:
                 gender=Gender.MALE,
                 wallet=Decimal(str(i * 1000)),
                 current_status=AgentStatus.IDLE if i % 2 == 0 else AgentStatus.WORKING,
-                version="0.1.0"
+                version="0.1.0",
             )
             for i in range(5)
         ]
@@ -317,8 +326,8 @@ class TestAgentQueries:
         session.commit()
 
         stats = queries.agents.get_statistics()
-        assert stats['total'] == 5
-        assert stats['average_wallet'] > 0
+        assert stats["total"] == 5
+        assert stats["average_wallet"] > 0
 
 
 class TestBuildingQueries:
@@ -326,16 +335,8 @@ class TestBuildingQueries:
 
     def test_get_by_type(self, session, queries):
         """Testa busca de edifícios por tipo."""
-        building1 = Building(
-            name="Casa 1",
-            building_type="residential",
-            x=0, y=0
-        )
-        building2 = Building(
-            name="Loja 1",
-            building_type="commercial",
-            x=1, y=1
-        )
+        building1 = Building(name="Casa 1", building_type="residential", x=0, y=0)
+        building2 = Building(name="Loja 1", building_type="commercial", x=1, y=1)
         session.add_all([building1, building2])
         session.commit()
 
@@ -348,16 +349,18 @@ class TestBuildingQueries:
         building1 = Building(
             name="Casa Cheia",
             building_type="residential",
-            x=0, y=0,
+            x=0,
+            y=0,
             capacity=2,
-            current_occupancy=2
+            current_occupancy=2,
         )
         building2 = Building(
             name="Casa com Vaga",
             building_type="residential",
-            x=1, y=1,
+            x=1,
+            y=1,
             capacity=4,
-            current_occupancy=2
+            current_occupancy=2,
         )
         session.add_all([building1, building2])
         session.commit()
@@ -402,7 +405,7 @@ class TestStationModel:
             has_shelter=True,
             has_ticket_office=True,
             has_restrooms=True,
-            condition_percent=95
+            condition_percent=95,
         )
         session.add(station)
         session.commit()
@@ -426,7 +429,7 @@ class TestStationModel:
             type=StationType.BUS_STOP,
             platform_count=1,
             max_vehicles_docked=1,
-            condition_percent=80
+            condition_percent=80,
         )
         session.add(small_station)
 
@@ -436,7 +439,7 @@ class TestStationModel:
             type=StationType.BUS_TERMINAL,
             platform_count=10,
             max_vehicles_docked=20,
-            condition_percent=90
+            condition_percent=90,
         )
         session.add(large_station)
         session.commit()
@@ -450,7 +453,7 @@ class TestStationModel:
             name="Estação de Metrô",
             type=StationType.METRO_STATION,
             max_vehicles_docked=2,
-            condition_percent=100
+            condition_percent=100,
         )
         session.add(station)
         session.commit()
@@ -466,7 +469,7 @@ class TestStationModel:
             name="Terminal Principal",
             building_type=BuildingType.TRANSPORT_BUS_TERMINAL,
             x=100,
-            y=200
+            y=200,
         )
         session.add(building)
         session.commit()
@@ -481,7 +484,7 @@ class TestStationModel:
             has_shelter=True,
             has_ticket_office=True,
             has_restrooms=True,
-            condition_percent=100
+            condition_percent=100,
         )
         session.add(station)
         session.commit()
@@ -499,7 +502,7 @@ class TestStationModel:
             name="Estação Degradada",
             type=StationType.TRAIN_STATION,
             condition_percent=60,
-            last_inspection_date=None
+            last_inspection_date=None,
         )
         session.add(station)
         session.commit()
@@ -518,9 +521,7 @@ class TestStationModel:
     def test_get_waiting_passengers(self, session):
         """Testa contagem de passageiros esperando."""
         station = Station(
-            name="Ponto de Táxi",
-            type=StationType.TAXI_STAND,
-            condition_percent=100
+            name="Ponto de Táxi", type=StationType.TAXI_STAND, condition_percent=100
         )
         session.add(station)
         session.commit()
@@ -533,9 +534,7 @@ class TestStationModel:
         """Testa constraint de condição (0-100)."""
         # Condição válida
         station = Station(
-            name="Estação OK",
-            type=StationType.METRO_STATION,
-            condition_percent=50
+            name="Estação OK", type=StationType.METRO_STATION, condition_percent=50
         )
         session.add(station)
         session.commit()
@@ -561,5 +560,3 @@ class TestStationModel:
         assert len(stations) == 9
         assert stations[0].type == StationType.TRAIN_STATION
         assert stations[8].type == StationType.PORT
-
-
