@@ -11,7 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 import uuid
 import enum
@@ -443,14 +443,11 @@ class Profession(Base):
         return f"<Profession(id={self.id}, name='{self.name}')>"
 
 
-# ============================================================================
 # ENUMS PARA BUILDING (EDIFÍCIOS)
-# ============================================================================
-
 class BuildingType(str, enum.Enum):
     """Tipos detalhados de edifícios na cidade"""
 
-    # ==================== RESIDENCIAIS ====================
+    # RESIDENCIAIS
     RESIDENTIAL_HOUSE_SMALL = "residential_house_small"          # Casa térrea simples
     RESIDENTIAL_HOUSE_MEDIUM = "residential_house_medium"        # Casa de 2 andares
     RESIDENTIAL_HOUSE_LARGE = "residential_house_large"          # Mansão, sobrado
@@ -462,7 +459,7 @@ class BuildingType(str, enum.Enum):
     RESIDENTIAL_CONDOMINIUM = "residential_condominium"          # Condomínio fechado
     RESIDENTIAL_MOBILE_HOME = "residential_mobile_home"          # Trailer park (futuro)
 
-    # ==================== COMERCIAIS ====================
+    # COMERCIAIS
     COMMERCIAL_STORE_SMALL = "commercial_store_small"            # Loja de bairro
     COMMERCIAL_STORE_MEDIUM = "commercial_store_medium"          # Loja especializada
     COMMERCIAL_SUPERMARKET = "commercial_supermarket"            # Supermercado
@@ -482,7 +479,7 @@ class BuildingType(str, enum.Enum):
     COMMERCIAL_BOOKSTORE = "commercial_bookstore"                # Livraria
     COMMERCIAL_BARBERSHOP = "commercial_barbershop"              # Barbearia, salão
 
-    # ==================== INDUSTRIAIS ====================
+    # INDUSTRIAIS
     INDUSTRIAL_FACTORY_TEXTILE = "industrial_factory_textile"    # Fábrica têxtil
     INDUSTRIAL_FACTORY_METAL = "industrial_factory_metal"        # Metalúrgica
     INDUSTRIAL_FACTORY_FOOD = "industrial_factory_food"          # Processamento de alimentos
@@ -499,7 +496,7 @@ class BuildingType(str, enum.Enum):
     INDUSTRIAL_RECYCLING = "industrial_recycling"                # Centro de reciclagem
     INDUSTRIAL_CONSTRUCTION_YARD = "industrial_construction_yard"  # Depósito de construção
 
-    # ==================== PÚBLICOS ====================
+    # PÚBLICOS
     PUBLIC_SCHOOL_ELEMENTARY = "public_school_elementary"        # Escola fundamental
     PUBLIC_SCHOOL_HIGH = "public_school_high"                    # Colégio
     PUBLIC_UNIVERSITY = "public_university"                      # Universidade
@@ -509,19 +506,14 @@ class BuildingType(str, enum.Enum):
     PUBLIC_CLINIC = "public_clinic"                              # Clínica
     PUBLIC_CITY_HALL = "public_city_hall"                        # Prefeitura
     PUBLIC_COURTHOUSE = "public_courthouse"                      # Fórum
-    PUBLIC_POLICE_STATION = "public_police_station"              # Delegacia
     PUBLIC_FIRE_STATION = "public_fire_station"                  # Corpo de bombeiros
     PUBLIC_POST_OFFICE = "public_post_office"                    # Correios
     PUBLIC_CEMETERY = "public_cemetery"                          # Cemitério
-    PUBLIC_CHURCH = "public_church"                              # Igreja
-    PUBLIC_TEMPLE = "public_temple"                              # Templo religioso
     PUBLIC_MONUMENT = "public_monument"                          # Monumento, estátua
     PUBLIC_MUSEUM = "public_museum"                              # Museu
     PUBLIC_ARCHIVE = "public_archive"                            # Arquivo histórico
-    PUBLIC_ORPHANAGE = "public_orphanage"                        # Orfanato
-    PUBLIC_NURSING_HOME = "public_nursing_home"                  # Asilo
 
-    # ==================== TRANSPORTE ====================
+    # TRANSPORTE
     TRANSPORT_TRAIN_STATION_SMALL = "transport_train_station_small"    # Estação de bairro
     TRANSPORT_TRAIN_STATION_CENTRAL = "transport_train_station_central"  # Estação central
     TRANSPORT_BUS_TERMINAL = "transport_bus_terminal"            # Terminal de ônibus
@@ -534,11 +526,9 @@ class BuildingType(str, enum.Enum):
     TRANSPORT_SIGNAL_BOX = "transport_signal_box"                # Cabine de sinalização
     TRANSPORT_BRIDGE = "transport_bridge"                        # Ponte
     TRANSPORT_TUNNEL = "transport_tunnel"                        # Túnel
-    TRANSPORT_AIRPORT = "transport_airport"                      # Aeroporto (futuro)
-    TRANSPORT_HELIPAD = "transport_helipad"                      # Heliponto (futuro)
     TRANSPORT_PORT = "transport_port"                            # Porto fluvial/marítimo
 
-    # ==================== LAZER ====================
+    # LAZER
     LEISURE_PARK_SMALL = "leisure_park_small"                    # Praça
     LEISURE_PARK_LARGE = "leisure_park_large"                    # Parque municipal
     LEISURE_PLAYGROUND = "leisure_playground"                    # Parquinho infantil
@@ -550,13 +540,12 @@ class BuildingType(str, enum.Enum):
     LEISURE_CINEMA = "leisure_cinema"                            # Cinema
     LEISURE_NIGHTCLUB = "leisure_nightclub"                      # Boate
     LEISURE_CASINO = "leisure_casino"                            # Cassino (histórico)
-    LEISURE_ZOO = "leisure_zoo"                                  # Zoológico
     LEISURE_BOTANICAL_GARDEN = "leisure_botanical_garden"        # Jardim botânico
     LEISURE_AMUSEMENT_PARK = "leisure_amusement_park"            # Parque de diversões
     LEISURE_LAKE = "leisure_lake"                                # Lago recreativo
     LEISURE_BEACH = "leisure_beach"                              # Praia artificial
 
-    # ==================== INFRAESTRUTURA ====================
+    # INFRAESTRUTURA
     INFRASTRUCTURE_POWER_SUBSTATION = "infrastructure_power_substation"  # Subestação
     INFRASTRUCTURE_WATER_TOWER = "infrastructure_water_tower"    # Caixa d'água
     INFRASTRUCTURE_WATER_PUMP = "infrastructure_water_pump"      # Bomba de água
@@ -569,14 +558,12 @@ class BuildingType(str, enum.Enum):
     INFRASTRUCTURE_BILLBOARD = "infrastructure_billboard"        # Outdoor
     INFRASTRUCTURE_BRIDGE_PEDESTRIAN = "infrastructure_bridge_pedestrian"  # Passarela
 
-    # ==================== ESPECIAIS ====================
+    # ESPECIAIS
     SPECIAL_RUINS = "special_ruins"                              # Ruínas (pós-demolição)
     SPECIAL_CONSTRUCTION_SITE = "special_construction_site"      # Canteiro de obras
     SPECIAL_EMPTY_LOT = "special_empty_lot"                      # Terreno vazio
     SPECIAL_FARM = "special_farm"                                # Fazenda (rural)
-    SPECIAL_RANCH = "special_ranch"                              # Sítio
     SPECIAL_LANDMARK = "special_landmark"                        # Marco histórico único
-    SPECIAL_PRISON = "special_prison"                            # Prisão
     SPECIAL_MILITARY_BASE = "special_military_base"              # Base militar (histórico)
     SPECIAL_LIGHTHOUSE = "special_lighthouse"                    # Farol (se houver costa)
     SPECIAL_DAM = "special_dam"                                  # Barragem
@@ -585,12 +572,12 @@ class BuildingType(str, enum.Enum):
 class BuildingStatus(str, enum.Enum):
     """Status detalhado de construção e operação"""
 
-    # ==================== PLANEJAMENTO ====================
+    # PLANEJAMENTO
     PLANNING_PROPOSED = "planning_proposed"                      # Apenas proposta
     PLANNING_APPROVED = "planning_approved"                      # Aprovada, aguardando fundos
     PLANNING_FUNDED = "planning_funded"                          # Financiada, aguarda início
 
-    # ==================== CONSTRUÇÃO ====================
+    # CONSTRUÇÃO
     CONSTRUCTION_FOUNDATION = "construction_foundation"          # Fundação (0-25%)
     CONSTRUCTION_STRUCTURE = "construction_structure"            # Estrutura (25-50%)
     CONSTRUCTION_WALLS = "construction_walls"                    # Paredes (50-75%)
@@ -598,7 +585,7 @@ class BuildingStatus(str, enum.Enum):
     CONSTRUCTION_PAUSED = "construction_paused"                  # Obra paralisada
     CONSTRUCTION_DELAYED = "construction_delayed"                # Atraso (falta material/verba)
 
-    # ==================== OPERAÇÃO ====================
+    # OPERAÇÃO
     OPERATIONAL_NEW = "operational_new"                          # Recém-inaugurado
     OPERATIONAL_ACTIVE = "operational_active"                    # Funcionando normalmente
     OPERATIONAL_BUSY = "operational_busy"                        # Lotado (100%+ capacidade)
@@ -607,14 +594,14 @@ class BuildingStatus(str, enum.Enum):
     OPERATIONAL_NIGHT_SHIFT = "operational_night_shift"          # Operação noturna apenas
     OPERATIONAL_SEASONAL = "operational_seasonal"                # Sazonal (verão/inverno)
 
-    # ==================== MANUTENÇÃO ====================
+    # MANUTENÇÃO
     MAINTENANCE_ROUTINE = "maintenance_routine"                  # Manutenção preventiva
     MAINTENANCE_EMERGENCY = "maintenance_emergency"              # Reparo urgente
     MAINTENANCE_RENOVATION = "maintenance_renovation"            # Reforma
     MAINTENANCE_EXPANSION = "maintenance_expansion"              # Ampliação
     MAINTENANCE_MODERNIZATION = "maintenance_modernization"      # Modernização
 
-    # ==================== PROBLEMAS ====================
+    # PROBLEMAS
     DAMAGED_MINOR = "damaged_minor"                              # Danos leves (>80% funcional)
     DAMAGED_MODERATE = "damaged_moderate"                        # Danos moderados (40-80%)
     DAMAGED_SEVERE = "damaged_severe"                            # Danos severos (<40%)
@@ -623,19 +610,19 @@ class BuildingStatus(str, enum.Enum):
     DAMAGED_FLOOD = "damaged_flood"                              # Pós-enchente
     DAMAGED_EARTHQUAKE = "damaged_earthquake"                    # Pós-terremoto
 
-    # ==================== DESATIVADO ====================
+    # DESATIVADO
     ABANDONED_RECENT = "abandoned_recent"                        # Abandonado há <1 ano
     ABANDONED_OLD = "abandoned_old"                              # Abandonado há 1-5 anos
     ABANDONED_RUIN = "abandoned_ruin"                            # Ruína (>5 anos)
     CONDEMNED = "condemned"                                      # Interditado (perigo)
     HISTORICAL_PRESERVATION = "historical_preservation"          # Preservação histórica
 
-    # ==================== DEMOLIÇÃO ====================
+    # DEMOLIÇÃO
     DEMOLITION_SCHEDULED = "demolition_scheduled"                # Agendada para demolir
     DEMOLITION_IN_PROGRESS = "demolition_in_progress"            # Sendo demolido
     DEMOLISHED = "demolished"                                    # Demolido (terreno vazio)
 
-    # ==================== EVENTOS ESPECIAIS ====================
+    # EVENTOS ESPECIAIS
     EVENT_HOSTING = "event_hosting"                              # Sediando evento
     QUARANTINED = "quarantined"                                  # Quarentena (epidemia)
     SEIZED = "seized"                                            # Apreendido (governo/dívida)
@@ -654,19 +641,19 @@ class BuildingCondition(str, enum.Enum):
 
 class BuildingArchitectureStyle(str, enum.Enum):
     """Estilos arquitetônicos por era"""
-    # Era 1 (1860-1920)
+    # Era 1 (1850-1900)
     COLONIAL_PORTUGUESE = "colonial_portuguese"
     VICTORIAN = "victorian"
     NEOCLASSICAL = "neoclassical"
     ECLETIC = "ecletic"
 
-    # Era 2 (1920-1960)
+    # Era 2 (1900-1920)
     ART_DECO = "art_deco"
     MODERNIST = "modernist"
     BAUHAUS = "bauhaus"
     INDUSTRIAL = "industrial"
 
-    # Era 3 (1960-2000)
+    # Era 3 (1920-1960)
     BRUTALIST = "brutalist"
     POSTMODERN = "postmodern"
     HIGH_TECH = "high_tech"
@@ -710,11 +697,7 @@ class BuildingZoning(str, enum.Enum):
     PROTECTED = "protected"                                  # Preservação ambiental
     SPECIAL_USE = "special_use"                              # Uso especial (hospital, escola)
 
-
-# ============================================================================
 # MODELO: BUILDING (EDIFÍCIO COMPLETO)
-# ============================================================================
-
 class Building(Base):
     """
     Edifícios da cidade com sistema detalhado.
@@ -722,12 +705,12 @@ class Building(Base):
     """
     __tablename__ = 'buildings'
 
-    # ==================== IDENTIFICAÇÃO ====================
+    # IDENTIFICAÇÃO
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     name = Column(String(200), nullable=False, index=True)
     building_type = Column(SQLEnum(BuildingType), nullable=False)
 
-    # ==================== LOCALIZAÇÃO ====================
+    # LOCALIZAÇÃO
     x = Column(Integer, nullable=False, comment="Coordenada X no grid")
     y = Column(Integer, nullable=False, comment="Coordenada Y no grid")
     address = Column(String(200), default="")
@@ -735,13 +718,13 @@ class Building(Base):
     postal_code = Column(String(20), default="")
     zoning = Column(SQLEnum(BuildingZoning), default=BuildingZoning.MIXED_USE)
 
-    # ==================== DIMENSÕES ====================
+    # DIMENSÕES
     width = Column(Float, default=10.0, comment="Largura em metros")
     length = Column(Float, default=10.0, comment="Comprimento em metros")
     height = Column(Float, default=5.0, comment="Altura em metros")
     floors = Column(Integer, default=1, comment="Número de andares")
 
-    # ==================== STATUS E CONDIÇÃO ====================
+    # STATUS E CONDIÇÃO
     status = Column(SQLEnum(BuildingStatus), default=BuildingStatus.OPERATIONAL_ACTIVE)
     condition = Column(SQLEnum(BuildingCondition), default=BuildingCondition.GOOD)
     condition_value = Column(Integer, default=80, comment="0-100 (numérico)")
@@ -749,29 +732,29 @@ class Building(Base):
         CheckConstraint('condition_value >= 0 AND condition_value <= 100', name='check_building_condition_range'),
     )
 
-    # ==================== PROPRIEDADE ====================
+    # PROPRIEDADE
     owner_id = Column(GUID(), ForeignKey('agents.id'), nullable=True, comment="ID do agente dono")
     owner_type = Column(SQLEnum(BuildingOwnershipType), default=BuildingOwnershipType.PRIVATE_INDIVIDUAL)
 
-    # ==================== ARQUITETURA ====================
+    # ARQUITETURA
     architecture_style = Column(SQLEnum(BuildingArchitectureStyle), default=BuildingArchitectureStyle.GENERIC)
     construction_year = Column(Integer, default=1900)
     era = Column(Integer, default=1, comment="1-4, baseado no ano")
 
-    # ==================== CAPACIDADE E OCUPAÇÃO ====================
+    # CAPACIDADE E OCUPAÇÃO
     max_occupancy = Column(Integer, default=10, comment="Pessoas simultâneas")
     current_occupancy = Column(Integer, default=0)
     units = Column(Integer, default=0, comment="Apartamentos/salas/leitos")
     parking_spaces = Column(Integer, default=0)
 
-    # ==================== CONSTRUÇÃO ====================
+    # CONSTRUÇÃO
     foundation_type = Column(String(50), default="concrete", comment="concreto, madeira, pedra")
     structure_type = Column(String(50), default="brick", comment="tijolo, concreto, aço, madeira")
     roof_type = Column(String(50), default="tile", comment="telha, laje, zinco")
     exterior_finish = Column(String(50), default="painted")
     interior_finish = Column(String(50), default="basic")
 
-    # ==================== UTILIDADES ====================
+    # UTILIDADES
     has_electricity = Column(Boolean, default=True)
     has_water = Column(Boolean, default=True)
     has_sewage = Column(Boolean, default=True)
@@ -780,14 +763,14 @@ class Building(Base):
     has_elevator = Column(Boolean, default=False)
     has_generator = Column(Boolean, default=False)
 
-    # ==================== ACESSIBILIDADE E EXTRAS ====================
+    # ACESSIBILIDADE E EXTRAS
     wheelchair_accessible = Column(Boolean, default=False)
     has_garden = Column(Boolean, default=False)
     has_balcony = Column(Boolean, default=False)
     has_basement = Column(Boolean, default=False)
     has_attic = Column(Boolean, default=False)
 
-    # ==================== ECONOMIA ====================
+    # ECONOMIA
     land_value = Column(DECIMAL(13, 2), default=50000.00)
     construction_cost = Column(DECIMAL(13, 2), default=100000.00)
     current_market_value = Column(DECIMAL(13, 2), default=150000.00)
@@ -801,7 +784,7 @@ class Building(Base):
     total_invested = Column(DECIMAL(13, 2), default=0.00)
     expected_roi = Column(Float, default=0.0, comment="Retorno esperado (%)")
 
-    # ==================== HISTÓRICO ====================
+    #  HISTÓRICO
     construction_started = Column(DateTime, nullable=True)
     construction_completed = Column(DateTime, nullable=True)
     inauguration_date = Column(DateTime, nullable=True)
@@ -811,7 +794,7 @@ class Building(Base):
     ownership_history = Column(JSON, default=list, comment="Mudanças de proprietário")
     renovations = Column(JSON, default=list, comment="Histórico de reformas")
 
-    # ==================== MEIO AMBIENTE ====================
+    # MEIO AMBIENTE
     energy_consumption_kwh_month = Column(Float, default=0.0)
     water_consumption_m3_month = Column(Float, default=0.0)
     waste_production_kg_month = Column(Float, default=0.0)
@@ -824,7 +807,7 @@ class Building(Base):
     leed_certified = Column(Boolean, default=False)
     energy_efficiency_rating = Column(String(5), default="D", comment="A+ a G")
 
-    # ==================== SEGURANÇA ====================
+    # SEGURANÇA
     has_fire_alarm = Column(Boolean, default=False)
     has_sprinklers = Column(Boolean, default=False)
     has_fire_extinguishers = Column(Boolean, default=False)
@@ -840,35 +823,35 @@ class Building(Base):
     last_structural_inspection = Column(DateTime, nullable=True)
     safety_violations = Column(Integer, default=0)
 
-    # ==================== CONSTRUÇÃO EM ANDAMENTO ====================
+    #  CONSTRUÇÃO EM ANDAMENTO
     construction_progress = Column(Integer, default=100, comment="0-100%")
     construction_start_date = Column(DateTime, nullable=True)
     estimated_completion_date = Column(DateTime, nullable=True)
 
-    # ==================== GAMEPLAY ====================
+    # GAMEPLAY
     happiness_modifier = Column(Float, default=0.0, comment="Bônus/penalidade para moradores")
     crime_rate = Column(Float, default=0.0, comment="0-1, taxa de criminalidade local")
     noise_complaints = Column(Integer, default=0)
     health_violations = Column(Integer, default=0)
 
-    # ==================== VISUAL (para renderização) ====================
+    # VISUAL (para renderização)
     texture_id = Column(String(200), nullable=True)
     model_id = Column(String(200), nullable=True)
     color = Column(String(7), default="#FFFFFF", comment="Cor principal (hex)")
     is_visible = Column(Boolean, default=True)
 
-    # ==================== INTEGRAÇÃO FÍSICA (IoT) ====================
+    #  INTEGRAÇÃO FÍSICA (IoT)
     has_led = Column(Boolean, default=False, comment="Tem LED físico na maquete?")
     led_pin = Column(Integer, nullable=True, comment="Pino do Arduino para controlar LED")
 
-    # ==================== METADATA ====================
+    # METADATA
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     demolished_at = Column(DateTime, nullable=True, comment="Soft delete")
     tags = Column(JSON, default=list, comment="Ex: ['historic', 'landmark']")
     notes = Column(Text, default="", comment="Notas do jogador")
 
-    # ==================== RELACIONAMENTOS ====================
+    # RELACIONAMENTOS
     # Proprietário (agente que é dono)
     owner = relationship(
         "Agent",
@@ -897,7 +880,14 @@ class Building(Base):
         back_populates="home_building"
     )
 
-    # ==================== MÉTODOS ====================
+    # Estações dentro ou anexas ao edifício
+    stations = relationship(
+        "Station",
+        foreign_keys="Station.building_id",
+        back_populates="building"
+    )
+
+    # MÉTODOS
 
     def calculate_monthly_costs(self) -> float:
         """Calcula custos operacionais mensais totais"""
@@ -905,8 +895,7 @@ class Building(Base):
             self.maintenance_cost +
             self.utility_costs +
             self.tax_property +
-            self.insurance_cost
-        )
+            self.insurance_cost)
 
     def calculate_monthly_income(self) -> float:
         """Calcula receita mensal total"""
@@ -1896,5 +1885,587 @@ class LogEntry(Base):
         return f"<LogEntry(level='{self.level.value}', message='{self.message[:50]}...')>"
 
 
-# Nota: Routine já definido anteriormente na linha ~388
+class StationType(str, enum.Enum):
+    """Tipos de estações e pontos de parada de transporte.
 
+    Focado em transporte público coletivo de uma cidade socialista/comunista.
+    Enfatiza integração modal, acessibilidade universal e transporte de massas.
+
+    Nota: Edifícios maiores (estações centrais, terminais) devem usar BuildingType.
+    Este enum representa pontos de parada e infraestrutura de menor escala.
+    """
+
+    # ==================== TRANSPORTE FERROVIÁRIO ====================
+    TRAIN_PLATFORM = "train_platform"
+    TRAIN_STOP_LOCAL = "train_stop_local"
+    TRAIN_STOP_EXPRESS = "train_stop_express"
+    TRAIN_STOP_SUBURBAN = "train_stop_suburban"
+    TRAIN_STOP_INTERURBAN = "train_stop_interurban"
+    TRAIN_PLATFORM_ELEVATED = "train_platform_elevated"
+    TRAIN_PLATFORM_UNDERGROUND = "train_platform_underground"
+
+    METRO_STATION = "metro_station"
+    METRO_PLATFORM = "metro_platform"
+    METRO_PLATFORM_ISLAND = "metro_platform_island"
+    METRO_PLATFORM_SIDE = "metro_platform_side"
+    METRO_TRANSFER_CORRIDOR = "metro_transfer_corridor"
+
+    LIGHT_RAIL_STOP = "light_rail_stop"
+    LIGHT_RAIL_PLATFORM = "light_rail_platform"
+    MONORAIL_STATION = "monorail_station"
+    TRAM_STOP = "tram_stop"
+    TRAM_STOP_PROTECTED = "tram_stop_protected"
+    TRAM_PLATFORM = "tram_platform"
+
+    # ==================== TRANSPORTE RODOVIÁRIO ====================
+    BUS_STOP_SIMPLE = "bus_stop_simple"
+    BUS_STOP_SHELTER = "bus_stop_shelter"
+    BUS_STOP_TUBE = "bus_stop_tube"
+    BUS_STOP_COVERED = "bus_stop_covered"
+    BUS_STOP_HEATED = "bus_stop_heated"
+    BUS_STOP_ARTICULATED = "bus_stop_articulated"
+    BUS_STATION_LOCAL = "bus_station_local"
+    BUS_STATION_DISTRICT = "bus_station_district"
+    BUS_BAY = "bus_bay"
+    BRT_STATION = "brt_station"
+    BRT_PLATFORM_CENTER = "brt_platform_center"
+    BRT_PLATFORM_SIDE = "brt_platform_side"
+    TROLLEYBUS_STOP = "trolleybus_stop"
+    TROLLEYBUS_TURNAROUND = "trolleybus_turnaround"
+
+    # ==================== INTEGRAÇÃO / TERMINAIS ====================
+    INTEGRATION_PLATFORM = "integration_platform"
+    TRANSFER_POINT = "transfer_point"
+    TRANSFER_POINT_COVERED = "transfer_point_covered"
+    MULTIMODAL_HUB = "multimodal_hub"
+    MULTIMODAL_PLATFORM = "multimodal_platform"
+    PARK_AND_RIDE = "park_and_ride"
+    BIKE_AND_RIDE = "bike_and_ride"
+    KISS_AND_RIDE = "kiss_and_ride"
+    INTERMODAL_EXCHANGE = "intermodal_exchange"
+
+    # ==================== TRANSPORTE COLETIVO ESPECIAL ====================
+    SHARED_VAN_STOP = "shared_van_stop"
+    COLLECTIVE_TRANSPORT_POINT = "collective_transport_point"
+    WORKERS_SHUTTLE_STOP = "workers_shuttle_stop"
+    SCHOOL_BUS_STOP = "school_bus_stop"
+    MOBILITY_SERVICE_POINT = "mobility_service_point"
+
+    # ==================== VEÍCULOS DE CARGA ====================
+    LOADING_DOCK = "loading_dock"
+    LOADING_DOCK_COVERED = "loading_dock_covered"
+    TRUCK_STOP = "truck_stop"
+    TRUCK_REST_AREA = "truck_rest_area"
+    CARGO_PLATFORM = "cargo_platform"
+    CARGO_PLATFORM_REFRIGERATED = "cargo_platform_refrigerated"
+    FREIGHT_SIDING = "freight_siding"
+    FREIGHT_YARD = "freight_yard"
+    CONTAINER_TRANSFER_POINT = "container_transfer_point"
+    BULK_LOADING_FACILITY = "bulk_loading_facility"
+
+    # ==================== ESTACIONAMENTOS ====================
+    PARKING_SURFACE = "parking_surface"
+    PARKING_UNDERGROUND = "parking_underground"
+    PARKING_STRUCTURE = "parking_structure"
+    PARKING_VALET = "parking_valet"
+    PARKING_DISABLED = "parking_disabled"
+    PARKING_MOTORCYCLE = "parking_motorcycle"
+    PARKING_BICYCLE = "parking_bicycle"
+    PARKING_BICYCLE_COVERED = "parking_bicycle_covered"
+    PARKING_BICYCLE_SECURE = "parking_bicycle_secure"
+    PARKING_ELECTRIC_CHARGING = "parking_electric_charging"
+    PARKING_SOLAR_CHARGING = "parking_solar_charging"
+    PARKING_CARPOOL = "parking_carpool"
+    PARKING_CARGO_BIKE = "parking_cargo_bike"
+
+    # ==================== SERVIÇOS DE EMERGÊNCIA ====================
+    AMBULANCE_STATION = "ambulance_station"
+    FIRE_TRUCK_BAY = "fire_truck_bay"
+    EMERGENCY_VEHICLE_BAY = "emergency_vehicle_bay"
+    CIVIL_DEFENSE_GARAGE = "civil_defense_garage"
+
+    # ==================== TRANSPORTE AQUÁTICO (FUTURO/VIRTUAL) ====================
+    FERRY_PIER = "ferry_pier"
+    FERRY_TERMINAL = "ferry_terminal"
+    BOAT_DOCK = "boat_dock"
+    WATER_BUS_STOP = "water_bus_stop"
+    RIVER_STATION = "river_station"
+    CANAL_LOCK = "canal_lock"
+
+    # ==================== TRANSPORTE ALTERNATIVO ====================
+    CABLE_CAR_STATION = "cable_car_station"
+    CABLE_CAR_TOWER = "cable_car_tower"
+    FUNICULAR_STATION = "funicular_station"
+    FUNICULAR_PLATFORM_UPPER = "funicular_platform_upper"
+    FUNICULAR_PLATFORM_LOWER = "funicular_platform_lower"
+    ELEVATOR_STATION = "elevator_station"
+    PEOPLE_MOVER = "people_mover"
+    ESCALATOR_STATION = "escalator_station"
+    MOVING_WALKWAY = "moving_walkway"
+
+    # ==================== MICROMODILIDADE ====================
+    SCOOTER_DOCK = "scooter_dock"
+    SCOOTER_PARKING = "scooter_parking"
+    BIKESHARE_STATION = "bikeshare_station"
+    BIKESHARE_DOCK = "bikeshare_dock"
+    CARGO_BIKE_STATION = "cargo_bike_station"
+    WHEELCHAIR_CHARGING = "wheelchair_charging"
+
+    # ==================== INFRAESTRUTURA DE APOIO ====================
+    TICKET_BOOTH = "ticket_booth"
+    TICKET_MACHINE = "ticket_machine"
+    TURNSTILE_GATE = "turnstile_gate"
+    ACCESS_GATE = "access_gate"
+    WAITING_AREA = "waiting_area"
+    WAITING_ROOM = "waiting_room"
+    WAITING_SHELTER = "waiting_shelter"
+    INFORMATION_KIOSK = "information_kiosk"
+    INFORMATION_BOARD = "information_board"
+    HELP_POINT = "help_point"
+    LOST_AND_FOUND = "lost_and_found"
+
+    # ==================== ACESSIBILIDADE ====================
+    ACCESSIBLE_PLATFORM = "accessible_platform"
+    ACCESSIBLE_RAMP = "accessible_ramp"
+    ACCESSIBLE_ELEVATOR = "accessible_elevator"
+    TACTILE_PATH = "tactile_path"
+    AUDIO_BEACON = "audio_beacon"
+    BRAILLE_SIGNAGE = "braille_signage"
+
+    # ==================== MANUTENÇÃO ====================
+    VEHICLE_WASH = "vehicle_wash"
+    VEHICLE_WASH_AUTOMATED = "vehicle_wash_automated"
+    FUEL_PUMP = "fuel_pump"
+    FUEL_DEPOT = "fuel_depot"
+    CHARGING_STATION = "charging_station"
+    FAST_CHARGING_STATION = "fast_charging_station"
+    HYDROGEN_STATION = "hydrogen_station"
+    MAINTENANCE_BAY = "maintenance_bay"
+    MAINTENANCE_PIT = "maintenance_pit"
+    INSPECTION_POINT = "inspection_point"
+    REPAIR_SHOP = "repair_shop"
+    TIRE_SERVICE = "tire_service"
+    SPARE_PARTS_DEPOT = "spare_parts_depot"
+
+    # ==================== INFRAESTRUTURA DUTOS ====================
+    PNEUMATIC_TUBE_STATION = "pneumatic_tube_station"
+    PIPELINE_JUNCTION = "pipeline_junction"
+    PIPELINE_PUMP_STATION = "pipeline_pump_station"
+    PIPELINE_VALVE_STATION = "pipeline_valve_station"
+    PNEUMATIC_TERMINAL = "pneumatic_terminal"
+    PNEUMATIC_DISTRIBUTION_HUB = "pneumatic_distribution_hub"
+    PIPELINE_LOADING_BAY = "pipeline_loading_bay"
+    PIPELINE_UNLOADING_BAY = "pipeline_unloading_bay"
+    VACUUM_WASTE_INLET = "vacuum_waste_inlet"
+    VACUUM_WASTE_COLLECTION = "vacuum_waste_collection"
+
+    # ==================== LOGÍSTICA INTEGRADA ====================
+    CARGO_CONSOLIDATION_POINT = "cargo_consolidation_point"
+    DISTRIBUTION_CENTER_DOCK = "distribution_center_dock"
+    CROSS_DOCK_FACILITY = "cross_dock_facility"
+    SORTING_FACILITY = "sorting_facility"
+    PACKAGE_LOCKER = "package_locker"
+    DELIVERY_POINT = "delivery_point"
+    COLLECTION_POINT = "collection_point"
+
+    # ==================== HISTÓRICO / ESPECIAL ====================
+    HORSE_CARRIAGE_STAND = "horse_carriage_stand"
+    RICKSHAW_STAND = "rickshaw_stand"
+    STEAM_TRAIN_STOP = "steam_train_stop"
+    HERITAGE_STATION = "heritage_station"
+    HERITAGE_TRAM_STOP = "heritage_tram_stop"
+    MUSEUM_RAILWAY_STOP = "museum_railway_stop"
+
+    # ==================== CONTROLE E OPERAÇÃO ====================
+    SIGNAL_BOX = "signal_box"
+    CONTROL_TOWER = "control_tower"
+    SWITCHING_STATION = "switching_station"
+    DEPOT_ENTRANCE = "depot_entrance"
+    DEPOT_EXIT = "depot_exit"
+    TURNAROUND_LOOP = "turnaround_loop"
+    REVERSING_POINT = "reversing_point"
+    LAYOVER_AREA = "layover_area"
+
+    # ==================== FUTURO / EXPERIMENTAL ====================
+    HYPERLOOP_POD = "hyperloop_pod"
+    MAGLEV_STATION = "maglev_station"
+    UNDERGROUND_FREIGHT = "underground_freight"
+    AUTOMATED_GUIDEWAY = "automated_guideway"
+    CARGO_ROBOT_DOCK = "cargo_robot_dock"
+    AUTOMATED_PARCEL_HUB = "automated_parcel_hub"
+
+
+class StationStatus(str, enum.Enum):
+    """Status operacional da estação."""
+    ACTIVE = "active"  # Em operação normal
+    INACTIVE = "inactive"  # Fora de operação
+    MAINTENANCE = "maintenance"  # Em manutenção
+    CONSTRUCTION = "construction"  # Em construção
+    CLOSED_TEMPORARILY = "closed_temporarily"  # Fechada temporariamente
+    OVERCROWDED = "overcrowded"  # Superlotada
+    EMERGENCY = "emergency"  # Situação de emergência
+
+
+class Station(Base):
+    """Estações e pontos de parada de transporte.
+
+    Representa infraestrutura de transporte de menor escala que não
+    constitui um edifício completo (usar Building para terminais grandes).
+    """
+    __tablename__ = 'stations'
+
+    # ==================== IDENTIFICAÇÃO ====================
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    name = Column(String(200), nullable=False, index=True)
+    station_type = Column(SQLEnum(StationType), nullable=False, index=True)
+    code = Column(String(20), unique=True, nullable=True, comment="Código alfanumérico (ex: M01, B234)")
+
+    # ==================== LOCALIZAÇÃO ====================
+    x = Column(Integer, nullable=False, index=True)
+    y = Column(Integer, nullable=False, index=True)
+    z = Column(Integer, default=0, comment="Nível/andar (0=térreo, -1=subsolo, 1=elevado)")
+    tile_id = Column(GUID(), ForeignKey('tiles.id'), nullable=True)
+
+    # Relacionamento com edifício (se estação está dentro/anexa a um prédio)
+    building_id = Column(GUID(), ForeignKey('buildings.id'), nullable=True)
+
+    # ==================== CAPACIDADE ====================
+    platform_count = Column(Integer, default=1, comment="Número de plataformas/docas")
+    max_queue_length = Column(Integer, default=50, comment="Capacidade máxima de fila")
+    current_queue_length = Column(Integer, default=0, comment="Pessoas aguardando atualmente")
+    max_simultaneous_vehicles = Column(Integer, default=1, comment="Veículos simultâneos")
+
+    # ==================== OPERAÇÃO ====================
+    status = Column(SQLEnum(StationStatus), default=StationStatus.ACTIVE, index=True)
+    is_operational = Column(Boolean, default=True)
+    serves_passengers = Column(Boolean, default=True)
+    serves_cargo = Column(Boolean, default=False)
+
+    # Horário de operação (JSON: {"monday": ["06:00-23:00"], ...})
+    operating_hours = Column(JSON, default=dict, comment="Horários por dia da semana")
+
+    # ==================== ACESSIBILIDADE ====================
+    is_accessible = Column(Boolean, default=False, comment="Acessível para PCD")
+    has_elevator = Column(Boolean, default=False)
+    has_escalator = Column(Boolean, default=False)
+    has_ramp = Column(Boolean, default=False)
+    has_tactile_paving = Column(Boolean, default=False)
+    has_audio_announcements = Column(Boolean, default=False)
+    has_braille_signage = Column(Boolean, default=False)
+
+    # ==================== COMODIDADES ====================
+    has_shelter = Column(Boolean, default=False, comment="Cobertura/abrigo")
+    has_heating = Column(Boolean, default=False, comment="Aquecimento")
+    has_cooling = Column(Boolean, default=False, comment="Climatização")
+    has_seating = Column(Boolean, default=False)
+    seating_capacity = Column(Integer, default=0)
+    has_lighting = Column(Boolean, default=True)
+    has_cctv = Column(Boolean, default=False)
+    has_wifi = Column(Boolean, default=False)
+    has_restrooms = Column(Boolean, default=False)
+    has_drinking_fountain = Column(Boolean, default=False)
+
+    # ==================== INTEGRAÇÃO MODAL ====================
+    connects_to_stations = Column(JSON, default=list, comment="IDs de estações conectadas")
+    transfer_time_minutes = Column(Integer, default=5, comment="Tempo médio de transferência")
+    allows_bike_parking = Column(Boolean, default=False)
+    bike_parking_capacity = Column(Integer, default=0)
+    allows_vehicle_parking = Column(Boolean, default=False)
+    vehicle_parking_capacity = Column(Integer, default=0)
+
+    # ==================== TARIFAÇÃO ====================
+    requires_ticket = Column(Boolean, default=True)
+    has_ticket_machine = Column(Boolean, default=False)
+    has_ticket_booth = Column(Boolean, default=False)
+    has_turnstile = Column(Boolean, default=False)
+    fare_zone = Column(Integer, default=1, comment="Zona tarifária")
+
+    # ==================== ESTATÍSTICAS ====================
+    daily_passenger_avg = Column(Integer, default=0, comment="Média diária de passageiros")
+    daily_passenger_peak = Column(Integer, default=0, comment="Pico diário")
+    total_passengers_served = Column(Integer, default=0, comment="Total histórico")
+    last_passenger_count_at = Column(DateTime, nullable=True)
+
+    # Carga (se aplicável)
+    daily_cargo_avg_kg = Column(Float, default=0.0)
+    total_cargo_handled_kg = Column(Float, default=0.0)
+
+    # ==================== MANUTENÇÃO ====================
+    condition_value = Column(Integer, default=100, comment="Condição geral (0-100)")
+    last_maintenance_at = Column(DateTime, nullable=True)
+    next_maintenance_at = Column(DateTime, nullable=True)
+    maintenance_interval_days = Column(Integer, default=90)
+    maintenance_cost_total = Column(DECIMAL(10, 2), default=0.00)
+
+    # ==================== ENERGIA E SUSTENTABILIDADE ====================
+    energy_consumption_kwh_month = Column(Float, default=0.0)
+    has_solar_panels = Column(Boolean, default=False)
+    has_rainwater_harvesting = Column(Boolean, default=False)
+    has_green_roof = Column(Boolean, default=False)
+
+    # ==================== VISUAL (IoT/Renderização) ====================
+    has_led = Column(Boolean, default=False, comment="LED físico na maquete")
+    led_pin = Column(Integer, nullable=True)
+    model_id = Column(String(200), nullable=True, comment="Modelo 3D")
+    color = Column(String(7), default="#3498DB", comment="Cor (hex)")
+    icon = Column(String(50), nullable=True, comment="Ícone para mapa")
+
+    # ==================== METADATA ====================
+    operator_company_id = Column(GUID(), ForeignKey('companies.id'), nullable=True)
+    construction_date = Column(DateTime, nullable=True)
+    opened_at = Column(DateTime, nullable=True)
+    closed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    tags = Column(JSON, default=list, comment="Tags customizadas")
+    notes = Column(Text, default="")
+
+    # ==================== CONSTRAINTS ====================
+    __table_args__ = (
+        Index('idx_station_location', 'x', 'y', 'z'),
+        Index('idx_station_type_status', 'station_type', 'status'),
+        CheckConstraint('platform_count >= 0', name='check_platform_count_positive'),
+        CheckConstraint('max_queue_length >= 0', name='check_queue_length_positive'),
+        CheckConstraint('current_queue_length >= 0', name='check_current_queue_positive'),
+        CheckConstraint('current_queue_length <= max_queue_length', name='check_queue_within_max'),
+        CheckConstraint('condition_value >= 0 AND condition_value <= 100', name='check_condition_range'),
+    )
+
+    # ==================== RELACIONAMENTOS ====================
+    building = relationship('Building', foreign_keys=[building_id], back_populates='stations')
+    operator_company = relationship('Company', foreign_keys=[operator_company_id])
+
+    # ==================== VALIDAÇÕES ====================
+
+    from sqlalchemy.orm import validates
+
+    @validates('current_queue_length')
+    def validate_queue(self, key, value):
+        if value < 0:
+            return 0
+        if value > self.max_queue_length:
+            return self.max_queue_length
+        return value
+
+    @validates('condition_value')
+    def validate_condition(self, key, value):
+        return max(0, min(100, value))
+
+    # ==================== MÉTODOS DE NEGÓCIO ====================
+
+    def is_overcrowded(self) -> bool:
+        """Verifica se a estação está superlotada."""
+        if self.max_queue_length == 0:
+            return False
+        return (self.current_queue_length / self.max_queue_length) > 0.9
+
+    def can_accept_passengers(self, count: int = 1) -> bool:
+        """Verifica se pode aceitar mais passageiros."""
+        if not self.is_operational or not self.serves_passengers:
+            return False
+        return (self.current_queue_length + count) <= self.max_queue_length
+
+    def add_to_queue(self, count: int = 1) -> bool:
+        """Adiciona passageiros à fila."""
+        if not self.can_accept_passengers(count):
+            return False
+        self.current_queue_length += count
+        return True
+
+    def remove_from_queue(self, count: int = 1) -> int:
+        """Remove passageiros da fila. Retorna quantos foram removidos."""
+        removed = min(count, self.current_queue_length)
+        self.current_queue_length -= removed
+        return removed
+
+    def clear_queue(self):
+        """Limpa completamente a fila."""
+        self.current_queue_length = 0
+
+    def board_vehicle(self, vehicle_capacity: int) -> int:
+        """Embarca passageiros em um veículo. Retorna quantos embarcaram."""
+        boarded = min(self.current_queue_length, vehicle_capacity)
+        self.current_queue_length -= boarded
+        self.total_passengers_served += boarded
+        self.last_passenger_count_at = datetime.utcnow()
+        return boarded
+
+    def needs_maintenance(self) -> bool:
+        """Verifica se precisa de manutenção."""
+        if self.condition_value < 50:
+            return True
+        if self.next_maintenance_at and datetime.utcnow() >= self.next_maintenance_at:
+            return True
+        return False
+
+    def perform_maintenance(self, cost: DECIMAL = None):
+        """Realiza manutenção da estação."""
+        self.condition_value = min(100, self.condition_value + 30)
+        self.last_maintenance_at = datetime.utcnow()
+        self.next_maintenance_at = datetime.utcnow() + timedelta(days=self.maintenance_interval_days)
+        if cost:
+            self.maintenance_cost_total += cost
+
+    def degrade_condition(self, amount: int = 1):
+        """Degrada a condição da estação."""
+        self.condition_value = max(0, self.condition_value - amount)
+        if self.condition_value < 20:
+            self.status = StationStatus.MAINTENANCE
+            self.is_operational = False
+
+    def is_operating_now(self, current_datetime: datetime = None) -> bool:
+        """Verifica se está operando no momento."""
+        if not self.is_operational or self.status != StationStatus.ACTIVE:
+            return False
+
+        if not self.operating_hours:
+            return True
+
+        dt = current_datetime or datetime.utcnow()
+        weekday = dt.strftime('%A').lower()
+
+        if weekday not in self.operating_hours:
+            return True
+
+        current_time = dt.strftime('%H:%M')
+        for time_range in self.operating_hours[weekday]:
+            start, end = time_range.split('-')
+            if start <= current_time <= end:
+                return True
+
+        return False
+
+    def calculate_occupancy_rate(self) -> float:
+        """Calcula taxa de ocupação atual."""
+        if self.max_queue_length == 0:
+            return 0.0
+        return (self.current_queue_length / self.max_queue_length) * 100
+
+    def get_connected_stations(self, session) -> List['Station']:
+        """Retorna estações conectadas."""
+        if not self.connects_to_stations:
+            return []
+        return session.query(Station).filter(Station.id.in_(self.connects_to_stations)).all()
+
+    def add_connection(self, station_id: str):
+        """Adiciona conexão com outra estação."""
+        if station_id not in self.connects_to_stations:
+            self.connects_to_stations.append(station_id)
+
+    def remove_connection(self, station_id: str):
+        """Remove conexão com outra estação."""
+        if station_id in self.connects_to_stations:
+            self.connects_to_stations.remove(station_id)
+
+    def get_accessibility_score(self) -> int:
+        """Calcula score de acessibilidade (0-100)."""
+        score = 0
+        if self.is_accessible:
+            score += 20
+        if self.has_elevator:
+            score += 15
+        if self.has_escalator:
+            score += 10
+        if self.has_ramp:
+            score += 15
+        if self.has_tactile_paving:
+            score += 15
+        if self.has_audio_announcements:
+            score += 15
+        if self.has_braille_signage:
+            score += 10
+        return min(100, score)
+
+    def get_comfort_score(self) -> int:
+        """Calcula score de conforto (0-100)."""
+        score = 0
+        if self.has_shelter:
+            score += 20
+        if self.has_seating:
+            score += 15
+        if self.has_heating:
+            score += 15
+        if self.has_cooling:
+            score += 15
+        if self.has_restrooms:
+            score += 15
+        if self.has_wifi:
+            score += 10
+        if self.has_drinking_fountain:
+            score += 10
+        return min(100, score)
+
+    def estimate_wait_time(self, vehicles_per_hour: int) -> int:
+        """Estima tempo de espera em minutos."""
+        if vehicles_per_hour == 0:
+            return 999
+        return int(60 / vehicles_per_hour)
+
+    # ==================== PROPRIEDADES CALCULADAS ====================
+
+    @property
+    def is_multimodal(self) -> bool:
+        """Verifica se é estação multimodal."""
+        return len(self.connects_to_stations) > 0
+
+    @property
+    def occupancy_percentage(self) -> float:
+        """Taxa de ocupação em porcentagem."""
+        return self.calculate_occupancy_rate()
+
+    @property
+    def queue_status(self) -> str:
+        """Status descritivo da fila."""
+        rate = self.occupancy_percentage
+        if rate == 0:
+            return "empty"
+        elif rate < 30:
+            return "low"
+        elif rate < 60:
+            return "moderate"
+        elif rate < 90:
+            return "high"
+        else:
+            return "critical"
+
+    @property
+    def age_days(self) -> Optional[int]:
+        """Idade em dias desde construção."""
+        if not self.construction_date:
+            return None
+        return (datetime.utcnow() - self.construction_date).days
+
+    # ==================== MÉTODOS UTILITÁRIOS ====================
+
+    def get_daily_stats(self) -> dict:
+        """Retorna estatísticas diárias."""
+        return {
+            'avg_passengers': self.daily_passenger_avg,
+            'peak_passengers': self.daily_passenger_peak,
+            'total_served': self.total_passengers_served,
+            'avg_cargo_kg': self.daily_cargo_avg_kg,
+            'occupancy_rate': self.occupancy_percentage,
+            'queue_status': self.queue_status
+        }
+
+    def get_status_summary(self) -> dict:
+        """Resumo do status da estação."""
+        return {
+            'id': str(self.id),
+            'name': self.name,
+            'type': self.station_type.value,
+            'status': self.status.value,
+            'operational': self.is_operational,
+            'condition': self.condition_value,
+            'queue': self.current_queue_length,
+            'max_queue': self.max_queue_length,
+            'accessibility_score': self.get_accessibility_score(),
+            'comfort_score': self.get_comfort_score()
+        }
+
+    def __repr__(self):
+        return (f"<Station(id={self.id}, name='{self.name}', "
+                f"type={self.station_type.value}, status={self.status.value}, "
+                f"queue={self.current_queue_length}/{self.max_queue_length})>")
+
+#todo Adicionar relacionamento reverso em Building (adicionar à classe Building existente): stations = relationship('Station', foreign_keys='Station.building_id', back_populates='building')
