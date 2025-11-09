@@ -1028,8 +1028,14 @@ class Vehicle(Base):
     home_building_id = Column(GUID(), ForeignKey('buildings.id'), nullable=True,
                              comment="Garagem/depósito onde fica quando inativo")
 
+    # Novos campos para integração com Station
+    current_station_id = Column(GUID(), ForeignKey('stations.id'), nullable=True,
+                               comment="Estação atual onde o veículo está (se aplicável)")
+    assigned_route_id = Column(GUID(), ForeignKey('routes.id'), nullable=True,
+                              comment="Rota atribuída ao veículo (diferente de route_id que é rota ativa)")
 
     # ==================== OPERAÇÃO ====================
+    is_docked = Column(Boolean, default=False, comment="Se está acoplado/parado em uma estação")
     is_operational = Column(Boolean, default=True, comment="Se está operacional ou não")
     is_moving = Column(Boolean, default=False, comment="Se está em movimento")
     speed = Column(Float, default=0.0, comment="Velocidade atual em km/h")
@@ -1071,6 +1077,8 @@ class Vehicle(Base):
         Index('idx_vehicle_driver', 'current_driver_id'),
         Index('idx_vehicle_type', 'vehicle_type'),
         Index('idx_vehicle_location', 'current_location_type', 'current_location_id'),
+        Index('idx_vehicle_station', 'current_station_id'),
+        Index('idx_vehicle_docked', 'is_docked'),
     )
 
     # ==================== RELACIONAMENTOS ORM ====================
@@ -1080,6 +1088,8 @@ class Vehicle(Base):
     company = relationship('Company', foreign_keys=[company_id], back_populates='vehicles')
     current_driver = relationship('Agent', foreign_keys=[current_driver_id], back_populates='driven_vehicles')
     home_building = relationship('Building', foreign_keys=[home_building_id], back_populates='parked_vehicles')
+    current_station = relationship('Station', foreign_keys=[current_station_id])
+    assigned_route = relationship('Route', foreign_keys=[assigned_route_id])
 
     # Relacionamentos polimórficos (viewonly para performance)
     maintenance_records = relationship(
@@ -2234,6 +2244,7 @@ class Station(Base):
     # ==================== RELACIONAMENTOS ====================
     building = relationship('Building', foreign_keys=[building_id], back_populates='stations')
     operator_company = relationship('Company', foreign_keys=[operator_company_id])
+    docked_vehicles = relationship('Vehicle', foreign_keys='Vehicle.current_station_id', back_populates='current_station')
 
     # ==================== VALIDAÇÕES ====================
 

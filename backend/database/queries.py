@@ -250,6 +250,78 @@ class VehicleQueries:
         self.session.flush()
         return vehicle
 
+    def get_docked_at_station(self, station_id: uuid.UUID) -> List[Vehicle]:
+        """Retorna veículos acoplados em uma estação.
+
+        Args:
+            station_id: UUID da estação
+
+        Returns:
+            Lista de veículos acoplados na estação
+        """
+        return self.session.query(Vehicle).filter(
+            Vehicle.current_station_id == station_id,
+            Vehicle.is_docked == True
+        ).all()
+
+    def dock_vehicle(self, vehicle_id: uuid.UUID, station_id: uuid.UUID) -> Optional[Vehicle]:
+        """Acopla um veículo em uma estação.
+
+        Args:
+            vehicle_id: UUID do veículo
+            station_id: UUID da estação
+
+        Returns:
+            Veículo atualizado ou None se não encontrado
+        """
+        vehicle = self.get_by_id(vehicle_id)
+        if vehicle:
+            vehicle.current_station_id = station_id
+            vehicle.is_docked = True
+            vehicle.is_moving = False
+            vehicle.speed = 0.0
+            self.session.flush()
+        return vehicle
+
+    def undock_vehicle(self, vehicle_id: uuid.UUID) -> Optional[Vehicle]:
+        """Desacopla um veículo de uma estação.
+
+        Args:
+            vehicle_id: UUID do veículo
+
+        Returns:
+            Veículo atualizado ou None se não encontrado
+        """
+        vehicle = self.get_by_id(vehicle_id)
+        if vehicle:
+            vehicle.current_station_id = None
+            vehicle.is_docked = False
+            self.session.flush()
+        return vehicle
+
+    def get_all_docked(self) -> List[Vehicle]:
+        """Retorna todos os veículos acoplados em estações.
+
+        Returns:
+            Lista de veículos acoplados
+        """
+        return self.session.query(Vehicle).filter(
+            Vehicle.is_docked == True
+        ).all()
+
+    def get_by_assigned_route(self, route_id: uuid.UUID) -> List[Vehicle]:
+        """Retorna veículos atribuídos a uma rota.
+
+        Args:
+            route_id: UUID da rota
+
+        Returns:
+            Lista de veículos
+        """
+        return self.session.query(Vehicle).filter(
+            Vehicle.assigned_route_id == route_id
+        ).all()
+
 
 class EventQueries:
     """Queries relacionadas a eventos."""
