@@ -214,6 +214,25 @@ def get_gender_prevalence(gender: "Gender") -> float:
     return GENDER_PREVALENCE.get(gender, 0.0)
 
 
+# Enums para Ticket (definidos antes de Agent que os usa)
+class TicketStatus(str, enum.Enum):
+    """Status do bilhete de transporte."""
+    ACTIVE = 'active'           # Bilhete válido e ativo
+    USED = 'used'               # Já utilizado
+    EXPIRED = 'expired'         # Expirado
+    CANCELLED = 'cancelled'     # Cancelado
+
+
+class TicketType(str, enum.Enum):
+    """Tipo de bilhete."""
+    SINGLE = 'single'           # Passagem única
+    RETURN = 'return'           # Ida e volta
+    DAY_PASS = 'day_pass'       # Passe diário
+    WEEK_PASS = 'week_pass'     # Passe semanal
+    MONTH_PASS = 'month_pass'   # Passe mensal
+    TRANSFER = 'transfer'       # Transferência/integração
+
+
 # Modelo principal: Agent (Agente)
 class Agent(Base):
     """
@@ -252,6 +271,12 @@ class Agent(Base):
     current_location_type = Column(String(50), nullable=True, comment="building, vehicle, street, etc")
     current_location_id = Column(GUID(), nullable=True)
     last_seen_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Transporte público
+    waiting_at_station_id = Column(GUID(), ForeignKey('stations.id'), nullable=True,
+                                   comment="Estação onde o agente está aguardando")
+    current_ticket_id = Column(GUID(), ForeignKey('tickets.id'), nullable=True,
+                              comment="Bilhete de transporte atual")
 
     # Status de saúde
     health_status = Column(
@@ -357,6 +382,11 @@ class Agent(Base):
         foreign_keys=[work_building_id],
         back_populates="workers"
     )
+
+    # Transporte público
+    waiting_at_station = relationship("Station", foreign_keys=[waiting_at_station_id])
+    current_ticket = relationship("Ticket", foreign_keys=[current_ticket_id])
+    tickets = relationship("Ticket", foreign_keys='Ticket.agent_id', back_populates="agent")
     owned_buildings = relationship(
         "Building",
         foreign_keys="Building.owner_id",
@@ -387,6 +417,88 @@ class Agent(Base):
             bio_parts.append(f"Profissão: {self.profession.name}")
         # Adicionar eventos importantes do histórico
         return ". ".join(bio_parts)
+
+    # Métodos de transporte público
+    def purchase_ticket(self, route_id: uuid.UUID = None,
+                       origin_id: uuid.UUID = None,
+                       destination_id: uuid.UUID = None,
+                       ticket_type: TicketType = TicketType.SINGLE,
+                       price: DECIMAL = DECIMAL('3.50')) -> 'Ticket':
+        """Compra um bilhete de transporte.
+
+        Args:
+            route_id: ID da rota (opcional)
+            origin_id: ID da estação de origem (opcional)
+            destination_id: ID da estação de destino (opcional)
+            ticket_type: Tipo de bilhete
+            price: Preço do bilhete
+
+        Returns:
+            Ticket criado
+
+        Raises:
+            ValueError: Se o agente não tem dinheiro suficiente
+        """
+        # Verificar se tem dinheiro
+        if self.wallet < price:
+            raise ValueError(f"Saldo insuficiente. Necessário: {price}, Disponível: {self.wallet}")
+
+        # Descontar do saldo
+        self.wallet -= price
+
+        # Criar bilhete
+        ticket = Ticket(
+            agent_id=self.id,
+            ticket_type=ticket_type,
+            route_id=route_id,
+            origin_station_id=origin_id,
+            destination_station_id=destination_id,
+            price=price,
+            status=TicketStatus.ACTIVE
+        )
+
+        # Definir validade baseado no tipo
+        from datetime import timedelta
+        now = datetime.utcnow()
+        ticket.valid_from = now
+
+        if ticket_type == TicketType.SINGLE:
+            ticket.valid_until = now + timedelta(hours=2)
+            ticket.max_validations = 1
+        elif ticket_type == TicketType.RETURN:
+            ticket.valid_until = now + timedelta(days=1)
+            ticket.max_validations = 2
+        elif ticket_type == TicketType.DAY_PASS:
+            ticket.valid_until = now + timedelta(days=1)
+            ticket.max_validations = 999
+        elif ticket_type == TicketType.WEEK_PASS:
+            ticket.valid_until = now + timedelta(days=7)
+            ticket.max_validations = 999
+        elif ticket_type == TicketType.MONTH_PASS:
+            ticket.valid_until = now + timedelta(days=30)
+            ticket.max_validations = 999
+        elif ticket_type == TicketType.TRANSFER:
+            ticket.valid_until = now + timedelta(minutes=30)
+            ticket.max_validations = 1
+
+        # Nota: current_ticket_id deve ser definido após o ticket ser commitado
+        # pois ticket.id só estará disponível após o flush/commit
+
+        return ticket
+
+    def wait_at_station(self, station_id: uuid.UUID):
+        """Faz o agente aguardar em uma estação.
+
+        Args:
+            station_id: ID da estação
+        """
+        self.waiting_at_station_id = station_id
+        self.current_location_type = 'station'
+        self.current_location_id = station_id
+
+    def leave_station(self):
+        """Faz o agente sair da estação."""
+        self.waiting_at_station_id = None
 
     def __repr__(self):
         return f"<Agent(id={self.id}, name='{self.name}', age={self.age})>"
@@ -1502,6 +1614,99 @@ class Vehicle(Base):
 
     def __repr__(self):
         return f"<Vehicle(id={self.id}, type='{self.vehicle_type}', license='{self.license_plate}', status='{self.status.value}')>"
+
+
+# Modelo: Ticket (Bilhete de Transporte)
+class Ticket(Base):
+    """Bilhetes de transporte público."""
+    __tablename__ = 'tickets'
+
+    # Identificação
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    ticket_type = Column(SQLEnum(TicketType), default=TicketType.SINGLE, nullable=False)
+    status = Column(SQLEnum(TicketStatus), default=TicketStatus.ACTIVE, nullable=False, index=True)
+
+    # Proprietário
+    agent_id = Column(GUID(), ForeignKey('agents.id'), nullable=False, index=True)
+
+    # Rota e estações
+    route_id = Column(GUID(), ForeignKey('routes.id'), nullable=True)
+    origin_station_id = Column(GUID(), ForeignKey('stations.id'), nullable=True)
+    destination_station_id = Column(GUID(), ForeignKey('stations.id'), nullable=True)
+
+    # Validade
+    purchased_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    valid_from = Column(DateTime, default=datetime.utcnow, nullable=False)
+    valid_until = Column(DateTime, nullable=True)
+    used_at = Column(DateTime, nullable=True)
+
+    # Valor
+    price = Column(DECIMAL(10, 2), default=0.00)
+    fare_zone = Column(Integer, default=1)
+
+    # Validação
+    validation_count = Column(Integer, default=0, comment="Número de validações")
+    max_validations = Column(Integer, default=1, comment="Máximo de validações permitidas")
+
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    cancelled_at = Column(DateTime, nullable=True)
+    notes = Column(Text, default="")
+
+    # Constraints
+    __table_args__ = (
+        CheckConstraint('validation_count >= 0', name='check_validation_count_positive'),
+        CheckConstraint('validation_count <= max_validations', name='check_validation_within_max'),
+        Index('idx_ticket_agent', 'agent_id'),
+        Index('idx_ticket_status', 'status'),
+        Index('idx_ticket_validity', 'valid_from', 'valid_until'),
+    )
+
+    # Relacionamentos
+    agent = relationship('Agent', foreign_keys=[agent_id], back_populates='tickets')
+    route = relationship('Route', foreign_keys=[route_id])
+    origin_station = relationship('Station', foreign_keys=[origin_station_id])
+    destination_station = relationship('Station', foreign_keys=[destination_station_id])
+
+    def is_valid(self) -> bool:
+        """Verifica se o bilhete é válido no momento atual."""
+        if self.status != TicketStatus.ACTIVE:
+            return False
+
+        now = datetime.utcnow()
+        if now < self.valid_from:
+            return False
+
+        if self.valid_until and now > self.valid_until:
+            self.status = TicketStatus.EXPIRED
+            return False
+
+        if self.validation_count >= self.max_validations:
+            return False
+
+        return True
+
+    def validate(self) -> bool:
+        """Valida (usa) o bilhete."""
+        if not self.is_valid():
+            return False
+
+        self.validation_count += 1
+        if not self.used_at:
+            self.used_at = datetime.utcnow()
+
+        if self.validation_count >= self.max_validations:
+            self.status = TicketStatus.USED
+
+        return True
+
+    def cancel(self):
+        """Cancela o bilhete."""
+        self.status = TicketStatus.CANCELLED
+        self.cancelled_at = datetime.utcnow()
+
+    def __repr__(self):
+        return f"<Ticket(id={self.id}, type='{self.ticket_type.value}', status='{self.status.value}', agent_id={self.agent_id})>"
 
 
 # Modelo: Event (Evento)

@@ -153,6 +153,36 @@ class AgentQueries:
             'by_health': {health: count for health, count in by_health}
         }
 
+    def get_waiting_at_station(self, station_id: uuid.UUID) -> List[Agent]:
+        """Retorna agentes aguardando em uma estação.
+
+        Args:
+            station_id: UUID da estação
+
+        Returns:
+            Lista de agentes aguardando
+        """
+        return self.session.query(Agent).filter(
+            Agent.waiting_at_station_id == station_id,
+            Agent.is_deleted == False
+        ).all()
+
+    def get_with_active_ticket(self) -> List[Agent]:
+        """Retorna agentes com bilhete válido.
+
+        Returns:
+            Lista de agentes com bilhete ativo
+        """
+        from backend.database.models import Ticket, TicketStatus
+
+        return self.session.query(Agent).join(
+            Ticket,
+            Agent.current_ticket_id == Ticket.id
+        ).filter(
+            Ticket.status == TicketStatus.ACTIVE,
+            Agent.is_deleted == False
+        ).all()
+
 
 class BuildingQueries:
     """Queries relacionadas a edifícios."""
