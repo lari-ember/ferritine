@@ -10,8 +10,8 @@ import uuid
 
 from backend.database.models import (
     Agent, Building, Vehicle, Event, EconomicStat, 
-    Profession, Routine, NamePool,
-    CreatedBy, HealthStatus, AgentStatus, Gender
+    Profession, Routine, NamePool, Station,
+    CreatedBy, HealthStatus, AgentStatus, Gender, StationType, StationStatus
 )
 
 
@@ -377,6 +377,308 @@ class NamePoolQueries:
         return name
 
 
+class StationQueries:
+    """Queries relacionadas a estações de transporte."""
+
+    def __init__(self, session: Session):
+        self.session = session
+
+    def get_by_id(self, station_id: uuid.UUID) -> Optional[Station]:
+        """Busca estação por ID.
+
+        Args:
+            station_id: UUID da estação
+
+        Returns:
+            Station ou None se não encontrada
+        """
+        return self.session.query(Station).filter(
+            Station.id == station_id
+        ).first()
+
+    def get_all(self, active_only: bool = True) -> List[Station]:
+        """Retorna todas as estações.
+
+        Args:
+            active_only: Se True, retorna apenas estações ativas
+
+        Returns:
+            Lista de estações
+        """
+        query = self.session.query(Station)
+        if active_only:
+            query = query.filter(
+                Station.status == StationStatus.ACTIVE,
+                Station.is_operational == True
+            )
+        return query.all()
+
+    def get_by_type(self, station_type: StationType) -> List[Station]:
+        """Filtra estações por tipo.
+
+        Args:
+            station_type: Tipo de estação (ex: METRO_STATION, BUS_STOP_TUBE)
+
+        Returns:
+            Lista de estações do tipo especificado
+        """
+        return self.session.query(Station).filter(
+            Station.station_type == station_type,
+            Station.is_operational == True
+        ).all()
+
+    def get_by_building(self, building_id: uuid.UUID) -> List[Station]:
+        """Retorna estações de um edifício.
+
+        Args:
+            building_id: UUID do edifício
+
+        Returns:
+            Lista de estações dentro/anexas ao edifício
+        """
+        return self.session.query(Station).filter(
+            Station.building_id == building_id
+        ).all()
+
+    def get_nearest_station(self, x: int, y: int,
+                          station_type: StationType = None,
+                          max_distance: int = None) -> Optional[Station]:
+        """Encontra a estação mais próxima de uma coordenada.
+
+        Args:
+            x: Coordenada X
+            y: Coordenada Y
+            station_type: Tipo de estação (opcional)
+            max_distance: Distância máxima em tiles (opcional)
+
+        Returns:
+            Estação mais próxima ou None
+        """
+        query = self.session.query(
+            Station,
+            func.sqrt(
+                func.pow(Station.x - x, 2) +
+                func.pow(Station.y - y, 2)
+            ).label('distance')
+        ).filter(
+            Station.is_operational == True,
+            Station.status == StationStatus.ACTIVE
+        )
+
+        if station_type:
+            query = query.filter(Station.station_type == station_type)
+
+        if max_distance:
+            query = query.filter(
+                func.sqrt(
+                    func.pow(Station.x - x, 2) +
+                    func.pow(Station.y - y, 2)
+                ) <= max_distance
+            )
+
+        result = query.order_by('distance').first()
+        return result[0] if result else None
+
+    def get_available_for_docking(self, vehicle_type: str = None,
+                                  min_capacity: int = 1) -> List[Station]:
+        """Retorna estações com capacidade disponível para embarque.
+
+        Args:
+            vehicle_type: Tipo de veículo (opcional, para filtrar estações compatíveis)
+            min_capacity: Capacidade mínima livre necessária
+
+        Returns:
+            Lista de estações disponíveis
+        """
+        # Mapeamento de tipos de veículos para tipos de estações compatíveis
+        vehicle_station_map = {
+            'train': [StationType.TRAIN_PLATFORM, StationType.TRAIN_STOP_LOCAL,
+                     StationType.TRAIN_STOP_EXPRESS],
+            'bus': [StationType.BUS_STOP_SIMPLE, StationType.BUS_STOP_SHELTER,
+                   StationType.BUS_STOP_TUBE, StationType.BUS_STATION_LOCAL,
+                   StationType.BRT_STATION],
+            'metro': [StationType.METRO_STATION, StationType.METRO_PLATFORM],
+            'tram': [StationType.TRAM_STOP, StationType.TRAM_PLATFORM]
+        }
+
+        query = self.session.query(Station).filter(
+            Station.is_operational == True,
+            Station.status == StationStatus.ACTIVE,
+            Station.serves_passengers == True,
+            (Station.max_queue_length - Station.current_queue_length) >= min_capacity
+        )
+
+        if vehicle_type and vehicle_type in vehicle_station_map:
+            query = query.filter(
+                Station.station_type.in_(vehicle_station_map[vehicle_type])
+            )
+
+        return query.all()
+
+    def get_waiting_passengers_count(self, station_id: uuid.UUID) -> int:
+        """Conta passageiros esperando em uma estação.
+
+        Args:
+            station_id: UUID da estação
+
+        Returns:
+            Número de passageiros aguardando
+        """
+        station = self.get_by_id(station_id)
+        return station.current_queue_length if station else 0
+
+    def update_condition(self, station_id: uuid.UUID, condition: int) -> Optional[Station]:
+        """Atualiza a condição de uma estação.
+
+        Args:
+            station_id: UUID da estação
+            condition: Valor de condição (0-100)
+
+        Returns:
+            Estação atualizada ou None
+        """
+        station = self.get_by_id(station_id)
+        if station:
+            # A validação já está no modelo
+            station.condition_value = condition
+
+            # Atualizar status se necessário
+            if condition < 20:
+                station.status = StationStatus.MAINTENANCE
+                station.is_operational = False
+            elif condition >= 50:
+                if station.status == StationStatus.MAINTENANCE:
+                    station.status = StationStatus.ACTIVE
+                    station.is_operational = True
+
+            self.session.flush()
+        return station
+
+    def create(self, **kwargs) -> Station:
+        """Cria uma nova estação.
+
+        Args:
+            **kwargs: Atributos da estação
+
+        Returns:
+            Estação criada
+        """
+        station = Station(**kwargs)
+        self.session.add(station)
+        self.session.flush()
+        return station
+
+    def update(self, station_id: uuid.UUID, **kwargs) -> Optional[Station]:
+        """Atualiza uma estação.
+
+        Args:
+            station_id: UUID da estação
+            **kwargs: Atributos a atualizar
+
+        Returns:
+            Estação atualizada ou None
+        """
+        station = self.get_by_id(station_id)
+        if station:
+            for key, value in kwargs.items():
+                if hasattr(station, key):
+                    setattr(station, key, value)
+            self.session.flush()
+        return station
+
+    def get_overcrowded_stations(self, threshold: float = 0.9) -> List[Station]:
+        """Retorna estações superlotadas.
+
+        Args:
+            threshold: Percentual de ocupação considerado superlotado (0-1)
+
+        Returns:
+            Lista de estações superlotadas
+        """
+        return self.session.query(Station).filter(
+            Station.is_operational == True,
+            Station.max_queue_length > 0,
+            (Station.current_queue_length / Station.max_queue_length) >= threshold
+        ).all()
+
+    def get_by_operator(self, company_id: uuid.UUID) -> List[Station]:
+        """Retorna estações operadas por uma empresa.
+
+        Args:
+            company_id: UUID da empresa operadora
+
+        Returns:
+            Lista de estações
+        """
+        return self.session.query(Station).filter(
+            Station.operator_company_id == company_id
+        ).all()
+
+    def get_multimodal_stations(self) -> List[Station]:
+        """Retorna estações multimodais (conectadas a outras estações).
+
+        Returns:
+            Lista de estações multimodais
+        """
+        return self.session.query(Station).filter(
+            Station.connects_to_stations != None,
+            func.json_array_length(Station.connects_to_stations) > 0
+        ).all()
+
+    def get_needing_maintenance(self) -> List[Station]:
+        """Retorna estações que precisam de manutenção.
+
+        Returns:
+            Lista de estações
+        """
+        return self.session.query(Station).filter(
+            or_(
+                Station.condition_value < 50,
+                and_(
+                    Station.next_maintenance_at != None,
+                    Station.next_maintenance_at <= datetime.utcnow()
+                )
+            )
+        ).all()
+
+    def get_statistics(self) -> Dict[str, Any]:
+        """Retorna estatísticas sobre estações.
+
+        Returns:
+            Dicionário com estatísticas
+        """
+        total = self.session.query(func.count(Station.id)).scalar()
+
+        operational = self.session.query(func.count(Station.id)).filter(
+            Station.is_operational == True
+        ).scalar()
+
+        avg_condition = self.session.query(func.avg(Station.condition_value)).scalar()
+
+        total_passengers_waiting = self.session.query(
+            func.sum(Station.current_queue_length)
+        ).scalar()
+
+        by_type = self.session.query(
+            Station.station_type,
+            func.count(Station.id)
+        ).group_by(Station.station_type).all()
+
+        by_status = self.session.query(
+            Station.status,
+            func.count(Station.id)
+        ).group_by(Station.status).all()
+
+        return {
+            'total': total or 0,
+            'operational': operational or 0,
+            'average_condition': float(avg_condition) if avg_condition else 0.0,
+            'total_passengers_waiting': int(total_passengers_waiting) if total_passengers_waiting else 0,
+            'by_type': {str(stype.value): count for stype, count in by_type},
+            'by_status': {str(status.value): count for status, count in by_status}
+        }
+
+
 class DatabaseQueries:
     """Classe principal que agrupa todas as queries."""
     
@@ -389,7 +691,8 @@ class DatabaseQueries:
         self.economic_stats = EconomicStatQueries(session)
         self.professions = ProfessionQueries(session)
         self.names = NamePoolQueries(session)
-    
+        self.stations = StationQueries(session)
+
     def commit(self):
         """Commit das alterações."""
         self.session.commit()
