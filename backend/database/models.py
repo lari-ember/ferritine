@@ -6,12 +6,12 @@ Implementa persistência usando PostgreSQL e SQLAlchemy.
 from sqlalchemy import (
     create_engine, Column, Integer, String, Float, Boolean,
     DateTime, ForeignKey, Text, DECIMAL, CHAR, Enum as SQLEnum,
-    JSON, CheckConstraint, Index, TypeDecorator
+    JSON, CheckConstraint, Index, TypeDecorator, Time
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from typing import List, Optional
 import uuid
 import enum
@@ -231,6 +231,89 @@ class TicketType(str, enum.Enum):
     WEEK_PASS = 'week_pass'     # Passe semanal
     MONTH_PASS = 'month_pass'   # Passe mensal
     TRANSFER = 'transfer'       # Transferência/integração
+
+
+class StationType(str, enum.Enum):
+    """Tipos de estações de transporte por era histórica e tecnologia"""
+
+    # ==================== ERA 1: VAPOR (1860-1920) ====================
+    TRAIN_STEAM = "train_steam"  # Estação de maria fumaça
+    TRAM_HORSE = "tram_horse"  # Bonde puxado a cavalo
+
+    # ==================== ERA 2: INDUSTRIALIZAÇÃO (1920-1960) ====================
+    TRAIN_DIESEL = "train_diesel"  # Estação diesel
+    TRAIN_ELECTRIC = "train_electric"  # Estação elétrica
+    BUS_DIESEL = "bus_diesel"  # Terminal de ônibus a diesel
+    TRAM_ELECTRIC = "tram_electric"  # Bonde elétrico
+    TROLLEYBUS = "trolleybus"  # Ônibus elétrico (trólebus)
+
+    # ==================== ERA 3: MODERNIZAÇÃO (1960-2000) ====================
+    SUBWAY = "subway"  # Estação de metrô
+    BRT = "brt"  # Bus Rapid Transit
+    MONORAIL = "monorail"  # Monotrilho
+    CABLE_CAR = "cable_car"  # Teleférico urbano
+
+    # ==================== ERA 4: CONTEMPORÂNEO (2000+) ====================
+    TRAIN_HIGH_SPEED = "train_high_speed"  # Trem de alta velocidade
+    LIGHT_RAIL = "light_rail"  # VLT (Veículo Leve sobre Trilhos)
+    BUS_ELECTRIC = "bus_electric"  # Ônibus elétrico moderno
+    BUS_HYDROGEN = "bus_hydrogen"  # Ônibus a hidrogênio
+    MAGLEV = "maglev"  # Trem de levitação magnética
+    AUTONOMOUS_SHUTTLE = "autonomous_shuttle"  # Shuttle autônomo
+
+    # ==================== FUTURO/ESPECIAL ====================
+    HYPERLOOP = "hyperloop"  # Hyperloop (futurista)
+    AERIAL_TRAM = "aerial_tram"  # Teleférico aéreo
+    WATER_TAXI = "water_taxi"  # Táxi aquático
+    FERRY_ELECTRIC = "ferry_electric"  # Balsa elétrica
+
+    # ==================== MULTIMODAL ====================
+    MIXED_TRAIN_BUS = "mixed_train_bus"  # Estação trem + ônibus
+    MIXED_SUBWAY_BUS = "mixed_subway_bus"  # Estação metrô + ônibus
+    MIXED_FULL = "mixed_full"  # Integração completa
+    TRANSPORT_HUB = "transport_hub"  # Hub central multimodal
+
+    # ==================== CARGA ====================
+    CARGO_TRAIN = "cargo_train"  # Terminal de carga ferroviária
+    CARGO_PORT = "cargo_port"  # Porto de carga
+    LOGISTICS_CENTER = "logistics_center"  # Centro logístico
+
+
+class RouteFrequencyPattern(str, enum.Enum):
+    """Padrões de frequência de rotas"""
+    CONSTANT = "constant"  # Mesma frequência o dia to do
+    PEAK_HOURS = "peak_hours"  # Mais frequente em horários de pico
+    RUSH_HOUR = "rush_hour"  # Concentrado em rush (manhã/tarde)
+    WEEKEND = "weekend"  # Padrão de fim de semana
+    NIGHT_SERVICE = "night_service"  # Serviço noturno reduzido
+    SEASONAL = "seasonal"  # Varia por estação do ano
+    EVENT_BASED = "event_based"  # Baseado em eventos especiais
+    ON_DEMAND = "on_demand"  # Sob demanda (futuro)
+
+
+class RoutePriority(str, enum.Enum):
+    """Prioridade da rota no sistema"""
+    CRITICAL = "critical"  # Linha crítica (não pode parar)
+    HIGH = "high"  # Alta prioridade
+    MEDIUM = "medium"  # Prioridade média
+    LOW = "low"  # Baixa prioridade
+    TOURIST = "tourist"  # Turística (pode ser desativada)
+    EXPERIMENTAL = "experimental"  # Experimental (teste)
+
+
+class RouteStatus(str, enum.Enum):
+    """Status operacional da rota"""
+    ACTIVE = "active"  # Operando normalmente
+    DELAYED = "delayed"  # Atrasada
+    SUSPENDED = "suspended"  # Suspensa temporariamente
+    MAINTENANCE = "maintenance"  # Manutenção programada
+    EMERGENCY_STOP = "emergency_stop"  # Parada emergencial
+    STRIKE = "strike"  # Em greve
+    WEATHER_SUSPENDED = "weather_suspended"  # Suspensa por clima
+    ACCIDENT = "accident"  # Acidente na linha
+    OVERCROWDED = "overcrowded"  # Superlotada
+    UNDER_CONSTRUCTION = "under_construction"  # Em construção
+    DEACTIVATED = "deactivated"  # Desativada permanentemente
 
 
 # Modelo principal: Agent (Agente)
@@ -1145,6 +1228,8 @@ class Vehicle(Base):
                                comment="Estação atual onde o veículo está (se aplicável)")
     assigned_route_id = Column(GUID(), ForeignKey('routes.id'), nullable=True,
                               comment="Rota atribuída ao veículo (diferente de route_id que é rota ativa)")
+    current_route_id = Column(GUID(), ForeignKey('routes.id'), nullable=True)
+    current_route = relationship("Route", foreign_keys=[current_route_id], back_populates="vehicles")
 
     # ==================== OPERAÇÃO ====================
     is_docked = Column(Boolean, default=False, comment="Se está acoplado/parado em uma estação")
@@ -1816,37 +1901,407 @@ class Company(Base):
 
 # Modelo: Route / Line
 class Route(Base):
-    """Rotas de transporte (trem, ônibus, etc)."""
+    """
+    Rotas de transporte público com sistema complexo de simulação.
+    Suporta múltiplas eras, padrões dinâmicos e economia realista.
+    """
     __tablename__ = 'routes'
 
+    # ==================== IDENTIFICAÇÃO ====================
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
-    name = Column(String(100), nullable=False)
-    route_type = Column(String(50), nullable=False, comment="train, bus, tram, etc")
+    name = Column(String(200), nullable=False, index=True)
+    code = Column(String(20), unique=True, index=True, comment="Ex: L1, 501, Norte-Sul")
+    description = Column(Text, comment="Descrição da linha para passageiros")
 
-    # Configuração da rota
-    stops = Column(JSON, default=list, comment="Lista ordenada de stop_ids com offsets de tempo")
-    frequency = Column(Integer, default=30, comment="Frequência em minutos")
+    # ==================== TIPO E ERA ====================
+    route_type = Column(SQLEnum(StationType), nullable=False)
+    era = Column(Integer, default=1, comment="1-4, era histórica da rota")
+    technology_level = Column(Integer, default=1, comment="0-10, nível tecnológico")
 
-    # Status
-    is_active = Column(Boolean, default=True)
+    # ==================== OPERAÇÃO BÁSICA ====================
+    operating_hours_start = Column(Time, nullable=False, default='06:00:00')
+    operating_hours_end = Column(Time, nullable=False, default='22:00:00')
+    frequency_minutes = Column(Integer, default=30, comment="Intervalo entre partidas")
+    frequency_pattern = Column(
+        SQLEnum(RouteFrequencyPattern),
+        default=RouteFrequencyPattern.CONSTANT
+    )
 
-    # Operação
-    company_id = Column(GUID(), ForeignKey('companies.id'), nullable=True)
+    # ==================== HORÁRIOS DINÂMICOS ====================
+    # Frequência em horários de pico (se aplicável)
+    peak_frequency_minutes = Column(Integer, nullable=True, comment="Frequência no pico")
+    peak_morning_start = Column(Time, default='07:00:00')
+    peak_morning_end = Column(Time, default='09:00:00')
+    peak_evening_start = Column(Time, default='17:00:00')
+    peak_evening_end = Column(Time, default='19:00:00')
 
-    # Estatísticas
-    total_distance = Column(Float, default=0.0, comment="Distância total da rota em km")
-    average_duration = Column(Integer, default=0, comment="Duração média em minutos")
+    # Operação em finais de semana
+    weekend_frequency_minutes = Column(Integer, nullable=True)
+    operates_sunday = Column(Boolean, default=True)
+    operates_holidays = Column(Boolean, default=True)
 
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
+    # ==================== STATUS E PRIORIDADE ====================
+    is_active = Column(Boolean, default=True, index=True)
+    status = Column(SQLEnum(RouteStatus), default=RouteStatus.ACTIVE)
+    priority = Column(SQLEnum(RoutePriority), default=RoutePriority.MEDIUM)
+
+    # ==================== CAPACIDADE E DEMANDA ====================
+    max_vehicles_operating = Column(Integer, default=1, comment="Veículos simultâneos na rota")
+    current_vehicles_operating = Column(Integer, default=0)
+    average_daily_passengers = Column(Integer, default=0)
+    peak_daily_passengers = Column(Integer, default=0)
+    capacity_utilization = Column(Float, default=0.0, comment="0.0-1.0, utilização média")
+
+    # ==================== ECONOMIA ====================
+    fare_base = Column(DECIMAL(10, 2), default=3.50, comment="Tarifa base")
+    fare_peak = Column(DECIMAL(10, 2), nullable=True, comment="Tarifa em horário de pico")
+    fare_weekend = Column(DECIMAL(10, 2), nullable=True, comment="Tarifa fim de semana")
+    fare_integration = Column(DECIMAL(10, 2), nullable=True, comment="Tarifa integração")
+
+    # Receitas e custos
+    monthly_revenue = Column(DECIMAL(15, 2), default=0.00)
+    monthly_operational_cost = Column(DECIMAL(15, 2), default=0.00)
+    monthly_maintenance_cost = Column(DECIMAL(15, 2), default=0.00)
+    fuel_cost_per_km = Column(DECIMAL(10, 2), default=0.00)
+
+    # ==================== PERFORMANCE ====================
+    total_distance_km = Column(Float, default=0.0, comment="Distância total da rota")
+    average_trip_duration_minutes = Column(Integer, default=30)
+    on_time_performance = Column(Float, default=1.0, comment="0.0-1.0, pontualidade")
+    accident_count = Column(Integer, default=0)
+    breakdown_count = Column(Integer, default=0)
+    customer_satisfaction = Column(Float, default=0.75, comment="0.0-1.0")
+
+    # ==================== INFRAESTRUTURA ====================
+    requires_dedicated_lane = Column(Boolean, default=False, comment="BRT, faixa exclusiva")
+    has_platform_doors = Column(Boolean, default=False, comment="Portas de plataforma")
+    is_electrified = Column(Boolean, default=False)
+    has_real_time_tracking = Column(Boolean, default=False)
+    has_wifi = Column(Boolean, default=False)
+    has_ac = Column(Boolean, default=False)
+    is_accessible = Column(Boolean, default=True, comment="Acessível para PCD")
+
+    # ==================== AMBIENTAL ====================
+    co2_emissions_kg_per_km = Column(Float, default=0.0)
+    noise_level_db = Column(Float, default=70.0)
+    energy_consumption_kwh_per_km = Column(Float, default=0.0)
+    is_zero_emission = Column(Boolean, default=False)
+
+    # ==================== GAMEPLAY/SIMULAÇÃO ====================
+    construction_progress = Column(Integer, default=100, comment="0-100%, se em construção")
+    popularity = Column(Float, default=0.5, comment="0.0-1.0, popularidade com cidadãos")
+    political_support = Column(Float, default=0.5, comment="0.0-1.0, apoio político")
+
+    # Eventos históricos
+    inaugurated_at = Column(DateTime, nullable=True)
+    last_accident_at = Column(DateTime, nullable=True)
+    last_strike_at = Column(DateTime, nullable=True)
+
+    # ==================== INTEGRAÇÃO IOT ====================
+    has_physical_model = Column(Boolean, default=False, comment="Tem modelo físico na maquete?")
+    sensor_ids = Column(JSON, default=list, comment="IDs dos sensores físicos associados")
+
+    # ==================== DADOS COMPLEXOS (JSON) ====================
+    # Horários especiais (feriados, eventos)
+    special_schedules = Column(
+        JSON,
+        default=list,
+        comment="[{date, frequency, reason}]"
+    )
+
+    # Histórico de mudanças de tarifa
+    fare_history = Column(
+        JSON,
+        default=list,
+        comment="[{date, old_fare, new_fare, reason}]"
+    )
+
+    # Incidentes
+    incidents = Column(
+        JSON,
+        default=list,
+        comment="[{date, type, description, impact}]"
+    )
+
+    # Estatísticas por dia da semana
+    weekly_stats = Column(
+        JSON,
+        default=dict,
+        comment="{monday: {passengers, revenue}, ...}"
+    )
+
+    # Rotas alternativas (em caso de interrupção)
+    alternative_routes = Column(
+        JSON,
+        default=list,
+        comment="[route_id1, route_id2] rotas alternativas"
+    )
+
+    # ==================== TIMESTAMPS ====================
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    deactivated_at = Column(DateTime, nullable=True)
 
-    # Relacionamentos reversos
-    vehicles = relationship('Vehicle', foreign_keys='Vehicle.route_id', back_populates='route')
+    # ==================== RELACIONAMENTOS ====================
+    stations = relationship(
+        "RouteStation",
+        back_populates="route",
+        cascade="all, delete-orphan",
+        order_by="RouteStation.sequence_order"
+    )
+
+    vehicles = relationship(
+        "Vehicle",
+        foreign_keys="Vehicle.current_route_id",
+        back_populates="current_route"
+    )
+
+    # ==================== MÉTODOS ====================
+
+    def calculate_daily_trips(self) -> int:
+        """Calcula número de viagens por dia"""
+        hours_operating = (
+                self.operating_hours_end.hour * 60 + self.operating_hours_end.minute -
+                (self.operating_hours_start.hour * 60 + self.operating_hours_start.minute)
+        )
+        return hours_operating // self.frequency_minutes if self.frequency_minutes > 0 else 0
+
+    def calculate_monthly_profit(self) -> float:
+        """Calcula lucro mensal"""
+        return float(self.monthly_revenue - self.monthly_operational_cost - self.monthly_maintenance_cost)
+
+    def is_profitable(self) -> bool:
+        """Verifica se a rota é lucrativa"""
+        return self.calculate_monthly_profit() > 0
+
+    def get_current_frequency(self, current_time: time) -> int:
+        """Retorna frequência baseada no horário atual"""
+        if self.frequency_pattern == RouteFrequencyPattern.CONSTANT:
+            return self.frequency_minutes
+
+        # Verificar se está em horário de pico
+        if self.peak_frequency_minutes:
+            if (self.peak_morning_start <= current_time <= self.peak_morning_end or
+                    self.peak_evening_start <= current_time <= self.peak_evening_end):
+                return self.peak_frequency_minutes
+
+        return self.frequency_minutes
+
+    def get_current_fare(self, is_weekend: bool = False, is_peak: bool = False) -> float:
+        """Retorna tarifa baseada em condições"""
+        if is_weekend and self.fare_weekend:
+            return float(self.fare_weekend)
+        if is_peak and self.fare_peak:
+            return float(self.fare_peak)
+        return float(self.fare_base)
+
+    def add_incident(self, incident_type: str, description: str, impact: str):
+        """Adiciona incidente ao histórico"""
+        if self.incidents is None:
+            self.incidents = []
+
+        self.incidents.append({
+            "date": datetime.utcnow().isoformat(),
+            "type": incident_type,
+            "description": description,
+            "impact": impact
+        })
+
+    def update_satisfaction(self, delta: float):
+        """Atualiza satisfação do cliente"""
+        self.customer_satisfaction = max(0.0, min(1.0, self.customer_satisfaction + delta))
+
+    @property
+    def is_operational(self) -> bool:
+        """Verifica se a rota está operacional"""
+        return (
+                self.is_active and
+                self.status in [RouteStatus.ACTIVE, RouteStatus.DELAYED, RouteStatus.OVERCROWDED]
+        )
+
+    @property
+    def needs_expansion(self) -> bool:
+        """Verifica se precisa de mais veículos"""
+        return self.capacity_utilization > 0.9
 
     def __repr__(self):
-        return f"<Route(id={self.id}, name='{self.name}', type='{self.route_type}')>"
+        return f"<Route(id={self.id}, code='{self.code}', name='{self.name}', type='{self.route_type.value}')>"
 
+
+class RouteStation(Base):
+    """
+    Associação entre rotas e estações com dados complexos de operação.
+    Suporta múltiplos veículos, horários dinâmicos e estatísticas detalhadas.
+    """
+    __tablename__ = 'route_stations'
+
+    # ==================== CHAVES PRIMÁRIAS ====================
+    route_id = Column(GUID(), ForeignKey('routes.id', ondelete='CASCADE'), primary_key=True)
+    station_id = Column(GUID(), ForeignKey('buildings.id', ondelete='CASCADE'), primary_key=True)
+
+    # ==================== ORDEM E TEMPO ====================
+    sequence_order = Column(Integer, nullable=False, comment="Posição na rota (1, 2, 3...)")
+    estimated_stop_minutes = Column(Integer, default=2, comment="Tempo de parada padrão")
+    peak_stop_minutes = Column(Integer, nullable=True, comment="Tempo de parada no pico")
+
+    # Distância da estação anterior (em km)
+    distance_from_previous_km = Column(Float, default=0.0)
+
+    # Tempo estimado de viagem da estação anterior (minutos)
+    travel_time_from_previous = Column(Integer, default=0)
+
+    # ==================== OPERAÇÃO ====================
+    is_terminal = Column(Boolean, default=False, comment="É ponta de linha?")
+    is_transfer_point = Column(Boolean, default=False, comment="Ponto de transferência?")
+    allows_boarding = Column(Boolean, default=True)
+    allows_disembarking = Column(Boolean, default=True)
+    is_express_stop = Column(Boolean, default=False, comment="Só expressos param aqui?")
+
+    # ==================== DEMANDA ====================
+    average_daily_boardings = Column(Integer, default=0)
+    average_daily_disembarkings = Column(Integer, default=0)
+    peak_hour_boardings = Column(Integer, default=0)
+    peak_hour_disembarkings = Column(Integer, default=0)
+
+    # Taxa de ocupação média ao sair desta estação
+    average_occupancy_leaving = Column(Float, default=0.0, comment="0.0-1.0")
+
+    # ==================== INFRAESTRUTURA DA PARADA ====================
+    platform_length_meters = Column(Float, nullable=True)
+    number_of_platforms = Column(Integer, default=1)
+    has_shelter = Column(Boolean, default=True)
+    has_seating = Column(Boolean, default=True)
+    has_real_time_display = Column(Boolean, default=False)
+    has_ticket_machine = Column(Boolean, default=False)
+    has_security_camera = Column(Boolean, default=False)
+    lighting_quality = Column(Integer, default=5, comment="0-10")
+
+    # ==================== ACESSIBILIDADE ====================
+    is_wheelchair_accessible = Column(Boolean, default=True)
+    has_tactile_paving = Column(Boolean, default=False)
+    has_audio_announcements = Column(Boolean, default=False)
+    has_elevator = Column(Boolean, default=False)
+    has_escalator = Column(Boolean, default=False)
+
+    # ==================== TRANSFERÊNCIAS ====================
+    # Outras rotas que param nesta estação (JSON com route_ids)
+    connected_routes = Column(
+        JSON,
+        default=list,
+        comment="[route_id1, route_id2] rotas que conectam aqui"
+    )
+
+    # Tempo de transferência estimado para cada rota
+    transfer_times = Column(
+        JSON,
+        default=dict,
+        comment="{route_id: minutes} tempo de transferência"
+    )
+
+    # ==================== HORÁRIOS ESPECIAIS ====================
+    # Horários em que ônibus expressos param aqui
+    express_stop_times = Column(
+        JSON,
+        default=list,
+        comment="[{time, direction}] horários de expresso"
+    )
+
+    # ==================== ESTATÍSTICAS ====================
+    # Passageiros por hora do dia
+    hourly_demand = Column(
+        JSON,
+        default=dict,
+        comment="{0: count, 1: count, ..., 23: count}"
+    )
+
+    # Passageiros por dia da semana
+    weekly_demand = Column(
+        JSON,
+        default=dict,
+        comment="{monday: count, tuesday: count, ...}"
+    )
+
+    # ==================== PROBLEMAS E MANUTENÇÃO ====================
+    last_maintenance = Column(DateTime, nullable=True)
+    condition = Column(Integer, default=100, comment="0-100, estado de conservação")
+    reported_issues = Column(Integer, default=0)
+
+    # Histórico de problemas
+    issues_history = Column(
+        JSON,
+        default=list,
+        comment="[{date, type, description, resolved}]"
+    )
+
+    # ==================== SATISFAÇÃO ====================
+    passenger_satisfaction = Column(Float, default=0.75, comment="0.0-1.0")
+    cleanliness_rating = Column(Integer, default=7, comment="0-10")
+    safety_rating = Column(Integer, default=7, comment="0-10")
+
+    # ==================== TIMESTAMPS ====================
+    added_to_route_at = Column(DateTime, default=datetime.utcnow)
+    removed_from_route_at = Column(DateTime, nullable=True)
+
+    # ==================== CONSTRAINTS ====================
+    __table_args__ = (
+        CheckConstraint('sequence_order > 0', name='check_sequence_positive'),
+        CheckConstraint('estimated_stop_minutes >= 0', name='check_stop_time_non_negative'),
+        CheckConstraint('distance_from_previous_km >= 0', name='check_distance_non_negative'),
+        CheckConstraint('condition >= 0 AND condition <= 100', name='check_condition_range'),
+        CheckConstraint('average_occupancy_leaving >= 0 AND average_occupancy_leaving <= 1',
+                        name='check_occupancy_range'),
+        # Índice composto para buscar estações em ordem
+        Index('ix_route_stations_route_sequence', 'route_id', 'sequence_order'),
+    )
+
+    # ==================== RELACIONAMENTOS ====================
+    route = relationship("Route", back_populates="stations")
+    station = relationship("Building", foreign_keys=[station_id])
+
+    # ==================== MÉTODOS ====================
+
+    def get_estimated_stop_time(self, is_peak: bool = False) -> int:
+        """Retorna tempo de parada baseado em condições"""
+        if is_peak and self.peak_stop_minutes:
+            return self.peak_stop_minutes
+        return self.estimated_stop_minutes
+
+    def calculate_total_daily_passengers(self) -> int:
+        """Calcula total de passageiros por dia"""
+        return self.average_daily_boardings + self.average_daily_disembarkings
+
+    def add_issue(self, issue_type: str, description: str):
+        """Adiciona problema ao histórico"""
+        if self.issues_history is None:
+            self.issues_history = []
+
+        self.issues_history.append({
+            "date": datetime.utcnow().isoformat(),
+            "type": issue_type,
+            "description": description,
+            "resolved": False
+        })
+        self.reported_issues += 1
+
+    def resolve_latest_issue(self):
+        """Marca último problema como resolvido"""
+        if self.issues_history and len(self.issues_history) > 0:
+            self.issues_history[-1]["resolved"] = True
+            self.issues_history[-1]["resolved_at"] = datetime.utcnow().isoformat()
+            self.reported_issues = max(0, self.reported_issues - 1)
+
+    @property
+    def needs_maintenance(self) -> bool:
+        """Verifica se precisa de manutenção"""
+        return self.condition < 60 or self.reported_issues > 3
+
+    @property
+    def is_overcrowded(self) -> bool:
+        """Verifica se está superlotada"""
+        return self.average_occupancy_leaving > 0.9
+
+    def __repr__(self):
+        return f"<RouteStation(route_id={self.route_id}, station_id={self.station_id}, order={self.sequence_order})>"
 
 # Modelo: Stop / Station
 class Stop(Base):
