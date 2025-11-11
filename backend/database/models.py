@@ -10,7 +10,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import relationship, sessionmaker, validates
 from datetime import datetime, timedelta, time
 from typing import List, Optional
 import uuid
@@ -329,7 +329,7 @@ class Agent(Base):
     name = Column(String(200), nullable=False, index=True)
 
     # Skills e rotina
-    skills = Column(JSON, default=dict, comment="Habilidades do agente em formato JSON")
+    skills = Column(JSON, default=lambda: {}, comment="Habilidades do agente em formato JSON")
     routine_id = Column(GUID(), ForeignKey('routines.id'), nullable=True)
 
     # Metadata de criação
@@ -381,7 +381,7 @@ class Agent(Base):
     # Humor/Emoção/Sentimento (polimórfico, complexo como The Sims 4)
     mood_data = Column(
         JSON,
-        default=dict,
+        default=lambda: {},
         comment="Sistema complexo de humor que afeta comportamento"
     )
 
@@ -393,7 +393,7 @@ class Agent(Base):
     )
 
     # Inventário
-    inventory = Column(JSON, default=list, comment="Itens que o agente possui")
+    inventory = Column(JSON, default=lambda: [], comment="Itens que o agente possui")
 
     # Status atual
     current_status = Column(SQLEnum(AgentStatus), default=AgentStatus.IDLE)
@@ -405,14 +405,14 @@ class Agent(Base):
     # Objetivos (curto/médio/longo prazo, sonhos)
     goals = Column(
         JSON,
-        default=dict,
+        default=lambda: {},
         comment="Objetivos: curto prazo, médio prazo, longo prazo, sonhos"
     )
 
     # Personalidade (adaptativa)
     personality = Column(
         JSON,
-        default=dict,
+        default=lambda: {},
         comment="Aleatória para IA, adaptativa por genética e traumas"
     )
 
@@ -439,14 +439,14 @@ class Agent(Base):
     # Histórico (eventos importantes, família, traumas, etc)
     history = Column(
         JSON,
-        default=list,
+        default=lambda: [],
         comment="Eventos importantes, origem familiar, interesses para biografia"
     )
 
     # Genética complexa
     genetics = Column(
         JSON,
-        default=dict,
+        default=lambda: {},
         comment="Sistema de genética complexa herdada dos pais"
     )
 
@@ -599,7 +599,7 @@ class Routine(Base):
     # Estrutura da rotina em JSON
     schedule = Column(
         JSON,
-        default=list,
+        default=lambda: [],
         comment="Programação por hora do dia"
     )
 
@@ -624,7 +624,7 @@ class Profession(Base):
 
     # Atributos econômicos
     base_salary = Column(DECIMAL(13, 2), default=1000.00)
-    required_skills = Column(JSON, default=list)
+    required_skills = Column(JSON, default=lambda: [])
 
     # Tipo de trabalho
     work_sector = Column(String(50), comment="residential, commercial, industrial, public, etc")
@@ -985,9 +985,9 @@ class Building(Base):
     inauguration_date = Column(DateTime, nullable=True)
     last_renovation = Column(DateTime, nullable=True)
     last_inspection = Column(DateTime, nullable=True)
-    major_events = Column(JSON, default=list, comment="Eventos importantes (incêndios, reformas, etc)")
-    ownership_history = Column(JSON, default=list, comment="Mudanças de proprietário")
-    renovations = Column(JSON, default=list, comment="Histórico de reformas")
+    major_events = Column(JSON, default=lambda: [], comment="Eventos importantes (incêndios, reformas, etc)")
+    ownership_history = Column(JSON, default=lambda: [], comment="Mudanças de proprietário")
+    renovations = Column(JSON, default=lambda: [], comment="Histórico de reformas")
 
     # MEIO AMBIENTE
     energy_consumption_kwh_month = Column(Float, default=0.0)
@@ -1043,7 +1043,7 @@ class Building(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     demolished_at = Column(DateTime, nullable=True, comment="Soft delete")
-    tags = Column(JSON, default=list, comment="Ex: ['historic', 'landmark']")
+    tags = Column(JSON, default=lambda: [], comment="Ex: ['historic', 'landmark']")
     notes = Column(Text, default="", comment="Notas do jogador")
 
     # RELACIONAMENTOS
@@ -1306,8 +1306,6 @@ class Vehicle(Base):
     )
 
     # ==================== VALIDAÇÕES ====================
-
-    from sqlalchemy.orm import validates
 
     @validates('current_fuel')
     def validate_fuel(self, key, value):
@@ -1809,7 +1807,7 @@ class Event(Base):
     vehicle_id = Column(GUID(), ForeignKey('vehicles.id'), nullable=True)
 
     # Dados adicionais
-    event_data = Column(JSON, default=dict)
+    event_data = Column(JSON, default=lambda: {})
 
     # Timestamp
     occurred_at = Column(DateTime, default=datetime.utcnow, index=True)
@@ -1919,8 +1917,8 @@ class Route(Base):
     technology_level = Column(Integer, default=1, comment="0-10, nível tecnológico")
 
     # ==================== OPERAÇÃO BÁSICA ====================
-    operating_hours_start = Column(Time, nullable=False, default='06:00:00')
-    operating_hours_end = Column(Time, nullable=False, default='22:00:00')
+    operating_hours_start = Column(Time, nullable=False, default=time(6, 0))
+    operating_hours_end = Column(Time, nullable=False, default=time(22, 0))
     frequency_minutes = Column(Integer, default=30, comment="Intervalo entre partidas")
     frequency_pattern = Column(
         SQLEnum(RouteFrequencyPattern),
@@ -1930,10 +1928,10 @@ class Route(Base):
     # ==================== HORÁRIOS DINÂMICOS ====================
     # Frequência em horários de pico (se aplicável)
     peak_frequency_minutes = Column(Integer, nullable=True, comment="Frequência no pico")
-    peak_morning_start = Column(Time, default='07:00:00')
-    peak_morning_end = Column(Time, default='09:00:00')
-    peak_evening_start = Column(Time, default='17:00:00')
-    peak_evening_end = Column(Time, default='19:00:00')
+    peak_morning_start = Column(Time, default=time(7, 0))
+    peak_morning_end = Column(Time, default=time(9, 0))
+    peak_evening_start = Column(Time, default=time(17, 0))
+    peak_evening_end = Column(Time, default=time(19, 0))
 
     # Operação em finais de semana
     weekend_frequency_minutes = Column(Integer, nullable=True)
@@ -1999,41 +1997,41 @@ class Route(Base):
 
     # ==================== INTEGRAÇÃO IOT ====================
     has_physical_model = Column(Boolean, default=False, comment="Tem modelo físico na maquete?")
-    sensor_ids = Column(JSON, default=list, comment="IDs dos sensores físicos associados")
+    sensor_ids = Column(JSON, default=lambda: [], comment="IDs dos sensores físicos associados")
 
     # ==================== DADOS COMPLEXOS (JSON) ====================
     # Horários especiais (feriados, eventos)
     special_schedules = Column(
         JSON,
-        default=list,
+        default=lambda: [],
         comment="[{date, frequency, reason}]"
     )
 
     # Histórico de mudanças de tarifa
     fare_history = Column(
         JSON,
-        default=list,
+        default=lambda: [],
         comment="[{date, old_fare, new_fare, reason}]"
     )
 
     # Incidentes
     incidents = Column(
         JSON,
-        default=list,
+        default=lambda: [],
         comment="[{date, type, description, impact}]"
     )
 
     # Estatísticas por dia da semana
     weekly_stats = Column(
         JSON,
-        default=dict,
+        default=lambda: {},
         comment="{monday: {passengers, revenue}, ...}"
     )
 
     # Rotas alternativas (em caso de interrupção)
     alternative_routes = Column(
         JSON,
-        default=list,
+        default=lambda: [],
         comment="[route_id1, route_id2] rotas alternativas"
     )
 
@@ -2187,14 +2185,14 @@ class RouteStation(Base):
     # Outras rotas que param nesta estação (JSON com route_ids)
     connected_routes = Column(
         JSON,
-        default=list,
+        default=lambda: [],
         comment="[route_id1, route_id2] rotas que conectam aqui"
     )
 
     # Tempo de transferência estimado para cada rota
     transfer_times = Column(
         JSON,
-        default=dict,
+        default=lambda: {},
         comment="{route_id: minutes} tempo de transferência"
     )
 
@@ -2202,7 +2200,7 @@ class RouteStation(Base):
     # Horários em que ônibus expressos param aqui
     express_stop_times = Column(
         JSON,
-        default=list,
+        default=lambda: [],
         comment="[{time, direction}] horários de expresso"
     )
 
@@ -2210,14 +2208,14 @@ class RouteStation(Base):
     # Passageiros por hora do dia
     hourly_demand = Column(
         JSON,
-        default=dict,
+        default=lambda: {},
         comment="{0: count, 1: count, ..., 23: count}"
     )
 
     # Passageiros por dia da semana
     weekly_demand = Column(
         JSON,
-        default=dict,
+        default=lambda: {},
         comment="{monday: count, tuesday: count, ...}"
     )
 
@@ -2229,7 +2227,7 @@ class RouteStation(Base):
     # Histórico de problemas
     issues_history = Column(
         JSON,
-        default=list,
+        default=lambda: [],
         comment="[{date, type, description, resolved}]"
     )
 
@@ -2442,8 +2440,8 @@ class Schedule(Base):
     end_time = Column(DateTime, nullable=False)
 
     # Recorrência
-    recurrence = Column(JSON, default=dict, comment="Padrão de recorrência (daily, weekly, etc)")
-    exceptions = Column(JSON, default=list, comment="Datas de exceção")
+    recurrence = Column(JSON, default=lambda: {}, comment="Padrão de recorrência (daily, weekly, etc)")
+    exceptions = Column(JSON, default=lambda: [], comment="Datas de exceção")
 
     # Status
     is_active = Column(Boolean, default=True)
@@ -2513,7 +2511,7 @@ class SensorEvent(Base):
     processed_at = Column(DateTime, nullable=True)
 
     # Contexto
-    context = Column(JSON, default=dict, comment="Dados adicionais sobre a leitura")
+    context = Column(JSON, default=lambda: {}, comment="Dados adicionais sobre a leitura")
 
     # Timestamps
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
@@ -2542,7 +2540,7 @@ class LogEntry(Base):
     message = Column(Text, nullable=False)
 
     # Contexto
-    context = Column(JSON, default=dict, comment="Dados contextuais do log")
+    context = Column(JSON, default=lambda: {}, comment="Dados contextuais do log")
     source = Column(String(100), nullable=True, comment="Serviço/módulo de origem")
 
     # Relacionamentos opcionais
@@ -2812,7 +2810,7 @@ class Station(Base):
     serves_cargo = Column(Boolean, default=False)
 
     # Horário de operação (JSON: {"monday": ["06:00-23:00"], ...})
-    operating_hours = Column(JSON, default=dict, comment="Horários por dia da semana")
+    operating_hours = Column(JSON, default=lambda: {}, comment="Horários por dia da semana")
 
     # ==================== ACESSIBILIDADE ====================
     is_accessible = Column(Boolean, default=False, comment="Acessível para PCD")
@@ -2836,7 +2834,7 @@ class Station(Base):
     has_drinking_fountain = Column(Boolean, default=False)
 
     # ==================== INTEGRAÇÃO MODAL ====================
-    connects_to_stations = Column(JSON, default=list, comment="IDs de estações conectadas")
+    connects_to_stations = Column(JSON, default=lambda: [], comment="IDs de estações conectadas")
     transfer_time_minutes = Column(Integer, default=5, comment="Tempo médio de transferência")
     allows_bike_parking = Column(Boolean, default=False)
     bike_parking_capacity = Column(Integer, default=0)
@@ -2887,7 +2885,7 @@ class Station(Base):
     closed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    tags = Column(JSON, default=list, comment="Tags customizadas")
+    tags = Column(JSON, default=lambda: [], comment="Tags customizadas")
     notes = Column(Text, default="")
 
     # ==================== CONSTRAINTS ====================
@@ -2908,7 +2906,6 @@ class Station(Base):
 
     # ==================== VALIDAÇÕES ====================
 
-    from sqlalchemy.orm import validates
 
     @validates('current_queue_length')
     def validate_queue(self, key, value):
