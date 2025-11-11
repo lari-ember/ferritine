@@ -16,7 +16,7 @@ from backend.database.models import (
 
 
 class AgentQueries:
-    """Queries relacionadas a agentes. """
+    """Queries relacionadas a agentes."""
     
     def __init__(self, session: Session):
         self.session = session
