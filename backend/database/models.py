@@ -1288,6 +1288,13 @@ class Vehicle(Base):
     current_station = relationship('Station', foreign_keys=[current_station_id])
     assigned_route = relationship('Route', foreign_keys=[assigned_route_id])
 
+    # Issue 4.9: Horários de veículos
+    schedules = relationship(
+        'Schedule',
+        back_populates='vehicle',
+        cascade='all, delete-orphan'
+    )
+
     # Relacionamentos polimórficos (viewonly para performance)
     maintenance_records = relationship(
         'MaintenanceRecord',
@@ -2054,6 +2061,13 @@ class Route(Base):
         back_populates="current_route"
     )
 
+    # Issue 4.9: Horários de veículos
+    schedules = relationship(
+        "Schedule",
+        back_populates="route",
+        cascade="all, delete-orphan"
+    )
+
     # ==================== MÉTODOS ====================
 
     def calculate_daily_trips(self) -> int:
@@ -2423,35 +2437,116 @@ class MaintenanceRecord(Base):
         return f"<MaintenanceRecord(id={self.id}, type='{self.maintenance_type}', cost={self.cost})>"
 
 
-# Modelo: Schedule / Timetable
+# Modelo: Schedule / Timetable (Issue 4.9)
 class Schedule(Base):
-    """Horários e cronogramas (trabalho, transporte, eventos)."""
+    """
+    Horários de veículos em rotas (Issue 4.9).
+
+    Representa a programação de saídas de veículos em rotas específicas,
+    incluindo horário de partida e dias da semana de operação.
+    """
     __tablename__ = 'schedules'
 
+    # ==================== IDENTIFICAÇÃO ====================
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
-    name = Column(String(100), nullable=False)
 
-    # Polimórfico: pode pertencer a agent, route, building, etc
-    owner_type = Column(String(50), nullable=False, comment="agent, route, building, event")
-    owner_id = Column(GUID(), nullable=False)
+    # ==================== RELACIONAMENTOS ====================
+    route_id = Column(GUID(), ForeignKey('routes.id', ondelete='CASCADE'), nullable=False, index=True)
+    vehicle_id = Column(GUID(), ForeignKey('vehicles.id', ondelete='CASCADE'), nullable=False, index=True)
 
-    # Horários
-    start_time = Column(DateTime, nullable=False)
-    end_time = Column(DateTime, nullable=False)
+    # ==================== HORÁRIO ====================
+    departure_time = Column(Time, nullable=False, comment="Horário de partida (HH:MM:SS)")
 
-    # Recorrência
-    recurrence = Column(JSON, default=lambda: {}, comment="Padrão de recorrência (daily, weekly, etc)")
-    exceptions = Column(JSON, default=lambda: [], comment="Datas de exceção")
+    # ==================== DIAS DA SEMANA ====================
+    # Array de inteiros [0-6] onde 0=Monday, 6=Sunday (compatível com datetime.weekday())
+    days_of_week = Column(
+        JSON,
+        nullable=False,
+        default=lambda: [0, 1, 2, 3, 4],  # Segunda a sexta por padrão
+        comment="Array de dias da semana [0=Mon, 1=Tue, ..., 6=Sun]"
+    )
 
-    # Status
-    is_active = Column(Boolean, default=True)
+    # ==================== STATUS ====================
+    is_active = Column(Boolean, default=True, index=True, comment="Se o horário está ativo")
 
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
+    # ==================== TIMESTAMPS ====================
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # ==================== RELACIONAMENTOS ORM ====================
+    route = relationship("Route", back_populates="schedules")
+    vehicle = relationship("Vehicle", back_populates="schedules")
+
+    # ==================== CONSTRAINTS ====================
+    __table_args__ = (
+        Index('idx_schedule_route_departure', 'route_id', 'departure_time'),
+        Index('idx_schedule_vehicle', 'vehicle_id'),
+        Index('idx_schedule_active', 'is_active'),
+    )
+
+    # ==================== MÉTODOS ====================
+
+    def is_active_today(self, target_date: Optional[datetime] = None) -> bool:
+        """
+        Verifica se o horário está ativo no dia especificado.
+
+        Args:
+            target_date: Data para verificar (default: hoje)
+
+        Returns:
+            True se o horário está ativo e opera no dia da semana especificado
+        """
+        if not self.is_active:
+            return False
+
+        if target_date is None:
+            target_date = datetime.utcnow()
+
+        weekday = target_date.weekday()  # 0=Monday, 6=Sunday
+        return weekday in self.days_of_week
+
+    def get_next_departure(self, from_datetime: Optional[datetime] = None) -> Optional[datetime]:
+        """
+        Calcula a próxima data/hora de partida a partir de um momento.
+
+        Args:
+            from_datetime: Momento de referência (default: agora)
+
+        Returns:
+            DateTime da próxima partida ou None se não houver
+        """
+        if not self.is_active:
+            return None
+
+        if from_datetime is None:
+            from_datetime = datetime.utcnow()
+
+        if not self.days_of_week:
+            return None
+
+        # Buscar próxima ocorrência nos próximos 7 dias
+        for day_offset in range(8):  # Verificar hoje + próximos 7 dias
+            check_date = from_datetime + timedelta(days=day_offset)
+            weekday = check_date.weekday()
+
+            if weekday in self.days_of_week:
+                # Combinar data com horário de partida
+                next_departure = datetime.combine(
+                    check_date.date(),
+                    self.departure_time
+                )
+
+                # Se for hoje, verificar se já passou
+                if day_offset == 0 and next_departure <= from_datetime:
+                    continue
+
+                return next_departure
+
+        return None
+
     def __repr__(self):
-        return f"<Schedule(id={self.id}, owner_type='{self.owner_type}', name='{self.name}')>"
+        days_str = ','.join(str(d) for d in sorted(self.days_of_week)) if self.days_of_week else 'none'
+        return f"<Schedule(id={self.id}, route_id={self.route_id}, vehicle_id={self.vehicle_id}, time={self.departure_time}, days=[{days_str}])>"
 
 
 # Modelo: Tile / MapCell / Location

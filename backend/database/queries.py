@@ -12,7 +12,7 @@ from backend.database.models import (
     Agent, Building, Vehicle, Event, EconomicStat, 
     Profession, Routine, NamePool, Station,
     CreatedBy, HealthStatus, AgentStatus, Gender, StationType, StationStatus,
-    Ticket, TicketStatus, TicketType, Route
+    Ticket, TicketStatus, TicketType, Route, Schedule
 )
 
 
@@ -926,6 +926,228 @@ class TicketQueries:
         }
 
 
+class ScheduleQueries:
+    """Queries relacionadas a horários de veículos em rotas (Issue 4.9)."""
+
+    def __init__(self, session: Session):
+        self.session = session
+
+    # ---------- CRUD Básico ----------
+
+    def create(self, route_id: uuid.UUID, vehicle_id: uuid.UUID,
+               departure_time: datetime.time, days_of_week: List[int],
+               is_active: bool = True) -> Schedule:
+        """
+        Cria um novo horário de veículo em rota.
+
+        Args:
+            route_id: UUID da rota
+            vehicle_id: UUID do veículo
+            departure_time: Horário de partida (time object)
+            days_of_week: Lista de dias [0=Monday, 1=Tuesday, ..., 6=Sunday]
+            is_active: Se o horário está ativo
+
+        Returns:
+            Schedule criado
+        """
+        schedule = Schedule(
+            route_id=route_id,
+            vehicle_id=vehicle_id,
+            departure_time=departure_time,
+            days_of_week=days_of_week,
+            is_active=is_active
+        )
+        self.session.add(schedule)
+        self.session.flush()
+        return schedule
+
+    def get_by_id(self, schedule_id: uuid.UUID) -> Optional[Schedule]:
+        """Busca horário por ID."""
+        return self.session.query(Schedule).filter(Schedule.id == schedule_id).first()
+
+    def update(self, schedule_id: uuid.UUID, **kwargs) -> Optional[Schedule]:
+        """
+        Atualiza um horário.
+
+        Args:
+            schedule_id: UUID do horário
+            **kwargs: Campos a atualizar
+
+        Returns:
+            Schedule atualizado ou None
+        """
+        schedule = self.get_by_id(schedule_id)
+        if schedule:
+            for key, value in kwargs.items():
+                if hasattr(schedule, key):
+                    setattr(schedule, key, value)
+            self.session.flush()
+        return schedule
+
+    def delete(self, schedule_id: uuid.UUID) -> bool:
+        """
+        Remove um horário.
+
+        Args:
+            schedule_id: UUID do horário
+
+        Returns:
+            True se removido, False se não encontrado
+        """
+        schedule = self.get_by_id(schedule_id)
+        if schedule:
+            self.session.delete(schedule)
+            self.session.flush()
+            return True
+        return False
+
+    # ---------- Consultas Específicas ----------
+
+    def get_by_route(self, route_id: uuid.UUID, only_active: bool = True) -> List[Schedule]:
+        """
+        Retorna todos os horários de uma rota.
+
+        Args:
+            route_id: UUID da rota
+            only_active: Se deve retornar apenas horários ativos
+
+        Returns:
+            Lista de horários
+        """
+        query = self.session.query(Schedule).filter(Schedule.route_id == route_id)
+        if only_active:
+            query = query.filter(Schedule.is_active == True)
+        return query.order_by(Schedule.departure_time).all()
+
+    def get_by_vehicle(self, vehicle_id: uuid.UUID, only_active: bool = True) -> List[Schedule]:
+        """
+        Retorna todos os horários de um veículo.
+
+        Args:
+            vehicle_id: UUID do veículo
+            only_active: Se deve retornar apenas horários ativos
+
+        Returns:
+            Lista de horários
+        """
+        query = self.session.query(Schedule).filter(Schedule.vehicle_id == vehicle_id)
+        if only_active:
+            query = query.filter(Schedule.is_active == True)
+        return query.order_by(Schedule.departure_time).all()
+
+    def get_active_schedules(self) -> List[Schedule]:
+        """Retorna todos os horários ativos."""
+        return self.session.query(Schedule).filter(
+            Schedule.is_active == True
+        ).order_by(Schedule.route_id, Schedule.departure_time).all()
+
+    def get_schedules_for_day(self, weekday: int, route_id: Optional[uuid.UUID] = None) -> List[Schedule]:
+        """
+        Retorna horários ativos para um dia da semana específico.
+
+        Args:
+            weekday: Dia da semana (0=Monday, 6=Sunday)
+            route_id: UUID da rota (opcional, para filtrar por rota)
+
+        Returns:
+            Lista de horários que operam no dia especificado
+        """
+        query = self.session.query(Schedule).filter(
+            Schedule.is_active == True
+        )
+
+        if route_id:
+            query = query.filter(Schedule.route_id == route_id)
+
+        # Filtrar por dia da semana (PostgreSQL e SQLite suportam JSON)
+        # Para SQLite, usamos json_each; para PostgreSQL, jsonb_array_elements
+        all_schedules = query.all()
+
+        # Filtrar em Python para compatibilidade
+        filtered = [s for s in all_schedules if weekday in s.days_of_week]
+
+        return sorted(filtered, key=lambda s: s.departure_time)
+
+    def get_next_departures(self, route_id: uuid.UUID,
+                           from_datetime: Optional[datetime] = None,
+                           limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Retorna as próximas partidas de uma rota.
+
+        Args:
+            route_id: UUID da rota
+            from_datetime: Momento de referência (default: agora)
+            limit: Número máximo de partidas a retornar
+
+        Returns:
+            Lista de dicionários com schedule e próximo horário de partida
+        """
+        if from_datetime is None:
+            from_datetime = datetime.utcnow()
+
+        schedules = self.get_by_route(route_id, only_active=True)
+
+        departures = []
+        for schedule in schedules:
+            next_departure = schedule.get_next_departure(from_datetime)
+            if next_departure:
+                departures.append({
+                    'schedule': schedule,
+                    'next_departure': next_departure,
+                    'vehicle_id': schedule.vehicle_id,
+                    'departure_time': schedule.departure_time
+                })
+
+        # Ordenar por próxima partida
+        departures.sort(key=lambda x: x['next_departure'])
+
+        return departures[:limit]
+
+    def get_schedules_for_today(self, route_id: Optional[uuid.UUID] = None) -> List[Schedule]:
+        """
+        Retorna horários ativos para hoje.
+
+        Args:
+            route_id: UUID da rota (opcional)
+
+        Returns:
+            Lista de horários que operam hoje
+        """
+        today = datetime.utcnow()
+        weekday = today.weekday()
+        return self.get_schedules_for_day(weekday, route_id)
+
+    def check_vehicle_availability(self, vehicle_id: uuid.UUID,
+                                   departure_time: datetime.time,
+                                   days_of_week: List[int]) -> bool:
+        """
+        Verifica se um veículo está disponível para um novo horário.
+
+        Args:
+            vehicle_id: UUID do veículo
+            departure_time: Horário de partida desejado
+            days_of_week: Dias da semana desejados
+
+        Returns:
+            True se disponível, False se houver conflito
+        """
+        existing_schedules = self.get_by_vehicle(vehicle_id, only_active=True)
+
+        for schedule in existing_schedules:
+            # Verificar se há sobreposição de dias
+            overlapping_days = set(schedule.days_of_week) & set(days_of_week)
+            if overlapping_days:
+                # Verificar se horários são muito próximos (menos de 30 min)
+                time_diff = abs(
+                    (datetime.combine(datetime.today(), departure_time) -
+                     datetime.combine(datetime.today(), schedule.departure_time)).total_seconds()
+                )
+                if time_diff < 1800:  # 30 minutos
+                    return False
+
+        return True
+
+
 class DatabaseQueries:
     """Classe principal que agrupa todas as queries."""
     
@@ -941,6 +1163,8 @@ class DatabaseQueries:
         self.stations = StationQueries(session)
         # Issue 4.8
         self.tickets = TicketQueries(session)
+        # Issue 4.9
+        self.schedules = ScheduleQueries(session)
 
     def commit(self):
         """Commit das alterações."""
