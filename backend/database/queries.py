@@ -3,15 +3,16 @@ Queries e operações comuns do banco de dados.
 """
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_
+from sqlalchemy import func, and_, or_, desc
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 
 from backend.database.models import (
     Agent, Building, Vehicle, Event, EconomicStat, 
     Profession, Routine, NamePool, Station,
-    CreatedBy, HealthStatus, AgentStatus, Gender, StationType, StationStatus
+    CreatedBy, HealthStatus, AgentStatus, Gender, StationType, StationStatus,
+    Ticket, TicketStatus, TicketType, Route
 )
 
 
@@ -781,6 +782,150 @@ class StationQueries:
         }
 
 
+# ==================== TICKET QUERIES (Issue 4.8) ====================
+class TicketQueries:
+    """Queries relacionadas a bilhetes de transporte (Issue 4.8)."""
+
+    def __init__(self, session: Session):
+        self.session = session
+
+    # ---------- CRUD / Básico ----------
+    def get_by_id(self, ticket_id: uuid.UUID) -> Optional[Ticket]:
+        """Retorna bilhete pelo ID."""
+        return self.session.query(Ticket).filter(Ticket.id == ticket_id).first()
+
+    def create_ticket(
+        self,
+        agent_id: uuid.UUID,
+        route_id: Optional[uuid.UUID] = None,
+        origin_id: Optional[uuid.UUID] = None,
+        destination_id: Optional[uuid.UUID] = None,
+        ticket_type: TicketType = TicketType.SINGLE,
+        price: Optional[float] = None
+    ) -> Ticket:
+        """Cria bilhete seguindo regras de validade por tipo.
+
+        Se price for None e route_id existir, usa fare_base da rota.
+        Não realiza commit; responsabilidade do chamador.
+        """
+        # Inferir preço se não passado
+        if price is None and route_id:
+            route = self.session.query(Route).filter(Route.id == route_id).first()
+            if route and hasattr(route, 'fare_base'):
+                price = route.fare_base
+        if price is None:
+            price = 0.00
+
+        ticket = Ticket(
+            agent_id=agent_id,
+            route_id=route_id,
+            origin_station_id=origin_id,
+            destination_station_id=destination_id,
+            ticket_type=ticket_type,
+            price=price,
+            status=TicketStatus.ACTIVE
+        )
+
+        now = datetime.utcnow()
+        ticket.valid_from = now
+
+        # Regras de validade similares a Agent.purchase_ticket
+        if ticket_type == TicketType.SINGLE:
+            ticket.valid_until = now + timedelta(hours=2)
+            ticket.max_validations = 1
+        elif ticket_type == TicketType.RETURN:
+            ticket.valid_until = now + timedelta(days=1)
+            ticket.max_validations = 2
+        elif ticket_type == TicketType.DAY_PASS:
+            ticket.valid_until = now + timedelta(days=1)
+            ticket.max_validations = 999
+        elif ticket_type == TicketType.WEEK_PASS:
+            ticket.valid_until = now + timedelta(days=7)
+            ticket.max_validations = 999
+        elif ticket_type == TicketType.MONTH_PASS:
+            ticket.valid_until = now + timedelta(days=30)
+            ticket.max_validations = 999
+        elif ticket_type == TicketType.TRANSFER:
+            ticket.valid_until = now + timedelta(minutes=30)
+            ticket.max_validations = 1
+
+        self.session.add(ticket)
+        self.session.flush()  # Obter ID
+        return ticket
+
+    # ---------- Operações ----------
+    def validate_ticket(self, ticket_id: uuid.UUID) -> bool:
+        """Valida (usa) um bilhete pelo ID."""
+        ticket = self.get_by_id(ticket_id)
+        if not ticket:
+            return False
+        return ticket.validate()
+
+    # ---------- Listagens ----------
+    def get_active_tickets(self, agent_id: uuid.UUID = None) -> List[Ticket]:
+        """Retorna bilhetes ativos (opcional filtrar por agente)."""
+        query = self.session.query(Ticket).filter(Ticket.status == TicketStatus.ACTIVE)
+        if agent_id:
+            query = query.filter(Ticket.agent_id == agent_id)
+        return query.order_by(desc(Ticket.purchased_at)).all()
+
+    def get_by_agent(self, agent_id: uuid.UUID) -> List[Ticket]:
+        """Retorna todos os bilhetes de um agente."""
+        return self.session.query(Ticket).filter(Ticket.agent_id == agent_id).order_by(desc(Ticket.purchased_at)).all()
+
+    # ---------- Métricas / Estatísticas ----------
+    def get_revenue_by_period(self, start: datetime, end: datetime) -> float:
+        """Retorna a soma de preços de bilhetes não cancelados no período."""
+        total = self.session.query(func.sum(Ticket.price)).filter(
+            Ticket.purchased_at >= start,
+            Ticket.purchased_at <= end,
+            Ticket.status != TicketStatus.CANCELLED
+        ).scalar()
+        return float(total) if total else 0.0
+
+    def get_usage_statistics(self, period: str) -> Dict[str, Any]:
+        """Retorna estatísticas de uso de bilhetes.
+
+        period: 'day' | 'week' | 'month' | 'all'
+        """
+        now = datetime.utcnow()
+        if period == 'day':
+            start = now - timedelta(days=1)
+        elif period == 'week':
+            start = now - timedelta(weeks=1)
+        elif period == 'month':
+            start = now - timedelta(days=30)
+        elif period == 'all':
+            start = None
+        else:
+            raise ValueError("Período inválido. Use: day, week, month, all")
+
+        query = self.session.query(Ticket)
+        if start:
+            query = query.filter(Ticket.purchased_at >= start)
+
+        tickets = query.all()
+        total = len(tickets)
+        active = sum(1 for t in tickets if t.status == TicketStatus.ACTIVE)
+        used = sum(1 for t in tickets if t.status == TicketStatus.USED)
+        expired = sum(1 for t in tickets if t.status == TicketStatus.EXPIRED)
+        cancelled = sum(1 for t in tickets if t.status == TicketStatus.CANCELLED)
+        validations = sum(t.validation_count for t in tickets)
+        revenue = sum(float(t.price) for t in tickets if t.status != TicketStatus.CANCELLED)
+
+        return {
+            'period': period,
+            'total': total,
+            'active': active,
+            'used': used,
+            'expired': expired,
+            'cancelled': cancelled,
+            'avg_validations': (validations / total) if total else 0.0,
+            'revenue_total': revenue,
+            'usage_rate': (used / total) if total else 0.0
+        }
+
+
 class DatabaseQueries:
     """Classe principal que agrupa todas as queries."""
     
@@ -794,6 +939,8 @@ class DatabaseQueries:
         self.professions = ProfessionQueries(session)
         self.names = NamePoolQueries(session)
         self.stations = StationQueries(session)
+        # Issue 4.8
+        self.tickets = TicketQueries(session)
 
     def commit(self):
         """Commit das alterações."""
@@ -802,4 +949,3 @@ class DatabaseQueries:
     def rollback(self):
         """Rollback das alterações."""
         self.session.rollback()
-
