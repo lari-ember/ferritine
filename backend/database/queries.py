@@ -1148,6 +1148,249 @@ class ScheduleQueries:
         return True
 
 
+class TransportOperatorQueries:
+    """Queries relacionadas a operadoras de transporte (Issue 4.10 e 4.11)."""
+
+    def __init__(self, session: Session):
+        self.session = session
+
+    # ---------- CRUD Básico ----------
+
+    def get_by_id(self, operator_id: uuid.UUID) -> Optional['TransportOperator']:
+        """
+        Retorna operadora pelo ID.
+
+        Args:
+            operator_id: UUID da operadora
+
+        Returns:
+            TransportOperator ou None
+        """
+        from backend.database.models import TransportOperator
+        return self.session.query(TransportOperator).filter(
+            TransportOperator.id == operator_id
+        ).first()
+
+    def get_all(self, include_inactive: bool = False) -> List['TransportOperator']:
+        """
+        Retorna todas as operadoras.
+
+        Args:
+            include_inactive: Se True, inclui operadoras inativas
+
+        Returns:
+            Lista de TransportOperator
+        """
+        from backend.database.models import TransportOperator
+        query = self.session.query(TransportOperator)
+        if not include_inactive:
+            query = query.filter(TransportOperator.is_active == True)
+        return query.order_by(TransportOperator.name).all()
+
+    def get_by_type(self, operator_type: 'StationType') -> List['TransportOperator']:
+        """
+        Retorna operadoras por tipo de transporte.
+
+        Args:
+            operator_type: Tipo de estação/transporte
+
+        Returns:
+            Lista de operadoras do tipo especificado
+        """
+        from backend.database.models import TransportOperator
+        return self.session.query(TransportOperator).filter(
+            TransportOperator.operator_type == operator_type,
+            TransportOperator.is_active == True
+        ).order_by(TransportOperator.name).all()
+
+    def create(self, name: str, operator_type: 'StationType',
+               revenue: float = 0.0, operational_costs: float = 0.0,
+               is_active: bool = True) -> 'TransportOperator':
+        """
+        Cria uma nova operadora de transporte.
+
+        Args:
+            name: Nome da operadora
+            operator_type: Tipo de transporte operado
+            revenue: Receita inicial
+            operational_costs: Custos operacionais iniciais
+            is_active: Se a operadora está ativa
+
+        Returns:
+            TransportOperator criada
+        """
+        from backend.database.models import TransportOperator
+        from decimal import Decimal
+
+        operator = TransportOperator(
+            name=name,
+            operator_type=operator_type,
+            revenue=Decimal(str(revenue)),
+            operational_costs=Decimal(str(operational_costs)),
+            is_active=is_active
+        )
+        self.session.add(operator)
+        self.session.flush()
+        return operator
+
+    def update(self, operator_id: uuid.UUID, **kwargs) -> Optional['TransportOperator']:
+        """
+        Atualiza uma operadora existente.
+
+        Args:
+            operator_id: UUID da operadora
+            **kwargs: Campos a atualizar (name, revenue, operational_costs, is_active)
+
+        Returns:
+            TransportOperator atualizada ou None se não encontrada
+        """
+        from backend.database.models import TransportOperator
+        from decimal import Decimal
+
+        operator = self.get_by_id(operator_id)
+        if not operator:
+            return None
+
+        # Campos permitidos para atualização
+        allowed_fields = {'name', 'operator_type', 'revenue', 'operational_costs', 'is_active'}
+
+        for key, value in kwargs.items():
+            if key in allowed_fields:
+                # Converter para Decimal se for campo financeiro
+                if key in ('revenue', 'operational_costs') and value is not None:
+                    value = Decimal(str(value))
+                setattr(operator, key, value)
+
+        self.session.flush()
+        return operator
+
+    # ---------- Operações de Negócio ----------
+
+    def get_most_profitable(self, limit: int = 10) -> List['TransportOperator']:
+        """
+        Retorna as operadoras mais lucrativas.
+
+        Args:
+            limit: Número máximo de resultados
+
+        Returns:
+            Lista de operadoras ordenadas por lucro (receita - custos)
+        """
+        from backend.database.models import TransportOperator
+
+        # Ordenar por (revenue - operational_costs) DESC
+        operators = self.session.query(TransportOperator).filter(
+            TransportOperator.is_active == True
+        ).all()
+
+        # Calcular lucro e ordenar em Python (já que é uma propriedade)
+        operators_with_profit = [
+            (op, op.get_profit_margin()) for op in operators
+        ]
+        operators_with_profit.sort(key=lambda x: x[1], reverse=True)
+
+        return [op for op, _ in operators_with_profit[:limit]]
+
+    def calculate_daily_revenue(self, operator_id: uuid.UUID, date: datetime) -> float:
+        """
+        Calcula receita diária de uma operadora.
+
+        Args:
+            operator_id: UUID da operadora
+            date: Data para calcular a receita
+
+        Returns:
+            Receita do dia (float)
+        """
+        operator = self.get_by_id(operator_id)
+        if not operator:
+            return 0.0
+
+        return operator.calculate_daily_revenue(date)
+
+    def get_employees(self, operator_id: uuid.UUID) -> List[Agent]:
+        """
+        Retorna todos os funcionários de uma operadora.
+
+        Args:
+            operator_id: UUID da operadora
+
+        Returns:
+            Lista de agentes empregados pela operadora
+        """
+        return self.session.query(Agent).filter(
+            Agent.employer_id == operator_id
+        ).all()
+
+    def assign_vehicle_to_route(self, vehicle_id: uuid.UUID,
+                               route_id: uuid.UUID) -> bool:
+        """
+        Atribui um veículo a uma rota.
+
+        Args:
+            vehicle_id: UUID do veículo
+            route_id: UUID da rota
+
+        Returns:
+            True se bem-sucedido, False caso contrário
+        """
+        vehicle = self.session.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+        route = self.session.query(Route).filter(Route.id == route_id).first()
+
+        if not vehicle or not route:
+            return False
+
+        # Verificar se veículo e rota pertencem à mesma operadora
+        if vehicle.operator_id != route.operator_id:
+            return False
+
+        vehicle.assigned_route_id = route_id
+        self.session.flush()
+        return True
+
+    # ---------- Estatísticas ----------
+
+    def get_statistics(self, operator_id: uuid.UUID) -> Dict[str, Any]:
+        """
+        Retorna estatísticas completas de uma operadora.
+
+        Args:
+            operator_id: UUID da operadora
+
+        Returns:
+            Dicionário com estatísticas
+        """
+        operator = self.get_by_id(operator_id)
+        if not operator:
+            return {}
+
+        routes = [r for r in operator.routes if r.is_active]
+        vehicles = operator.vehicles
+        employees = operator.employees
+
+        return {
+            'operator_id': str(operator.id),
+            'name': operator.name,
+            'type': operator.operator_type.value,
+            'is_active': operator.is_active,
+            'revenue': float(operator.revenue),
+            'operational_costs': float(operator.operational_costs),
+            'profit_margin': operator.get_profit_margin(),
+            'is_profitable': operator.is_profitable,
+            'total_routes': len(operator.routes) if operator.routes else 0,
+            'active_routes': len(routes),
+            'total_vehicles': operator.total_vehicles,
+            'total_employees': operator.total_employees,
+            'employees': [
+                {
+                    'id': str(emp.id),
+                    'name': emp.name,
+                    'profession': emp.profession.name if emp.profession else None
+                } for emp in (employees[:10] if employees else [])  # Limitar a 10
+            ]
+        }
+
+
 class DatabaseQueries:
     """Classe principal que agrupa todas as queries."""
     
@@ -1165,6 +1408,8 @@ class DatabaseQueries:
         self.tickets = TicketQueries(session)
         # Issue 4.9
         self.schedules = ScheduleQueries(session)
+        # Issue 4.10 e 4.11
+        self.transport_operators = TransportOperatorQueries(session)
 
     def commit(self):
         """Commit das alterações."""

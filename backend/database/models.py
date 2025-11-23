@@ -350,6 +350,10 @@ class Agent(Base):
     home_building_id = Column(GUID(), ForeignKey('buildings.id'), nullable=True)
     work_building_id = Column(GUID(), ForeignKey('buildings.id'), nullable=True)
 
+    # Issue 4.10: Empregador (operadora de transporte)
+    employer_id = Column(GUID(), ForeignKey('transport_operators.id'), nullable=True, index=True,
+                        comment="Operadora que emprega este agente")
+
     # Localização atual (polimórfica)
     current_location_type = Column(String(50), nullable=True, comment="building, vehicle, street, etc")
     current_location_id = Column(GUID(), nullable=True)
@@ -474,6 +478,13 @@ class Agent(Base):
         "Building",
         foreign_keys="Building.owner_id",
         back_populates="owner"
+    )
+
+    # Issue 4.10: Empregador (operadora)
+    employer = relationship(
+        "TransportOperator",
+        back_populates="employees",
+        foreign_keys=[employer_id]
     )
 
     # Veículos
@@ -1223,6 +1234,10 @@ class Vehicle(Base):
     home_building_id = Column(GUID(), ForeignKey('buildings.id'), nullable=True,
                              comment="Garagem/depósito onde fica quando inativo")
 
+    # Issue 4.10: Operadora de transporte
+    operator_id = Column(GUID(), ForeignKey('transport_operators.id'), nullable=True, index=True,
+                        comment="Operadora que gerencia este veículo")
+
     # Novos campos para integração com Station
     current_station_id = Column(GUID(), ForeignKey('stations.id'), nullable=True,
                                comment="Estação atual onde o veículo está (se aplicável)")
@@ -1287,6 +1302,13 @@ class Vehicle(Base):
     home_building = relationship('Building', foreign_keys=[home_building_id], back_populates='parked_vehicles')
     current_station = relationship('Station', foreign_keys=[current_station_id])
     assigned_route = relationship('Route', foreign_keys=[assigned_route_id])
+
+    # Issue 4.10: Operadora
+    operator = relationship(
+        'TransportOperator',
+        back_populates='vehicles',
+        foreign_keys=[operator_id]
+    )
 
     # Issue 4.9: Horários de veículos
     schedules = relationship(
@@ -1923,6 +1945,10 @@ class Route(Base):
     era = Column(Integer, default=1, comment="1-4, era histórica da rota")
     technology_level = Column(Integer, default=1, comment="0-10, nível tecnológico")
 
+    # ==================== OPERADORA (Issue 4.10) ====================
+    operator_id = Column(GUID(), ForeignKey('transport_operators.id'), nullable=True, index=True,
+                        comment="Operadora responsável pela rota")
+
     # ==================== OPERAÇÃO BÁSICA ====================
     operating_hours_start = Column(Time, nullable=False, default=time(6, 0))
     operating_hours_end = Column(Time, nullable=False, default=time(22, 0))
@@ -2048,6 +2074,13 @@ class Route(Base):
     deactivated_at = Column(DateTime, nullable=True)
 
     # ==================== RELACIONAMENTOS ====================
+    # Issue 4.10: Operadora
+    operator = relationship(
+        "TransportOperator",
+        back_populates="routes",
+        foreign_keys=[operator_id]
+    )
+
     stations = relationship(
         "RouteStation",
         back_populates="route",
@@ -2138,6 +2171,136 @@ class Route(Base):
 
     def __repr__(self):
         return f"<Route(id={self.id}, code='{self.code}', name='{self.name}', type='{self.route_type.value}')>"
+
+
+# Modelo: TransportOperator (Issue 4.10)
+class TransportOperator(Base):
+    """
+    Operadoras de transporte público (Issue 4.10).
+
+    Representa empresas/entidades que operam sistemas de transporte,
+    gerenciando rotas, veículos e funcionários.
+    """
+    __tablename__ = 'transport_operators'
+
+    # ==================== IDENTIFICAÇÃO ====================
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    name = Column(String(200), nullable=False, index=True, comment="Nome da operadora")
+    operator_type = Column(SQLEnum(StationType), nullable=False, index=True,
+                          comment="Tipo principal de transporte operado")
+
+    # ==================== FINANCEIRO ====================
+    revenue = Column(DECIMAL(15, 2), default=0.00, comment="Receita total")
+    operational_costs = Column(DECIMAL(15, 2), default=0.00, comment="Custos operacionais")
+
+    # ==================== STATUS ====================
+    is_active = Column(Boolean, default=True, index=True, comment="Se a operadora está ativa")
+
+    # ==================== TIMESTAMPS ====================
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # ==================== RELACIONAMENTOS ====================
+    routes = relationship(
+        'Route',
+        back_populates='operator',
+        foreign_keys='Route.operator_id'
+    )
+
+    vehicles = relationship(
+        'Vehicle',
+        back_populates='operator',
+        foreign_keys='Vehicle.operator_id'
+    )
+
+    employees = relationship(
+        'Agent',
+        back_populates='employer',
+        foreign_keys='Agent.employer_id'
+    )
+
+    # ==================== ÍNDICES ====================
+    __table_args__ = (
+        Index('idx_operator_type', 'operator_type'),
+        Index('idx_operator_active', 'is_active'),
+        Index('idx_operator_name', 'name'),
+    )
+
+    # ==================== PROPRIEDADES CALCULADAS ====================
+
+    @property
+    def total_employees(self) -> int:
+        """Retorna número total de funcionários."""
+        return len(self.employees) if self.employees else 0
+
+    @property
+    def active_routes_count(self) -> int:
+        """Retorna número de rotas ativas."""
+        return sum(1 for route in self.routes if route.is_active) if self.routes else 0
+
+    @property
+    def total_vehicles(self) -> int:
+        """Retorna número total de veículos."""
+        return len(self.vehicles) if self.vehicles else 0
+
+    @property
+    def is_profitable(self) -> bool:
+        """Verifica se a operadora é lucrativa."""
+        return self.get_profit_margin() > 0
+
+    # ==================== MÉTODOS DE NEGÓCIO ====================
+
+    def calculate_daily_revenue(self, date: datetime) -> float:
+        """
+        Calcula receita diária baseada nas rotas da operadora.
+
+        Args:
+            date: Data para calcular a receita
+
+        Returns:
+            Receita total do dia
+        """
+        if not self.routes:
+            return 0.0
+
+        # Soma receita de todas as rotas ativas
+        # Aproximação: monthly_revenue / 30
+        daily_revenue = 0.0
+        for route in self.routes:
+            if route.is_active:
+                daily_revenue += float(route.monthly_revenue) / 30.0
+
+        return daily_revenue
+
+    def calculate_operational_costs(self) -> float:
+        """
+        Calcula custos operacionais totais.
+
+        Returns:
+            Custos operacionais totais
+        """
+        if not self.routes:
+            return float(self.operational_costs)
+
+        # Soma custos de todas as rotas
+        total_costs = float(self.operational_costs)
+        for route in self.routes:
+            total_costs += float(route.monthly_operational_cost)
+            total_costs += float(route.monthly_maintenance_cost)
+
+        return total_costs
+
+    def get_profit_margin(self) -> float:
+        """
+        Calcula margem de lucro.
+
+        Returns:
+            Margem de lucro (receita - custos)
+        """
+        return float(self.revenue) - self.calculate_operational_costs()
+
+    def __repr__(self):
+        return f"<TransportOperator(id={self.id}, name='{self.name}', type='{self.operator_type.value}')>"
 
 
 class RouteStation(Base):

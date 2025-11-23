@@ -669,3 +669,294 @@ class TestScheduleQueries:
         )
         assert available is True
 
+
+# ==================== TRANSPORT OPERATOR TESTS (Issue 4.10 e 4.11) ====================
+@pytest.fixture
+def sample_operator(db_session):
+    """Create a sample transport operator."""
+    from backend.database.models import TransportOperator
+    from decimal import Decimal
+    operator = TransportOperator(
+        name="Metro SP",
+        operator_type=StationType.SUBWAY,
+        revenue=Decimal('1000000.00'),
+        operational_costs=Decimal('750000.00'),
+        is_active=True
+    )
+    db_session.add(operator)
+    db_session.commit()
+    return operator
+class TestTransportOperatorQueries:
+    """Tests for TransportOperatorQueries (Issue 4.10 e 4.11)."""
+    def test_create_operator_basic(self, db):
+        """Test creating a basic transport operator."""
+        operator = db.transport_operators.create(
+            name="CPTM",
+            operator_type=StationType.TRAIN_ELECTRIC,
+            revenue=500000.0,
+            operational_costs=400000.0
+        )
+        assert operator.id is not None
+        assert operator.name == "CPTM"
+        assert operator.operator_type == StationType.TRAIN_ELECTRIC
+        assert float(operator.revenue) == 500000.0
+        assert float(operator.operational_costs) == 400000.0
+        assert operator.is_active is True
+    def test_get_by_id(self, db, sample_operator):
+        """Test getting operator by ID."""
+        operator = db.transport_operators.get_by_id(sample_operator.id)
+        assert operator is not None
+        assert operator.id == sample_operator.id
+        assert operator.name == "Metro SP"
+    def test_get_by_id_not_found(self, db):
+        """Test getting non-existent operator."""
+        fake_id = uuid.uuid4()
+        operator = db.transport_operators.get_by_id(fake_id)
+        assert operator is None
+    def test_get_all_active_only(self, db, sample_operator):
+        """Test getting all active operators."""
+        # Create inactive operator
+        inactive = db.transport_operators.create(
+            name="Inactive Operator",
+            operator_type=StationType.BUS_DIESEL,
+            is_active=False
+        )
+        db.session.commit()
+        operators = db.transport_operators.get_all(include_inactive=False)
+        assert len(operators) == 1
+        assert operators[0].id == sample_operator.id
+    def test_get_all_include_inactive(self, db, sample_operator):
+        """Test getting all operators including inactive."""
+        inactive = db.transport_operators.create(
+            name="Inactive Operator",
+            operator_type=StationType.BUS_DIESEL,
+            is_active=False
+        )
+        db.session.commit()
+        operators = db.transport_operators.get_all(include_inactive=True)
+        assert len(operators) == 2
+    def test_get_by_type(self, db, sample_operator):
+        """Test getting operators by type."""
+        # Create another operator of different type
+        bus_operator = db.transport_operators.create(
+            name="SPTrans",
+            operator_type=StationType.BUS_DIESEL
+        )
+        db.session.commit()
+        subway_operators = db.transport_operators.get_by_type(StationType.SUBWAY)
+        assert len(subway_operators) == 1
+        assert subway_operators[0].id == sample_operator.id
+        bus_operators = db.transport_operators.get_by_type(StationType.BUS_DIESEL)
+        assert len(bus_operators) == 1
+        assert bus_operators[0].id == bus_operator.id
+    def test_update_operator(self, db, sample_operator):
+        """Test updating operator fields."""
+        updated = db.transport_operators.update(
+            sample_operator.id,
+            name="Metro São Paulo",
+            revenue=1500000.0,
+            operational_costs=800000.0
+        )
+        assert updated is not None
+        assert updated.name == "Metro São Paulo"
+        assert float(updated.revenue) == 1500000.0
+        assert float(updated.operational_costs) == 800000.0
+    def test_update_operator_not_found(self, db):
+        """Test updating non-existent operator."""
+        fake_id = uuid.uuid4()
+        result = db.transport_operators.update(fake_id, name="Test")
+        assert result is None
+    def test_get_most_profitable(self, db):
+        """Test getting most profitable operators."""
+        # Create operators with different profit margins
+        op1 = db.transport_operators.create(
+            name="High Profit",
+            operator_type=StationType.SUBWAY,
+            revenue=1000000.0,
+            operational_costs=500000.0  # Profit: 500k
+        )
+        op2 = db.transport_operators.create(
+            name="Low Profit",
+            operator_type=StationType.BUS_DIESEL,
+            revenue=500000.0,
+            operational_costs=450000.0  # Profit: 50k
+        )
+        op3 = db.transport_operators.create(
+            name="Loss Making",
+            operator_type=StationType.TRAM_ELECTRIC,
+            revenue=300000.0,
+            operational_costs=400000.0  # Profit: -100k
+        )
+        db.session.commit()
+        most_profitable = db.transport_operators.get_most_profitable(limit=2)
+        assert len(most_profitable) == 2
+        assert most_profitable[0].id == op1.id
+        assert most_profitable[1].id == op2.id
+    def test_calculate_daily_revenue(self, db, sample_operator, sample_route):
+        """Test calculating daily revenue."""
+        from decimal import Decimal
+        # Assign route to operator
+        sample_route.operator_id = sample_operator.id
+        sample_route.monthly_revenue = Decimal('900000.00')
+        db.session.commit()
+        daily_revenue = db.transport_operators.calculate_daily_revenue(
+            sample_operator.id,
+            datetime.utcnow()
+        )
+        # Should be approximately monthly_revenue / 30
+        assert daily_revenue > 0
+        assert daily_revenue == 900000.0 / 30.0
+    def test_get_employees(self, db, sample_operator, sample_agent):
+        """Test getting operator employees."""
+        # Assign agent as employee
+        sample_agent.employer_id = sample_operator.id
+        db.session.commit()
+        employees = db.transport_operators.get_employees(sample_operator.id)
+        assert len(employees) == 1
+        assert employees[0].id == sample_agent.id
+    def test_get_employees_empty(self, db, sample_operator):
+        """Test getting employees when none exist."""
+        employees = db.transport_operators.get_employees(sample_operator.id)
+        assert len(employees) == 0
+    def test_assign_vehicle_to_route_success(self, db, db_session, sample_operator):
+        """Test successfully assigning vehicle to route."""
+        # Create route and vehicle for same operator
+        route = Route(
+            name="Test Route",
+            route_type=StationType.SUBWAY,
+            operator_id=sample_operator.id,
+            fare_base=Decimal('3.50'),
+            is_active=True
+        )
+        vehicle = Vehicle(
+            name="Train 001",
+            vehicle_type="train",
+            operator_id=sample_operator.id,
+            status=VehicleStatus.ACTIVE,
+            fuel_type=FuelType.ELECTRIC
+        )
+        db_session.add(route)
+        db_session.add(vehicle)
+        db_session.commit()
+        result = db.transport_operators.assign_vehicle_to_route(
+            vehicle.id,
+            route.id
+        )
+        assert result is True
+        db_session.refresh(vehicle)
+        assert vehicle.assigned_route_id == route.id
+    def test_assign_vehicle_to_route_different_operators(self, db, db_session, sample_operator):
+        """Test assigning vehicle to route of different operator (should fail)."""
+        from backend.database.models import TransportOperator
+        # Create another operator
+        other_operator = TransportOperator(
+            name="Other Operator",
+            operator_type=StationType.BUS_DIESEL,
+            is_active=True
+        )
+        db_session.add(other_operator)
+        db_session.commit()
+        # Create route for sample_operator and vehicle for other_operator
+        route = Route(
+            name="Route 1",
+            route_type=StationType.SUBWAY,
+            operator_id=sample_operator.id,
+            fare_base=Decimal('3.50'),
+            is_active=True
+        )
+        vehicle = Vehicle(
+            name="Bus 001",
+            vehicle_type="bus",
+            operator_id=other_operator.id,
+            status=VehicleStatus.ACTIVE,
+            fuel_type=FuelType.DIESEL
+        )
+        db_session.add(route)
+        db_session.add(vehicle)
+        db_session.commit()
+        result = db.transport_operators.assign_vehicle_to_route(
+            vehicle.id,
+            route.id
+        )
+        assert result is False
+    def test_assign_vehicle_to_route_not_found(self, db):
+        """Test assigning non-existent vehicle/route."""
+        fake_vehicle_id = uuid.uuid4()
+        fake_route_id = uuid.uuid4()
+        result = db.transport_operators.assign_vehicle_to_route(
+            fake_vehicle_id,
+            fake_route_id
+        )
+        assert result is False
+    def test_get_statistics(self, db, db_session, sample_operator, sample_agent):
+        """Test getting operator statistics."""
+        from decimal import Decimal
+        # Assign employee
+        sample_agent.employer_id = sample_operator.id
+        # Create route
+        route = Route(
+            name="Route 1",
+            route_type=StationType.SUBWAY,
+            operator_id=sample_operator.id,
+            fare_base=Decimal('3.50'),
+            is_active=True,
+            monthly_revenue=Decimal('50000.00')
+        )
+        # Create vehicle
+        vehicle = Vehicle(
+            name="Vehicle 1",
+            vehicle_type="train",
+            operator_id=sample_operator.id,
+            status=VehicleStatus.ACTIVE,
+            fuel_type=FuelType.ELECTRIC
+        )
+        db_session.add(route)
+        db_session.add(vehicle)
+        db_session.commit()
+        stats = db.transport_operators.get_statistics(sample_operator.id)
+        assert stats['operator_id'] == str(sample_operator.id)
+        assert stats['name'] == "Metro SP"
+        assert stats['type'] == StationType.SUBWAY.value
+        assert stats['is_active'] is True
+        assert stats['total_routes'] == 1
+        assert stats['active_routes'] == 1
+        assert stats['total_vehicles'] == 1
+        assert stats['total_employees'] == 1
+        assert 'profit_margin' in stats
+        assert 'is_profitable' in stats
+    def test_get_statistics_not_found(self, db):
+        """Test getting statistics for non-existent operator."""
+        fake_id = uuid.uuid4()
+        stats = db.transport_operators.get_statistics(fake_id)
+        assert stats == {}
+    def test_operator_profit_margin_calculation(self, db, sample_operator):
+        """Test profit margin calculation."""
+        from decimal import Decimal
+        # Update revenue and costs
+        db.transport_operators.update(
+            sample_operator.id,
+            revenue=1000000.0,
+            operational_costs=700000.0
+        )
+        db.session.commit()
+        operator = db.transport_operators.get_by_id(sample_operator.id)
+        profit_margin = operator.get_profit_margin()
+        assert profit_margin == 300000.0  # 1M - 700k
+    def test_operator_is_profitable_property(self, db):
+        """Test is_profitable property."""
+        from decimal import Decimal
+        profitable = db.transport_operators.create(
+            name="Profitable Op",
+            operator_type=StationType.SUBWAY,
+            revenue=1000000.0,
+            operational_costs=500000.0
+        )
+        not_profitable = db.transport_operators.create(
+            name="Loss Op",
+            operator_type=StationType.BUS_DIESEL,
+            revenue=300000.0,
+            operational_costs=500000.0
+        )
+        db.session.commit()
+        assert profitable.is_profitable is True
+        assert not_profitable.is_profitable is False

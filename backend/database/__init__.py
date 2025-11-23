@@ -16,6 +16,8 @@ from backend.database.models import (
     HealthStatus,
     AgentStatus,
     Gender,
+    TransportOperator,
+    StationType,
 )
 
 from backend.database.connection import (
@@ -37,6 +39,7 @@ from backend.database.queries import (
     EconomicStatQueries,
     ProfessionQueries,
     NamePoolQueries,
+    TransportOperatorQueries,
 )
 
 __all__ = [
@@ -50,11 +53,13 @@ __all__ = [
     'Profession',
     'Routine',
     'NamePool',
+    'TransportOperator',
     # Enums
     'CreatedBy',
     'HealthStatus',
     'AgentStatus',
     'Gender',
+    'StationType',
     # Connection
     'DatabaseManager',
     'DatabaseConfig',
@@ -72,6 +77,7 @@ __all__ = [
     'EconomicStatQueries',
     'ProfessionQueries',
     'NamePoolQueries',
+    'TransportOperatorQueries',
 ]
 
 
