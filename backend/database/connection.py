@@ -47,7 +47,8 @@ class DatabaseManager:
         
         Args:
             config: Configuração do banco de dados
-            use_sqlite: Se True, usa SQLite ao invés de PostgreSQL
+            use_sqlite: Se True, usa SQLite ao invés de PostgreSQL.
+                       Se False, tenta PostgreSQL e faz fallback para SQLite se falhar.
         """
         self.config = config or DatabaseConfig()
         self.use_sqlite = use_sqlite
@@ -79,8 +80,22 @@ class DatabaseManager:
                 'pool_recycle': 3600,
             })
         
-        self.engine = create_engine(url, **engine_kwargs)
-        logger.info(f"Engine criado: {url}")
+        try:
+            self.engine = create_engine(url, **engine_kwargs)
+            # Testar conexão
+            from sqlalchemy import text
+            with self.engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            logger.info(f"Engine criado: {url}")
+        except Exception as e:
+            if not self.use_sqlite:
+                logger.warning(f"Falha ao conectar PostgreSQL: {e}")
+                logger.info("Fazendo fallback para SQLite...")
+                self.use_sqlite = True
+                return self.create_engine()  # Tentar novamente com SQLite
+            else:
+                raise
+
         return self.engine
     
     def create_session_factory(self):
@@ -153,8 +168,8 @@ class DatabaseManager:
         logger.info("Conexões com banco de dados fechadas")
 
 
-# Instância global do gerenciador (para uso comum)
-db_manager = DatabaseManager()
+# Instância global do gerenciador (usa SQLite por padrão para facilitar)
+db_manager = DatabaseManager(use_sqlite=True)
 
 
 # Funções de conveniência

@@ -252,6 +252,7 @@ class StationType(str, enum.Enum):
     BRT = "brt"  # Bus Rapid Transit
     MONORAIL = "monorail"  # Monotrilho
     CABLE_CAR = "cable_car"  # Teleférico urbano
+    METRO_STATION = "metro_station"  # Estação de metrô leve
 
     # ==================== ERA 4: CONTEMPORÂNEO (2000+) ====================
     TRAIN_HIGH_SPEED = "train_high_speed"  # Trem de alta velocidade
