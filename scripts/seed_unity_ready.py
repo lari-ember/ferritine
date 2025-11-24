@@ -30,14 +30,18 @@ def seed_minimal_world():
     session = get_session()
 
     try:
-        # Limpar dados existentes (opcional - comentar se quiser manter)
-        # session.query(Agent).delete()
-        # session.query(Vehicle).delete()
-        # session.query(RouteStation).delete()
-        # session.query(Station).delete()
-        # session.query(Route).delete()
-        # session.query(TransportOperator).delete()
-        # session.commit()
+        # Limpar dados existentes (ativa por ser execução de seed idempotente)
+        # Ordem de deleção respeitando chaves estrangeiras
+        print("   🧹 Limpando dados antigos (se existirem)...")
+        session.query(Schedule).delete()
+        session.query(RouteStation).delete()
+        session.query(Vehicle).delete()
+        session.query(Agent).delete()
+        session.query(Station).delete()
+        session.query(Route).delete()
+        session.query(TransportOperator).delete()
+        session.commit()
+        print("   ✅ Limpeza concluída")
 
         # ==================== 1. CRIAR OPERADORA ====================
         print("📍 Criando operadora...")
@@ -251,4 +255,3 @@ def seed_minimal_world():
 
 if __name__ == "__main__":
     seed_minimal_world()
-

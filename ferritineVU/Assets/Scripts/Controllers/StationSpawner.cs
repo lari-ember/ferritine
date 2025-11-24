@@ -10,15 +10,18 @@ public class StationSpawner : MonoBehaviour
     {
         if (data == null) return;
 
+        // StationData tem campos x e y separados, não um Vector3 position
+        Vector3 position = new Vector3(data.x, 0, data.y);
+
         if (spawnedStations.TryGetValue(data.id, out GameObject go))
         {
-            go.transform.position = data.position.ToVector3();
-            go.name = $"Station_{data.id}";
+            go.transform.position = position;
+            go.name = $"Station_{data.name}";
         }
         else
         {
-            GameObject s = Instantiate(stationPrefab, data.position.ToVector3(), Quaternion.identity);
-            s.name = $"Station_{data.id}";
+            GameObject s = Instantiate(stationPrefab, position, Quaternion.identity);
+            s.name = $"Station_{data.name}";
             spawnedStations[data.id] = s;
         }
     }

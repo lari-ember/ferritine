@@ -14,7 +14,7 @@ import uvicorn
 # Importações do banco de dados
 from backend.database.connection import get_session
 from backend.database.models import (
-    Agent, Vehicle, Station, Route, TransportOperator, 
+    Agent, Vehicle, Station, Route, TransportOperator,
     Ticket, Schedule, AgentStatus, VehicleStatus, StationType
 )
 from sqlalchemy import func
@@ -211,7 +211,7 @@ def get_world_state():
             StationDTO(
                 id=to_str(s.id),
                 name=s.name,
-                station_type=s.station_type.value if s.station_type else "metro",
+                station_type=s.station_type.value if s.station_type else "TRAIN_STEAM",
                 x=s.x,
                 y=s.y,
                 queue_length=s.current_queue_length or 0,
@@ -226,7 +226,7 @@ def get_world_state():
                 id=to_str(r.id),
                 name=r.name,
                 code=r.code,
-                route_type=r.route_type.value if r.route_type else "metro",
+                route_type=r.route_type.value if r.route_type else "TRAIN_STEAM",
                 fare=to_float(r.fare_base),
                 frequency=r.frequency_minutes or 10,
                 is_active=r.is_active if r.is_active is not None else True
@@ -238,7 +238,7 @@ def get_world_state():
             OperatorDTO(
                 id=to_str(o.id),
                 name=o.name,
-                operator_type=o.operator_type.value if o.operator_type else "metro",
+                operator_type=o.operator_type.value if o.operator_type else "TRAIN_STEAM",
                 revenue=to_float(o.revenue),
                 costs=to_float(o.operational_costs),
                 profit=o.get_profit_margin()
@@ -333,7 +333,7 @@ def get_stations():
             StationDTO(
                 id=to_str(s.id),
                 name=s.name,
-                station_type=s.station_type.value if s.station_type else "metro",
+                station_type=s.station_type.value if s.station_type else "TRAIN_STEAM",
                 x=s.x,
                 y=s.y,
                 queue_length=s.current_queue_length or 0,
@@ -356,7 +356,7 @@ def get_routes():
                 id=to_str(r.id),
                 name=r.name,
                 code=r.code,
-                route_type=r.route_type.value if r.route_type else "metro",
+                route_type=r.route_type.value if r.route_type else "TRAIN_STEAM",
                 fare=to_float(r.fare_base),
                 frequency=r.frequency_minutes or 10,
                 is_active=r.is_active if r.is_active is not None else True
@@ -376,7 +376,7 @@ def get_operators():
             OperatorDTO(
                 id=to_str(o.id),
                 name=o.name,
-                operator_type=o.operator_type.value if o.operator_type else "metro",
+                operator_type=o.operator_type.value if o.operator_type else "TRAIN_STEAM",
                 revenue=to_float(o.revenue),
                 costs=to_float(o.operational_costs),
                 profit=o.get_profit_margin()

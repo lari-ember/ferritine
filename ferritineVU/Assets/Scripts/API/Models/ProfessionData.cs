@@ -1,17 +1,16 @@
 using System;
 
 [Serializable]
-public class StationData
+public class ProfessionData
 {
     // UUID serializado como string no JSON, convertido para Guid
     public string id;
     public string name;
-    public string station_type;
-    public int x;
-    public int y;
-    public int queue_length;
-    public int max_queue;
-    public bool is_operational;
+    public string category;
+    public float base_salary;
+    public string[] required_skills;
+    public int education_level;
+    public string description;
     
     // Propriedade helper para trabalhar com Guid (safe parsing)
     public Guid GetIdAsGuid() => Guid.TryParse(id, out Guid result) ? result : Guid.Empty;
