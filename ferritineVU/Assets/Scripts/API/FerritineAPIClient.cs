@@ -12,6 +12,7 @@ public class FerritineAPIClient : MonoBehaviour
     [Header("Events")]
     public Action<WorldState> OnWorldStateReceived;
     public Action<string> OnError;
+    public Action<MetricsData> OnMetricsReceived;
     
     private bool isPolling = false;
     
@@ -40,6 +41,7 @@ public class FerritineAPIClient : MonoBehaviour
         while (isPolling)
         {
             yield return StartCoroutine(GetWorldState());
+            yield return StartCoroutine(GetMetrics());
             yield return new WaitForSeconds(pollInterval);
         }
     }
@@ -139,6 +141,37 @@ public class FerritineAPIClient : MonoBehaviour
             }
         }
     }
+    
+    public IEnumerator GetMetrics()
+    {
+        string url = $"{apiUrl}/api/metrics";
+
+        using (UnityWebRequest request = UnityWebRequest.Get(url))
+        {
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                try
+                {
+                    string json = request.downloadHandler.text;
+                    MetricsData metrics = JsonUtility.FromJson<MetricsData>(json);
+                    OnMetricsReceived?.Invoke(metrics);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Erro ao parsear Metrics JSON: {e.Message}");
+                    OnError?.Invoke(e.Message);
+                }
+            }
+            else
+            {
+                Debug.LogError($"Erro na API (metrics): {request.error}");
+                OnError?.Invoke(request.error);
+            }
+        }
+    }
+
     
     [Serializable]
     private class StationDataWrapper

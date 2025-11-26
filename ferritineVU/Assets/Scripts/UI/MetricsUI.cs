@@ -1,9 +1,10 @@
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
+
 
 public class MetricsUI : MonoBehaviour
 {
-    public Text metricsText;
+    public TextMeshProUGUI metricsText;  
 
     public void UpdateMetrics(MetricsData metrics)
     {
