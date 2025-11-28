@@ -1,5 +1,4 @@
 using UnityEngine;
-using System;
 using System.Collections.Generic;
 using TMPro;
 
@@ -21,13 +20,23 @@ public class WorldController : MonoBehaviour
     private Dictionary<string, GameObject> stations = new Dictionary<string, GameObject>();
     private Dictionary<string, GameObject> vehicles = new Dictionary<string, GameObject>();
     
+    void Awake()
+    {
+        // Tentar achar automaticamente o FerritineAPIClient na cena se não foi atribuído
+        if (apiClient == null)
+        {
+            apiClient = UnityEngine.Object.FindAnyObjectByType<FerritineAPIClient>();
+        }
+    }
+
     void Start()
     {
         if (apiClient == null)
         {
-            apiClient = GetComponent<FerritineAPIClient>();
+            Debug.LogError("WorldController: apiClient is not assigned and none was found in the scene. Please assign it in the Inspector.");
+            return;
         }
-        
+
         // Inscrever no evento de atualização
         apiClient.OnWorldStateReceived += UpdateWorld;
         apiClient.OnError += HandleError;
@@ -35,20 +44,29 @@ public class WorldController : MonoBehaviour
     
     void UpdateWorld(WorldState state)
     {
-        // Atualizar estações
-        UpdateStations(state.stations);
+        if (state == null) return;
+
+        // Atualizar estações (checar null)
+        if (state.stations != null)
+            UpdateStations(state.stations);
         
         // Atualizar veículos
-        UpdateVehicles(state.vehicles);
+        if (state.vehicles != null)
+            UpdateVehicles(state.vehicles);
         
-        // Atualizar UI de debug
+        // Atualizar UI de debug, com proteções adicionais
         if (debugText != null)
         {
+            int stationCount = state.stations?.Count ?? 0;
+            int vehicleCount = state.vehicles?.Count ?? 0;
+            int waiting = state.metrics != null ? state.metrics.total_passengers_waiting : 0;
+            int inVehicles = state.metrics != null ? state.metrics.total_passengers_in_vehicles : 0;
+
             debugText.text = $"Tempo: {state.timestamp}\n" +
-                           $"Estações: {state.stations.Count}\n" +
-                           $"Veículos: {state.vehicles.Count}\n" +
-                           $"Passageiros em fila: {state.metrics.total_passengers_waiting}\n" +
-                           $"Passageiros em veículos: {state.metrics.total_passengers_in_vehicles}";
+                             $"Estações: {stationCount}\n" +
+                             $"Veículos: {vehicleCount}\n" +
+                             $"Passageiros em fila: {waiting}\n" +
+                             $"Passageiros em veículos: {inVehicles}";
         }
     }
     
@@ -74,19 +92,19 @@ public class WorldController : MonoBehaviour
             
             // Atualizar estado (cor baseada em fila)
             GameObject stationObj = stations[data.id];
-            Renderer renderer = stationObj.GetComponent<Renderer>();
+            Renderer stationRenderer = stationObj.GetComponent<Renderer>();
             
-            if (renderer != null)
+            if (stationRenderer != null)
             {
                 // Verde se vazio, amarelo se médio, vermelho se cheio
                 float queueRatio = (float)data.queue_length / data.max_queue;
                 
                 if (queueRatio < 0.3f)
-                    renderer.material.color = Color.green;
+                    stationRenderer.material.color = Color.green;
                 else if (queueRatio < 0.7f)
-                    renderer.material.color = Color.yellow;
+                    stationRenderer.material.color = Color.yellow;
                 else
-                    renderer.material.color = Color.red;
+                    stationRenderer.material.color = Color.red;
             }
             
             // Atualizar texto de fila
@@ -128,11 +146,11 @@ public class WorldController : MonoBehaviour
             }
             
             // Atualizar cor baseado em ocupação
-            Renderer renderer = vehicleObj.GetComponent<Renderer>();
-            if (renderer != null)
+            Renderer vehicleRenderer = vehicleObj.GetComponent<Renderer>();
+            if (vehicleRenderer != null)
             {
                 float occupancy = data.capacity > 0 ? (float)data.passengers / data.capacity : 0f;
-                renderer.material.color = Color.Lerp(Color.blue, Color.magenta, occupancy);
+                vehicleRenderer.material.color = Color.Lerp(Color.blue, Color.magenta, occupancy);
             }
             
             // Atualizar texto
@@ -155,4 +173,3 @@ public class WorldController : MonoBehaviour
         }
     }
 }
-
