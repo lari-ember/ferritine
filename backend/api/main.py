@@ -412,6 +412,209 @@ def get_metrics():
     finally:
         session.close()
 
+# ==================== ENTITY CONTROL ENDPOINTS ====================
+
+class QueueUpdate(BaseModel):
+    """Request body for modifying station queue."""
+    queue_length: int
+
+class AgentTeleport(BaseModel):
+    """Request body for agent teleportation."""
+    location_type: str  # "station" or "building"
+    location_id: str
+
+class BuildingDTO(BaseModel):
+    """Simplified building data for teleport destinations."""
+    id: str
+    name: str
+    building_type: str
+    x: int
+    y: int
+    is_constructed: bool
+    
+    class Config:
+        from_attributes = True
+
+@app.post("/api/vehicles/{vehicle_id}/pause")
+def pause_vehicle(vehicle_id: str):
+    """Pausa um veículo."""
+    session = get_session()
+    try:
+        from uuid import UUID
+        vehicle = session.query(Vehicle).filter(Vehicle.id == UUID(vehicle_id)).first()
+        
+        if not vehicle:
+            raise HTTPException(status_code=404, detail=f"Veículo {vehicle_id} não encontrado")
+        
+        # Store previous status or use a paused flag
+        # For now, we'll change status to indicate paused
+        vehicle.status = VehicleStatus.MAINTENANCE  # Using maintenance as "paused" indicator
+        session.commit()
+        
+        return {
+            "success": True,
+            "message": f"Veículo {vehicle.name} pausado com sucesso",
+            "data": {
+                "id": to_str(vehicle.id),
+                "name": vehicle.name,
+                "status": vehicle.status.value
+            }
+        }
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ID de veículo inválido")
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao pausar veículo: {str(e)}")
+    finally:
+        session.close()
+
+@app.post("/api/vehicles/{vehicle_id}/resume")
+def resume_vehicle(vehicle_id: str):
+    """Retoma um veículo pausado."""
+    session = get_session()
+    try:
+        from uuid import UUID
+        vehicle = session.query(Vehicle).filter(Vehicle.id == UUID(vehicle_id)).first()
+        
+        if not vehicle:
+            raise HTTPException(status_code=404, detail=f"Veículo {vehicle_id} não encontrado")
+        
+        # Resume by setting status back to active
+        vehicle.status = VehicleStatus.ACTIVE
+        session.commit()
+        
+        return {
+            "success": True,
+            "message": f"Veículo {vehicle.name} retomado com sucesso",
+            "data": {
+                "id": to_str(vehicle.id),
+                "name": vehicle.name,
+                "status": vehicle.status.value
+            }
+        }
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ID de veículo inválido")
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao retomar veículo: {str(e)}")
+    finally:
+        session.close()
+
+@app.post("/api/stations/{station_id}/queue")
+def modify_station_queue(station_id: str, update: QueueUpdate):
+    """Modifica a fila de uma estação."""
+    session = get_session()
+    try:
+        from uuid import UUID
+        station = session.query(Station).filter(Station.id == UUID(station_id)).first()
+        
+        if not station:
+            raise HTTPException(status_code=404, detail=f"Estação {station_id} não encontrada")
+        
+        # Update queue length (no min/max validation as per requirements)
+        station.current_queue_length = update.queue_length
+        session.commit()
+        
+        return {
+            "success": True,
+            "message": f"Fila da estação {station.name} modificada para {update.queue_length}",
+            "data": {
+                "id": to_str(station.id),
+                "name": station.name,
+                "queue_length": station.current_queue_length,
+                "max_queue": station.max_queue_length
+            }
+        }
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ID de estação inválido")
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao modificar fila: {str(e)}")
+    finally:
+        session.close()
+
+@app.post("/api/agents/{agent_id}/teleport")
+def teleport_agent(agent_id: str, teleport: AgentTeleport):
+    """Teleporta um agente para uma nova localização."""
+    session = get_session()
+    try:
+        from uuid import UUID
+        agent = session.query(Agent).filter(Agent.id == UUID(agent_id)).first()
+        
+        if not agent:
+            raise HTTPException(status_code=404, detail=f"Agente {agent_id} não encontrado")
+        
+        # Validate destination exists
+        destination_uuid = UUID(teleport.location_id)
+        
+        if teleport.location_type == "station":
+            destination = session.query(Station).filter(Station.id == destination_uuid).first()
+            if not destination:
+                raise HTTPException(status_code=404, detail=f"Estação {teleport.location_id} não encontrada")
+        elif teleport.location_type == "building":
+            from backend.database.models import Building
+            destination = session.query(Building).filter(Building.id == destination_uuid).first()
+            if not destination:
+                raise HTTPException(status_code=404, detail=f"Edifício {teleport.location_id} não encontrado")
+        else:
+            raise HTTPException(status_code=400, detail=f"Tipo de localização inválido: {teleport.location_type}")
+        
+        # Update agent location
+        agent.current_location_type = teleport.location_type
+        agent.current_location_id = destination_uuid
+        
+        # TODO: Trigger pathfinding recalculation if needed
+        
+        session.commit()
+        
+        return {
+            "success": True,
+            "message": f"Agente {agent.name} teleportado para {teleport.location_type}",
+            "data": {
+                "id": to_str(agent.id),
+                "name": agent.name,
+                "location_type": agent.current_location_type,
+                "location_id": to_str(agent.current_location_id)
+            }
+        }
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ID inválido fornecido")
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao teleportar agente: {str(e)}")
+    finally:
+        session.close()
+
+@app.get("/api/buildings", response_model=List[BuildingDTO])
+def get_buildings(limit: int = 100, building_type: Optional[str] = None):
+    """Retorna lista de edifícios."""
+    session = get_session()
+    try:
+        from backend.database.models import Building
+        
+        query = session.query(Building)
+        
+        if building_type:
+            query = query.filter(Building.building_type == building_type)
+        
+        buildings = query.limit(limit).all()
+        
+        return [
+            BuildingDTO(
+                id=to_str(b.id),
+                name=b.name,
+                building_type=b.building_type.value if hasattr(b.building_type, 'value') else str(b.building_type),
+                x=b.x,
+                y=b.y,
+                is_constructed=True  # Assuming all queried buildings are constructed
+            )
+            for b in buildings
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar edifícios: {str(e)}")
+    finally:
+        session.close()
+
 # ==================== MAIN ====================
 
 if __name__ == "__main__":

@@ -14,12 +14,18 @@ public class FerritineAPIClient : MonoBehaviour
     public Action<string> OnError;
     public Action<MetricsData> OnMetricsReceived;
 
+    // DESATIVADO: EntitySpawner causava duplicação com WorldController
+    // Use apenas WorldController com Object Pooling
+    /*
     [Header("References")]
     // Referência opcional ao EntitySpawner — se não atribuída, tentamos localizar na cena
     public EntitySpawner spawner;
+    */
 
     private bool isPolling = false;
 
+    // DESATIVADO: Awake não é mais necessário sem EntitySpawner
+    /*
     void Awake()
     {
         if (spawner == null)
@@ -30,6 +36,7 @@ public class FerritineAPIClient : MonoBehaviour
                 Debug.LogWarning("FerritineAPIClient: nenhum EntitySpawner encontrado na cena. Atribua pelo Inspector para habilitar spawning automático.");
         }
     }
+    */
 
     void Start()
     {
@@ -77,14 +84,18 @@ public class FerritineAPIClient : MonoBehaviour
                     WorldState state = JsonUtility.FromJson<WorldState>(json);
                     ValidateUUIDs(state);
 
-                    // Notificar assinantes de evento
+                    // Notificar assinantes de evento (WorldController se inscreve aqui)
                     OnWorldStateReceived?.Invoke(state);
 
+                    // DESATIVADO: Causava duplicação com WorldController
+                    // Usar apenas WorldController com Object Pooling
+                    /*
                     // Também encaminhar diretamente para o EntitySpawner (se existir)
                     if (spawner != null)
                     {
                         spawner.UpdateWorldEntities(state);
                     }
+                    */
                 }
                 catch (Exception e)
                 {

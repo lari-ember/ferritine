@@ -58,13 +58,7 @@ public class EntitySpawner : MonoBehaviour
             }
 
             GameObject vehObj = spawnedVehicles[v.id];
-
-            // Cada veículo está sempre em uma estação (por enquanto)
-            if (v.current_station_id != null && spawnedStations.ContainsKey(v.current_station_id))
-            {
-                Vector3 pos = spawnedStations[v.current_station_id].transform.position;
-                vehObj.transform.position = pos + Vector3.up * 0.5f; // ligeiramente acima
-            }
+            
         }
     }
 

@@ -1,5 +1,9 @@
 using System;
 
+/// <summary>
+/// Data model for Building entities received from API.
+/// Simplified version for basic display and teleport validation.
+/// </summary>
 [Serializable]
 public class BuildingData
 {
@@ -9,17 +13,10 @@ public class BuildingData
     public string building_type;
     public int x;
     public int y;
-    public int width;
-    public int height;
     public bool is_constructed;
-    public float construction_progress;
-    public string owner_id;
-    public int capacity;
-    public int current_occupancy;
     
     // Propriedades helper para trabalhar com Guid (safe parsing)
     public Guid GetIdAsGuid() => Guid.TryParse(id, out Guid result) ? result : Guid.Empty;
-    public Guid GetOwnerIdAsGuid() => Guid.TryParse(owner_id, out Guid result) ? result : Guid.Empty;
     
     // Validação de UUID
     public bool HasValidId() => Guid.TryParse(id, out _);
