@@ -692,8 +692,20 @@ public class WorldController : MonoBehaviour
                 break;
         }
         
-        // Set layer for raycasting
-        obj.layer = LayerMask.NameToLayer("Selectable");
+        // Set layer for raycasting - with validation
+        int selectableLayerIndex = LayerMask.NameToLayer("Selectable");
+        
+        if (selectableLayerIndex == -1)
+        {
+            Debug.LogError("[WorldController] ⚠️ ATENÇÃO: Layer 'Selectable' não encontrada! " +
+                          "Crie a layer em Edit → Project Settings → Tags and Layers. " +
+                          "Usando layer Default como fallback (entidades NÃO serão clicáveis!)");
+            obj.layer = 0; // Default layer
+        }
+        else
+        {
+            obj.layer = selectableLayerIndex;
+        }
     }
     
     void OnDestroy()

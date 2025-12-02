@@ -3,138 +3,123 @@ using System.Collections.Generic;
 
 /// <summary>
 /// Object pool for selection pin indicators.
-/// Manages a pool of reusable 3D pin GameObjects to avoid instantiate/destroy overhead.
+/// Implements singleton pattern for easy global access.
 /// </summary>
 public class SelectionPinPool : MonoBehaviour
 {
-    public static SelectionPinPool Instance { get; private set; }
+    [Header("Pin Settings")]
+    public GameObject selectionPinPrefab;
+    public int initialPoolSize = 10;
+    public bool autoExpand = true;
     
-    [Header("Pool Settings")]
-    [Tooltip("Prefab for the selection pin indicator")]
-    public GameObject pinPrefab;
+    private ObjectPool objectPool;
+    private const string POOL_NAME = "selectionPins";
+    private Dictionary<string, GameObject> activePins = new Dictionary<string, GameObject>();
+
+    private static SelectionPinPool _instance;
     
-    [Tooltip("Number of pins to pre-create")]
-    public int prewarmCount = 5;
-    
-    [Tooltip("Maximum pool size")]
-    public int maxPoolSize = 10;
-    
-    private Queue<GameObject> availablePins = new Queue<GameObject>();
-    private List<GameObject> activePins = new List<GameObject>();
-    private Transform poolContainer;
-    
-    void Awake()
+    public static SelectionPinPool Instance
     {
-        // Singleton pattern
-        if (Instance == null)
+        get
         {
-            Instance = this;
+            if (_instance == null)
+            {
+                _instance = FindFirstObjectByType<SelectionPinPool>();
+            }
+            return _instance;
         }
-        else
+    }
+
+    private void Awake()
+    {
+        if (_instance == null)
+        {
+            _instance = this;
+            InitializePool();
+        }
+        else if (_instance != this)
         {
             Destroy(gameObject);
+        }
+    }
+
+    private void InitializePool()
+    {
+        if (selectionPinPrefab == null)
+        {
+            Debug.LogError("[SelectionPinPool] Selection Pin Prefab não está atribuído!");
             return;
         }
-        
-        // Create container for pooled objects
-        poolContainer = new GameObject("SelectionPinPool_Container").transform;
-        poolContainer.SetParent(transform);
-        
-        // Prewarm pool
-        Prewarm();
-    }
-    
-    /// <summary>
-    /// Pre-creates pins for the pool.
-    /// </summary>
-    void Prewarm()
-    {
-        if (pinPrefab == null)
+
+        objectPool = FindFirstObjectByType<ObjectPool>();
+        if (objectPool == null)
         {
-            Debug.LogError("[SelectionPinPool] Pin prefab is not assigned!");
+            Debug.LogError("[SelectionPinPool] ObjectPool não encontrado na cena!");
             return;
         }
-        
-        for (int i = 0; i < prewarmCount; i++)
-        {
-            CreatePin();
-        }
-        
-        Debug.Log($"[SelectionPinPool] Prewarmed with {prewarmCount} pins");
+
+        // Cria o pool usando InitializePool
+        Transform poolParent = transform;
+        objectPool.InitializePool(POOL_NAME, selectionPinPrefab, poolParent, initialPoolSize);
+        Debug.Log($"[SelectionPinPool] Pool inicializado com {initialPoolSize} pins");
     }
-    
-    /// <summary>
-    /// Creates a new pin and adds it to the pool.
-    /// </summary>
-    GameObject CreatePin()
+
+    public GameObject GetPin(Vector3 position, string entityId)
     {
-        GameObject pin = Instantiate(pinPrefab, poolContainer);
-        pin.SetActive(false);
-        availablePins.Enqueue(pin);
-        return pin;
-    }
-    
-    /// <summary>
-    /// Gets a pin from the pool.
-    /// </summary>
-    public GameObject Get()
-    {
-        GameObject pin;
-        
-        if (availablePins.Count > 0)
+        if (objectPool == null)
         {
-            pin = availablePins.Dequeue();
-        }
-        else if (activePins.Count < maxPoolSize)
-        {
-            pin = CreatePin();
-        }
-        else
-        {
-            Debug.LogWarning("[SelectionPinPool] Pool exhausted! Consider increasing maxPoolSize.");
+            Debug.LogError("[SelectionPinPool] ObjectPool não inicializado!");
             return null;
         }
-        
-        pin.SetActive(true);
-        activePins.Add(pin);
+
+        // Se já existe um pin ativo para esta entidade, retorna ele
+        if (activePins.TryGetValue(entityId, out GameObject existingPin))
+        {
+            existingPin.transform.position = position;
+            existingPin.SetActive(true);
+            return existingPin;
+        }
+
+        // Obtém um pin do pool usando o método correto
+        GameObject pin = objectPool.Get(POOL_NAME);
+        if (pin != null)
+        {
+            pin.transform.position = position;
+            pin.SetActive(true);
+            activePins[entityId] = pin;
+        }
+
         return pin;
     }
-    
-    /// <summary>
-    /// Returns a pin to the pool.
-    /// </summary>
-    public void Return(GameObject pin)
+
+    public void ReturnPin(string entityId)
     {
-        if (pin == null) return;
-        
-        pin.SetActive(false);
-        pin.transform.SetParent(poolContainer);
-        pin.transform.localPosition = Vector3.zero;
-        
-        activePins.Remove(pin);
-        availablePins.Enqueue(pin);
-    }
-    
-    /// <summary>
-    /// Returns all active pins to the pool.
-    /// </summary>
-    public void ReturnAll()
-    {
-        // Create a copy of the list to avoid modification during iteration
-        List<GameObject> pinsToReturn = new List<GameObject>(activePins);
-        
-        foreach (GameObject pin in pinsToReturn)
+        if (activePins.TryGetValue(entityId, out GameObject pin))
         {
-            Return(pin);
+            objectPool.Return(POOL_NAME, pin);
+            activePins.Remove(entityId);
         }
     }
-    
-    /// <summary>
-    /// Gets statistics about the pool.
-    /// </summary>
-    public void LogStats()
+
+    public void ReturnAllPins()
     {
-        Debug.Log($"[SelectionPinPool] Available: {availablePins.Count}, Active: {activePins.Count}, Total: {availablePins.Count + activePins.Count}");
+        foreach (var pin in activePins.Values)
+        {
+            if (pin != null)
+            {
+                objectPool.Return(POOL_NAME, pin);
+            }
+        }
+        activePins.Clear();
+    }
+
+    private void OnDestroy()
+    {
+        ReturnAllPins();
+        if (_instance == this)
+        {
+            _instance = null;
+        }
     }
 }
 

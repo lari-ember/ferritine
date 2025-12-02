@@ -67,7 +67,6 @@ public class EntitySpawner : MonoBehaviour
     {
         if (agents == null) return;
 
-        float spacing = 0.3f; // só para visualizar sem empilhar
 
         foreach (var a in agents)
         {

@@ -68,8 +68,22 @@ public class SelectableEntity : MonoBehaviour
     /// </summary>
     public void Highlight()
     {
-        if (isHighlighted || rendererComponent == null) return;
+        Debug.Log($"[SelectableEntity] Highlight() chamado em: {gameObject.name}");
+        Debug.Log($"[SelectableEntity] isHighlighted: {isHighlighted}, rendererComponent: {(rendererComponent != null ? "EXISTS" : "NULL")}");
         
+        if (isHighlighted)
+        {
+            Debug.LogWarning($"[SelectableEntity] Entidade já está destacada, ignorando.");
+            return;
+        }
+        
+        if (rendererComponent == null)
+        {
+            Debug.LogError($"[SelectableEntity] ❌ rendererComponent é NULL! GameObject: {gameObject.name}");
+            return;
+        }
+        
+        Debug.Log($"[SelectableEntity] Aplicando highlight a {rendererComponent.materials.Length} materiais...");
         foreach (Material mat in rendererComponent.materials)
         {
             // Enable emission keyword
@@ -78,9 +92,11 @@ public class SelectableEntity : MonoBehaviour
             // Set emission color
             Color emissionColor = highlightColor * highlightIntensity;
             mat.SetColor("_EmissionColor", emissionColor);
+            Debug.Log($"[SelectableEntity] Material '{mat.name}' - Emission aplicada: {emissionColor}");
         }
         
         isHighlighted = true;
+        Debug.Log($"[SelectableEntity] ✅ Highlight aplicado com sucesso!");
     }
     
     /// <summary>
@@ -88,8 +104,21 @@ public class SelectableEntity : MonoBehaviour
     /// </summary>
     public void Unhighlight()
     {
-        if (!isHighlighted || rendererComponent == null) return;
+        Debug.Log($"[SelectableEntity] Unhighlight() chamado em: {gameObject.name}");
         
+        if (!isHighlighted)
+        {
+            Debug.Log($"[SelectableEntity] Entidade não está destacada, ignorando.");
+            return;
+        }
+        
+        if (rendererComponent == null)
+        {
+            Debug.LogError($"[SelectableEntity] ❌ rendererComponent é NULL!");
+            return;
+        }
+        
+        Debug.Log($"[SelectableEntity] Removendo highlight de {rendererComponent.materials.Length} materiais...");
         foreach (Material mat in rendererComponent.materials)
         {
             // Disable emission
@@ -98,6 +127,7 @@ public class SelectableEntity : MonoBehaviour
         }
         
         isHighlighted = false;
+        Debug.Log($"[SelectableEntity] ✅ Highlight removido com sucesso!");
     }
     
     /// <summary>

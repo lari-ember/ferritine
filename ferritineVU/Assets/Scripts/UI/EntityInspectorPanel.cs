@@ -85,6 +85,10 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
         
+        // NOTE: NÃO conectar ao CameraController aqui!
+        // O UIManager gerencia a criação/destruição deste painel
+        // e chama ShowEntity() quando necessário.
+        
         // Setup button listeners
         if (closeButton != null)
             closeButton.onClick.AddListener(Close);
@@ -117,8 +121,8 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
         // Load saved position
         LoadPosition();
         
-        // Start hidden
-        gameObject.SetActive(false);
+        // NOTE: Panel inicia ATIVO - UIManager vai instanciar quando necessário
+        // Não precisa desativar aqui pois é instanciado dinamicamente
     }
     
     /// <summary>
@@ -326,11 +330,10 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
     }
     
     /// <summary>
-    /// Closes the panel.
+    /// Closes the panel and notifies UIManager to destroy it.
     /// </summary>
     public void Close()
     {
-        StartCoroutine(AnimateHide());
         AudioManager.PlayUISound("panel_close");
         
         // Unregister from entity updates
@@ -338,6 +341,17 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
         {
             currentEntity.OnDataUpdated.RemoveListener(OnEntityDataUpdated);
             currentEntity = null;
+        }
+        
+        // Notify UIManager to destroy this panel
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.HideInspector();
+        }
+        else
+        {
+            // Fallback: destroy self if UIManager doesn't exist
+            Destroy(gameObject);
         }
     }
     
@@ -359,6 +373,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
         if (currentEntity == null) return;
         
         CameraController cameraController = Camera.main?.GetComponent<CameraController>();
+        
         if (cameraController != null)
         {
             cameraController.FollowSelectedEntity();
@@ -367,6 +382,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
         }
         else
         {
+            Debug.LogError("[EntityInspectorPanel] CameraController not found on Main Camera!");
             ToastNotificationManager.ShowError("CameraController não encontrado!");
         }
     }
@@ -425,7 +441,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
             return;
         
         // Open teleport selector UI
-        TeleportSelectorUI teleportUI = FindObjectOfType<TeleportSelectorUI>();
+        TeleportSelectorUI teleportUI = FindAnyObjectByType<TeleportSelectorUI>();
         if (teleportUI != null)
         {
             teleportUI.Open(currentEntity.agentData);
@@ -614,11 +630,14 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
     
     void OnDestroy()
     {
-        // Cleanup
+        // Cleanup: unregister from entity updates
         if (currentEntity != null)
         {
             currentEntity.OnDataUpdated.RemoveListener(OnEntityDataUpdated);
         }
+        
+        // NOTE: Não precisamos mais desconectar do CameraController
+        // porque o painel é instanciado dinamicamente e destruído quando fechado
     }
 }
 
