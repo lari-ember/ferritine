@@ -77,6 +77,59 @@ public class TeleportSelectorUI : MonoBehaviour
     }
     
     /// <summary>
+    /// Alias for Open() - usado pelo UIManager.
+    /// </summary>
+    public void ShowForAgent(AgentData agent)
+    {
+        Open(agent);
+    }
+    
+    /// <summary>
+    /// Closes the teleport selector.
+    /// </summary>
+    public void Close()
+    {
+        // Cleanup selected location highlight
+        if (selectedLocationObject != null)
+        {
+            SelectableEntity entity = selectedLocationObject.GetComponent<SelectableEntity>();
+            if (entity != null)
+            {
+                entity.Unhighlight();
+            }
+            selectedLocationObject = null;
+        }
+        
+        // Remove preview particle
+        if (previewParticle != null)
+        {
+            ParticleEffectPool.Instance?.Return("teleport_preview", previewParticle);
+            previewParticle = null;
+        }
+        
+        // Stop camera preview
+        CameraController cameraController = Camera.main?.GetComponent<CameraController>();
+        if (cameraController != null)
+        {
+            cameraController.StopPreview();
+        }
+        
+        // Clear selection state
+        currentAgent = null;
+        selectedLocationType = null;
+        selectedLocationId = null;
+        
+        // Hide panel
+        if (panel != null)
+            panel.SetActive(false);
+        
+        AudioManager.PlayUISound("panel_close");
+        
+        // Notify UIManager to destroy this panel (se estiver gerenciado)
+        UIManager.Instance?.HideTeleportSelector();
+    }
+    
+    /// <summary>
     /// Populates the list of available teleport destinations.
     /// </summary>
     void PopulateLocationList()
@@ -328,41 +381,6 @@ public class TeleportSelectorUI : MonoBehaviour
     void OnSearchChanged(string searchText)
     {
         // TODO: Implement search filtering
-    }
-    
-    /// <summary>
-    /// Closes the teleport selector.
-    /// </summary>
-    public void Close()
-    {
-        // Cleanup
-        if (selectedLocationObject != null)
-        {
-            SelectableEntity entity = selectedLocationObject.GetComponent<SelectableEntity>();
-            if (entity != null)
-            {
-                entity.Unhighlight();
-            }
-            selectedLocationObject = null;
-        }
-        
-        if (previewParticle != null)
-        {
-            ParticleEffectPool.Instance?.Return("teleport_preview", previewParticle);
-            previewParticle = null;
-        }
-        
-        // Stop camera preview
-        CameraController cameraController = Camera.main?.GetComponent<CameraController>();
-        if (cameraController != null)
-        {
-            cameraController.StopPreview();
-        }
-        
-        if (panel != null)
-            panel.SetActive(false);
-        
-        AudioManager.PlayUISound("panel_close");
     }
     
     /// <summary>

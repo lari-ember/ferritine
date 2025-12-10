@@ -475,6 +475,13 @@ public class WorldController : MonoBehaviour
             {
                 selectable.UpdateData(a);
             }
+            
+            // Atualizar dados do agente incluindo animação
+            Agent3D agent3D = currentAgentObj.GetComponent<Agent3D>();
+            if (agent3D != null)
+            {
+                agent3D.UpdateAgentData(a);
+            }
 
             // calcular posição alvo base (fallback mantém onde está)
             Vector3 baseTarget = currentAgentObj.transform.position;

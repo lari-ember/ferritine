@@ -440,16 +440,15 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
         if (currentEntity == null || currentEntity.entityType != SelectableEntity.EntityType.Agent)
             return;
         
-        // Open teleport selector UI
-        TeleportSelectorUI teleportUI = FindAnyObjectByType<TeleportSelectorUI>();
-        if (teleportUI != null)
+        // Open teleport selector UI via UIManager
+        if (UIManager.Instance != null)
         {
-            teleportUI.Open(currentEntity.agentData);
+            UIManager.Instance.ShowTeleportSelector(currentEntity.agentData);
             AudioManager.PlayUISound("panel_open");
         }
         else
         {
-            ToastNotificationManager.ShowError("TeleportSelectorUI não encontrado!");
+            ToastNotificationManager.ShowError("UIManager não encontrado!");
         }
     }
     
