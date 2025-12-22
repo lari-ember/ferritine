@@ -34,6 +34,7 @@ public class SelectableEntity : MonoBehaviour
     // Cache original materials for highlight/unhighlight
     private Material[] originalMaterials;
     private Renderer rendererComponent;
+    private Renderer[] allRenderers; // Para modelos FBX com múltiplos renderers
     private bool isHighlighted = false;
     
     void Awake()
@@ -41,11 +42,49 @@ public class SelectableEntity : MonoBehaviour
         // Ensure this GameObject has a collider for raycasting
         EnsureCollider();
         
-        // Cache renderer and materials
+        // Cache renderer and materials - busca em filhos para modelos FBX
+        FindRendererComponents();
+    }
+    
+    /// <summary>
+    /// Busca componentes Renderer neste objeto ou nos filhos (para modelos FBX).
+    /// </summary>
+    void FindRendererComponents()
+    {
+        // Primeiro tenta no próprio objeto
         rendererComponent = GetComponent<Renderer>();
+        
+        // Se não encontrou, busca nos filhos (comum em FBX)
+        if (rendererComponent == null)
+        {
+            rendererComponent = GetComponentInChildren<Renderer>();
+            
+            // Também busca SkinnedMeshRenderer especificamente (modelos animados)
+            if (rendererComponent == null)
+            {
+                rendererComponent = GetComponentInChildren<SkinnedMeshRenderer>();
+            }
+        }
+        
+        // Busca TODOS os renderers nos filhos (modelos podem ter múltiplas partes)
+        allRenderers = GetComponentsInChildren<Renderer>();
+        
         if (rendererComponent != null)
         {
             originalMaterials = rendererComponent.materials;
+            Debug.Log($"[SelectableEntity] ✅ Renderer encontrado em '{rendererComponent.gameObject.name}' " +
+                      $"(tipo: {rendererComponent.GetType().Name}, total renderers: {allRenderers.Length})");
+        }
+        else if (allRenderers.Length > 0)
+        {
+            // Fallback: usa o primeiro renderer encontrado
+            rendererComponent = allRenderers[0];
+            originalMaterials = rendererComponent.materials;
+            Debug.Log($"[SelectableEntity] ✅ Usando fallback renderer em '{rendererComponent.gameObject.name}'");
+        }
+        else
+        {
+            Debug.LogWarning($"[SelectableEntity] ⚠️ Nenhum Renderer encontrado em '{gameObject.name}' ou seus filhos");
         }
     }
     
@@ -69,7 +108,6 @@ public class SelectableEntity : MonoBehaviour
     public void Highlight()
     {
         Debug.Log($"[SelectableEntity] Highlight() chamado em: {gameObject.name}");
-        Debug.Log($"[SelectableEntity] isHighlighted: {isHighlighted}, rendererComponent: {(rendererComponent != null ? "EXISTS" : "NULL")}");
         
         if (isHighlighted)
         {
@@ -77,22 +115,45 @@ public class SelectableEntity : MonoBehaviour
             return;
         }
         
-        if (rendererComponent == null)
+        // Tenta encontrar renderer se ainda não tem
+        if (rendererComponent == null && (allRenderers == null || allRenderers.Length == 0))
         {
-            Debug.LogError($"[SelectableEntity] ❌ rendererComponent é NULL! GameObject: {gameObject.name}");
+            FindRendererComponents();
+        }
+        
+        // Aplica highlight em TODOS os renderers (modelos FBX podem ter múltiplas partes)
+        if (allRenderers != null && allRenderers.Length > 0)
+        {
+            int count = 0;
+            foreach (Renderer rend in allRenderers)
+            {
+                if (rend == null) continue;
+                
+                foreach (Material mat in rend.materials)
+                {
+                    mat.EnableKeyword("_EMISSION");
+                    Color emissionColor = highlightColor * highlightIntensity;
+                    mat.SetColor("_EmissionColor", emissionColor);
+                    count++;
+                }
+            }
+            Debug.Log($"[SelectableEntity] ✅ Highlight aplicado a {count} materiais em {allRenderers.Length} renderers");
+            isHighlighted = true;
             return;
         }
         
-        Debug.Log($"[SelectableEntity] Aplicando highlight a {rendererComponent.materials.Length} materiais...");
+        // Fallback: renderer único
+        if (rendererComponent == null)
+        {
+            Debug.LogWarning($"[SelectableEntity] ⚠️ Nenhum renderer disponível para highlight em '{gameObject.name}'");
+            return;
+        }
+        
         foreach (Material mat in rendererComponent.materials)
         {
-            // Enable emission keyword
             mat.EnableKeyword("_EMISSION");
-            
-            // Set emission color
             Color emissionColor = highlightColor * highlightIntensity;
             mat.SetColor("_EmissionColor", emissionColor);
-            Debug.Log($"[SelectableEntity] Material '{mat.name}' - Emission aplicada: {emissionColor}");
         }
         
         isHighlighted = true;
@@ -104,24 +165,38 @@ public class SelectableEntity : MonoBehaviour
     /// </summary>
     public void Unhighlight()
     {
-        Debug.Log($"[SelectableEntity] Unhighlight() chamado em: {gameObject.name}");
-        
         if (!isHighlighted)
         {
-            Debug.Log($"[SelectableEntity] Entidade não está destacada, ignorando.");
             return;
         }
         
+        // Remove highlight de TODOS os renderers (modelos FBX)
+        if (allRenderers != null && allRenderers.Length > 0)
+        {
+            foreach (Renderer rend in allRenderers)
+            {
+                if (rend == null) continue;
+                
+                foreach (Material mat in rend.materials)
+                {
+                    mat.SetColor("_EmissionColor", Color.black);
+                    mat.DisableKeyword("_EMISSION");
+                }
+            }
+            isHighlighted = false;
+            Debug.Log($"[SelectableEntity] ✅ Highlight removido de {allRenderers.Length} renderers");
+            return;
+        }
+        
+        // Fallback: renderer único
         if (rendererComponent == null)
         {
-            Debug.LogError($"[SelectableEntity] ❌ rendererComponent é NULL!");
+            Debug.LogWarning($"[SelectableEntity] ⚠️ Nenhum renderer disponível para unhighlight em '{gameObject.name}'");
             return;
         }
         
-        Debug.Log($"[SelectableEntity] Removendo highlight de {rendererComponent.materials.Length} materiais...");
         foreach (Material mat in rendererComponent.materials)
         {
-            // Disable emission
             mat.SetColor("_EmissionColor", Color.black);
             mat.DisableKeyword("_EMISSION");
         }

@@ -53,11 +53,6 @@ namespace Controllers
                 inspectorPanel = GetComponent<EntityInspectorPanel>();
             }
             
-            if (cameraController == null)
-            {
-                cameraController = Camera.main?.GetComponent<CameraController>();
-            }
-            
             if (teleportSelectorUI == null)
             {
                 teleportSelectorUI = FindAnyObjectByType<TeleportSelectorUI>();
@@ -65,6 +60,42 @@ namespace Controllers
             
             // Setup button listeners
             SetupButtonListeners();
+        }
+        
+        void Start()
+        {
+            // Find CameraController in Start (Camera.main may not be available in Awake)
+            if (cameraController == null)
+            {
+                cameraController = Camera.main?.GetComponent<CameraController>();
+                Debug.Log($"[InspectorPanelController] Camera.main: {(Camera.main != null ? Camera.main.name : "NULL")}");
+                
+                // Fallback: search in scene
+                if (cameraController == null)
+                {
+                    cameraController = FindAnyObjectByType<CameraController>();
+                    Debug.Log($"[InspectorPanelController] FindAnyObjectByType result: {(cameraController != null ? cameraController.name : "NULL")}");
+                }
+            }
+            
+            // Connect to CameraController.OnEntitySelected event
+            ConnectToEntitySelectedEvent();
+        }
+        
+        /// <summary>
+        /// Connects to CameraController's OnEntitySelected event to receive entity updates.
+        /// </summary>
+        void ConnectToEntitySelectedEvent()
+        {
+            if (cameraController != null)
+            {
+                cameraController.OnEntitySelected.AddListener(OnEntitySelected);
+                Debug.Log("[InspectorPanelController] ✅ Conectado ao CameraController.OnEntitySelected");
+            }
+            else
+            {
+                Debug.LogWarning("[InspectorPanelController] ⚠️ CameraController não encontrado, não foi possível conectar ao evento");
+            }
         }
         
         /// <summary>
@@ -309,9 +340,21 @@ namespace Controllers
         /// </summary>
         public void OnTeleportPressed()
         {
-            if (_currentEntity == null || _currentEntity.entityType != SelectableEntity.EntityType.Agent)
+            // Debug: log estado atual
+            if (_currentEntity == null)
             {
-                Debug.LogWarning("[InspectorPanelController] Cannot teleport: not an agent");
+                Debug.LogWarning("[InspectorPanelController] Cannot teleport: _currentEntity is NULL");
+                ToastNotificationManager.ShowWarning("Nenhuma entidade selecionada");
+                return;
+            }
+            
+            Debug.Log($"[InspectorPanelController] OnTeleportPressed - EntityType: {_currentEntity.entityType}, " +
+                      $"GameObject: {_currentEntity.gameObject.name}, " +
+                      $"AgentData: {(_currentEntity.agentData != null ? _currentEntity.agentData.name : "NULL")}");
+            
+            if (_currentEntity.entityType != SelectableEntity.EntityType.Agent)
+            {
+                Debug.LogWarning($"[InspectorPanelController] Cannot teleport: entityType is {_currentEntity.entityType}, not Agent");
                 ToastNotificationManager.ShowWarning("Apenas agentes podem ser teleportados");
                 return;
             }
@@ -431,6 +474,12 @@ namespace Controllers
             if (pauseButton != null) pauseButton.onClick.RemoveAllListeners();
             if (teleportButton != null) teleportButton.onClick.RemoveAllListeners();
             if (modifyQueueButton != null) modifyQueueButton.onClick.RemoveAllListeners();
+            
+            // Clean up event listener
+            if (cameraController != null)
+            {
+                cameraController.OnEntitySelected.RemoveListener(OnEntitySelected);
+            }
         }
     }
 }
