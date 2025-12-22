@@ -1276,48 +1276,510 @@ Containerizar aplicação com Docker.
 
 ---
 
+## 🧪 FASE 0.5: MINI-GAMES E PROTÓTIPOS TÉCNICOS
+
+*Baseado na seção "Mini-Games / Protótipos Técnicos" do GDD atualizado*
+
+### Issue #56: Mini-Game "Mapa que Reclama"
+**Labels**: `feat`, `phase-0: fundamentals`, `area: ui`, `priority: high`, `complexity: beginner`, `good first issue`
+
+**Descrição**:
+Criar protótipo de UI onde problemas aparecem visualmente antes de números. Sistema de feedback visual baseado em ícones e cores.
+
+**Objetivo de Aprendizado**: UI, overlays, feedback visual
+
+**Tarefas**:
+- [ ] Criar mapa simples 2D
+- [ ] Implementar sistema de ícones de alerta
+- [ ] Estação congestionada pisca vermelho (sem mostrar "−10%")
+- [ ] Hover mostra causa/efeito em texto
+- [ ] Testar diferentes tipos de problemas
+- [ ] Documentar padrão reutilizável
+
+**Critérios de Aceitação**:
+- [ ] Problemas visíveis no mapa sem abrir menus
+- [ ] Hover contextual funcional
+- [ ] Código reutilizável para sistema final
+
+---
+
+### Issue #57: Mini-Game "Linha que Atrasa"
+**Labels**: `feat`, `phase-1: digital`, `area: transport`, `priority: high`, `complexity: intermediate`
+
+**Descrição**:
+Uma única linha ferroviária com poucos trens onde atrasos se encadeiam. Núcleo do sistema de transporte.
+
+**Objetivo de Aprendizado**: Grafos, simulação logística, efeito dominó
+
+**Tarefas**:
+- [ ] Criar grafo simples de linha ferroviária (3-4 estações)
+- [ ] Implementar 2-3 trens com horários
+- [ ] Sistema de atraso (se trem 1 atrasa → trem 2 espera)
+- [ ] Visualização de acúmulo de passageiros
+- [ ] Feedback visual de tensão (cores)
+- [ ] Log de eventos para debug
+
+**Critérios de Aceitação**:
+- [ ] Atrasos propagam corretamente
+- [ ] Visualização clara do efeito dominó
+- [ ] Base reutilizável para sistema ferroviário completo
+
+---
+
+### Issue #58: Mini-Game "Três Agentes"
+**Labels**: `feat`, `phase-1: digital`, `area: agents`, `priority: high`, `complexity: intermediate`
+
+**Descrição**:
+Três NPCs com rotinas simples que dependem de transporte. Base do Agent-Based Modeling.
+
+**Objetivo de Aprendizado**: ABM básico, agentes autônomos
+
+**Tarefas**:
+- [ ] Criar classe Agente básica (nome, profissão, rotina)
+- [ ] Implementar 3 agentes (João 7h, Maria 8h, Pedro 9h)
+- [ ] Rotinas dependem de transporte
+- [ ] Sistema de humor (reage a atrasos)
+- [ ] Visualização de estado dos agentes
+- [ ] Log de ações dos agentes
+
+**Critérios de Aceitação**:
+- [ ] Agentes seguem rotinas autonomamente
+- [ ] Humor muda baseado em eventos
+- [ ] Base extensível para mais agentes
+
+---
+
+### Issue #59: Mini-Game "Relógio Quebrado"
+**Labels**: `feat`, `phase-0: fundamentals`, `simulation`, `priority: critical`, `complexity: intermediate`
+
+**Descrição**:
+Experimentar com diferentes tick rates e observar emergência. Motor temporal do projeto.
+
+**Objetivo de Aprendizado**: Tempo discreto, determinismo
+
+**Tarefas**:
+- [ ] Implementar sistema de ticks discretos
+- [ ] Criar função `tick(world, delta_ticks)`
+- [ ] Separar tempo visual de tempo lógico
+- [ ] Testar com diferentes tick rates (1h, 10min, 1min)
+- [ ] Observar colapsos emergentes
+- [ ] Garantir determinismo (mesma seed = mesmo resultado)
+
+**Critérios de Aceitação**:
+- [ ] Simulação independente de framerate
+- [ ] Comportamento consistente em diferentes velocidades
+- [ ] Aceleração de tempo funcional
+
+---
+
+### Issue #60: Mini-Game "Terreno Hostil"
+**Labels**: `feat`, `phase-3: physical-model`, `priority: medium`, `complexity: intermediate`
+
+**Descrição**:
+Geração de terreno onde geografia afeta custo de construção e crescimento.
+
+**Objetivo de Aprendizado**: Unity Terrain, custo espacial, política material
+
+**Tarefas**:
+- [ ] Usar Unity Terrain Tools para criar mapa
+- [ ] Definir tipos de terreno (plano, montanha, pântano)
+- [ ] Implementar custo de construção por tipo
+- [ ] Visualizar custo com cores/overlay
+- [ ] Testar crescimento diferencial
+- [ ] Documentar sistema de custos
+
+**Critérios de Aceitação**:
+- [ ] Construir em montanha = mais caro/demorado
+- [ ] Geografia influencia decisões do jogador
+- [ ] Sistema reutilizável
+
+---
+
+### Issue #61: Mini-Game "AR como Janela"
+**Labels**: `feat`, `phase-4: expansion`, `iot`, `priority: medium`, `complexity: advanced`, `research`
+
+**Descrição**:
+Protótipo AR usando celular para ver dados sobre maquete física. Ponte físico-digital.
+
+**Objetivo de Aprendizado**: AR Foundation, ARCore/ARKit, overlay de dados
+
+**Tarefas**:
+- [ ] Setup AR Foundation no Unity
+- [ ] Criar marcadores de imagem (QR codes ou targets)
+- [ ] Apontar celular → ver nome de ruas
+- [ ] Overlay de fluxo de passageiros
+- [ ] Testar em Android e iOS
+- [ ] Documentar processo de setup
+
+**Critérios de Aceitação**:
+- [ ] App AR funcional em mobile
+- [ ] Reconhecimento de maquete física
+- [ ] Dados digitais aparecem sobre físico
+
+---
+
+### Issue #62: Mini-Game "Botão que Protesta"
+**Labels**: `feat`, `phase-2: basic-hardware`, `hardware`, `iot`, `priority: medium`, `complexity: intermediate`
+
+**Descrição**:
+Botão físico (Arduino) gera evento social no jogo. Integração maquete → simulação.
+
+**Objetivo de Aprendizado**: Arduino, Serial, Event Bus
+
+**Tarefas**:
+- [ ] Conectar botão ao Arduino
+- [ ] Código Arduino lê botão e envia via Serial
+- [ ] Python recebe Serial e emite evento
+- [ ] Unity escuta evento via Event Bus
+- [ ] Evento gera protesto na praça virtual
+- [ ] Testar latência e confiabilidade
+
+**Critérios de Aceitação**:
+- [ ] Botão físico → reação no mundo virtual < 1s
+- [ ] Sistema escalável para múltiplos sensores
+- [ ] Documentação completa do fluxo
+
+---
+
+## 📚 FASE 0.6: APRENDIZADO TÉCNICO E PESQUISA
+
+*Baseado na seção "Referências Acadêmicas e Técnicas" do GDD*
+
+### Issue #63: Estudar e documentar Agent-Based Modeling (ABM)
+**Labels**: `research`, `docs`, `phase-0: fundamentals`, `priority: high`, `complexity: intermediate`
+
+**Descrição**:
+Pesquisar fundamentos de ABM para embasar sistema de agentes.
+
+**Tarefas**:
+- [ ] Ler "Growing Artificial Societies" (Epstein & Axtell) - capítulos principais
+- [ ] Experimentar com NetLogo (tutoriais básicos)
+- [ ] Documentar princípios aplicáveis ao Ferritine
+- [ ] Criar protótipo conceitual de agente
+- [ ] Escrever `docs/research/ABM_FUNDAMENTALS.md`
+- [ ] Listar referências e recursos úteis
+
+**Critérios de Aceitação**:
+- [ ] Documento completo sobre ABM
+- [ ] Exemplos práticos com código
+- [ ] Aplicação clara ao projeto
+
+---
+
+### Issue #64: Prototipar UI Toolkit com amostras Unity
+**Labels**: `feat`, `area: ui`, `phase-1: digital`, `priority: medium`, `complexity: beginner`, `good first issue`
+
+**Descrição**:
+Estudar amostras oficiais Unity (Dragon Crashers, QuizU) e criar protótipo de UI.
+
+**Tarefas**:
+- [ ] Baixar Dragon Crashers sample
+- [ ] Baixar QuizU sample
+- [ ] Analisar estrutura UXML e USS
+- [ ] Criar protótipo de menu principal
+- [ ] Implementar painel de informações com data binding
+- [ ] Testar responsividade
+- [ ] Documentar padrões aprendidos
+
+**Critérios de Aceitação**:
+- [ ] UI funcional com UI Toolkit
+- [ ] Data binding implementado
+- [ ] Documentação de boas práticas
+
+---
+
+### Issue #65: Configurar ML-Agents para experimentos futuros
+**Labels**: `research`, `simulation`, `phase-4: expansion`, `priority: low`, `complexity: advanced`
+
+**Descrição**:
+Setup inicial do ML-Agents Toolkit para possível uso em IA de agentes.
+
+**Tarefas**:
+- [ ] Instalar ML-Agents Toolkit
+- [ ] Seguir tutorial básico de treinamento
+- [ ] Criar ambiente simples (agente caminha até ponto)
+- [ ] Treinar modelo básico
+- [ ] Avaliar viabilidade para Ferritine
+- [ ] Documentar processo e aprendizados
+
+**Critérios de Aceitação**:
+- [ ] ML-Agents instalado e funcionando
+- [ ] Modelo treinado com sucesso
+- [ ] Avaliação documentada
+
+---
+
+### Issue #66: Implementar MQTT para comunicação IoT
+**Labels**: `feat`, `iot`, `phase-2: basic-hardware`, `priority: medium`, `complexity: intermediate`
+
+**Descrição**:
+Setup de broker MQTT e cliente Unity para comunicação com sensores remotos.
+
+**Tarefas**:
+- [ ] Instalar broker MQTT (Mosquitto ou HiveMQ)
+- [ ] Instalar M2Mqtt no Unity
+- [ ] Criar publisher de teste (Python ou Arduino)
+- [ ] Unity subscribe a tópico de teste
+- [ ] Testar latência e confiabilidade
+- [ ] Documentar arquitetura MQTT
+
+**Critérios de Aceitação**:
+- [ ] Mensagens MQTT recebidas em Unity
+- [ ] Latência < 500ms
+- [ ] Sistema escalável para múltiplos sensores
+
+---
+
+## 🏗️ FASE 0.7: ARQUITETURA E PADRÕES
+
+*Baseado na seção "Desenvolvimento de Código: Arquitetura Correta" do GDD*
+
+### Issue #67: Refatorar para arquitetura desacoplada (Observer Pattern)
+**Labels**: `refactor`, `phase-1: digital`, `priority: high`, `complexity: intermediate`
+
+**Descrição**:
+Implementar Event Bus para desacoplar sistemas usando Observer Pattern.
+
+**Tarefas**:
+- [ ] Criar `backend/utils/event_bus.py`
+- [ ] Implementar subscribe/emit/unsubscribe
+- [ ] Refatorar sistemas para usar eventos
+- [ ] Exemplo: transport_system emite "train_arrived"
+- [ ] economy_system escuta e reage
+- [ ] Testes unitários do Event Bus
+- [ ] Documentar padrão
+
+**Critérios de Aceitação**:
+- [ ] Event Bus funcional
+- [ ] Sistemas desacoplados
+- [ ] Testes passando
+
+---
+
+### Issue #68: Migrar para arquitetura Data-Driven (ScriptableObjects)
+**Labels**: `refactor`, `phase-1: digital`, `area: database`, `priority: high`, `complexity: intermediate`
+
+**Descrição**:
+Separar dados de lógica usando ScriptableObjects no Unity e JSON no Python.
+
+**Tarefas**:
+- [ ] Criar ScriptableObject para edifícios
+- [ ] Criar ScriptableObject para profissões
+- [ ] Migrar dados hardcoded para arquivos
+- [ ] Implementar carregamento dinâmico
+- [ ] Sistema de hot-reload (opcional)
+- [ ] Documentar estrutura de dados
+
+**Critérios de Aceitação**:
+- [ ] Dados em arquivos separados
+- [ ] Balanceamento possível sem recompilar
+- [ ] Sistema extensível
+
+---
+
+### Issue #69: Implementar ECS conceitual para agentes
+**Labels**: `refactor`, `phase-1: digital`, `area: agents`, `priority: medium`, `complexity: advanced`, `research`
+
+**Descrição**:
+Adotar mentalidade ECS (Entity Component System) sem necessariamente usar DOTS.
+
+**Tarefas**:
+- [ ] Estudar ECS (Entity Component System)
+- [ ] Refatorar Agente para componentes
+- [ ] Componentes: Position, Profession, Mood, Routine
+- [ ] Sistemas operam sobre componentes
+- [ ] Comparar performance com OOP tradicional
+- [ ] Documentar arquitetura
+
+**Critérios de Aceitação**:
+- [ ] Arquitetura baseada em componentes
+- [ ] Performance mensurável
+- [ ] Código mais modular
+
+---
+
+### Issue #70: Criar sistema de testes automatizados para simulação
+**Labels**: `test`, `phase-0: fundamentals`, `priority: high`, `complexity: intermediate`
+
+**Descrição**:
+Suite de testes para garantir determinismo e correção da simulação.
+
+**Tarefas**:
+- [ ] Configurar pytest com fixtures
+- [ ] Testes de tempo discreto (determinismo)
+- [ ] Testes de agentes (rotinas)
+- [ ] Testes de transporte (atrasos)
+- [ ] Testes de economia (fluxo de recursos)
+- [ ] Coverage report
+- [ ] CI/CD integrado
+
+**Critérios de Aceitação**:
+- [ ] Coverage > 70%
+- [ ] Todos os testes passam
+- [ ] CI automatizado no GitHub Actions
+
+---
+
+## 🎓 FASE 0.8: DOCUMENTAÇÃO E DIVULGAÇÃO
+
+*Baseado em princípios de projeto open-source e educacional*
+
+### Issue #71: Criar documentação de API REST/WebSocket
+**Labels**: `docs`, `area: api`, `phase-1: digital`, `priority: medium`, `complexity: beginner`
+
+**Descrição**:
+Documentar endpoints da API para integração Unity ↔ Python.
+
+**Tarefas**:
+- [ ] Criar `docs/api/API_REFERENCE.md`
+- [ ] Documentar GET /api/world/state
+- [ ] Documentar GET /api/agents
+- [ ] Documentar WebSocket para eventos em tempo real
+- [ ] Exemplos de uso com curl/Python/C#
+- [ ] Swagger/OpenAPI spec (opcional)
+
+**Critérios de Aceitação**:
+- [ ] Documentação completa e clara
+- [ ] Exemplos funcionais
+- [ ] Fácil para novos desenvolvedores
+
+---
+
+### Issue #72: Escrever artigo técnico sobre arquitetura híbrida
+**Labels**: `docs`, `research`, `priority: low`, `complexity: intermediate`
+
+**Descrição**:
+Artigo explicando arquitetura físico-digital para compartilhar aprendizados.
+
+**Tarefas**:
+- [ ] Outline do artigo
+- [ ] Seção: Motivação e contexto
+- [ ] Seção: Arquitetura técnica
+- [ ] Seção: Desafios e soluções
+- [ ] Seção: Aprendizados e futuro
+- [ ] Diagramas e fotos
+- [ ] Publicar em blog/Medium/dev.to
+
+**Critérios de Aceitação**:
+- [ ] Artigo completo (2000+ palavras)
+- [ ] Publicado e compartilhado
+- [ ] Feedback da comunidade
+
+---
+
+### Issue #73: Criar vídeo showcase do projeto
+**Labels**: `docs`, `priority: low`, `complexity: beginner`
+
+**Descrição**:
+Vídeo demonstrando maquete física + simulação digital integradas.
+
+**Tarefas**:
+- [ ] Roteiro do vídeo (2-3 min)
+- [ ] Gravar maquete física
+- [ ] Gravar simulação Unity
+- [ ] Gravar integração AR (celular)
+- [ ] Editar vídeo com narração
+- [ ] Publicar no YouTube
+- [ ] Compartilhar em redes sociais
+
+**Critérios de Aceitação**:
+- [ ] Vídeo publicado
+- [ ] Qualidade HD
+- [ ] Explicação clara do projeto
+
+---
+
+## 📊 MILESTONES ADICIONADOS
+
+### Milestone 0.5: Mini-Games e Protótipos
+**Descrição**: Criar protótipos técnicos reutilizáveis para aprender ferramentas e validar conceitos  
+**Data Prevista**: 1-2 meses (paralelo a outras fases)  
+**Issues**: #56-#62 (7 mini-games)
+
+### Milestone 0.6: Pesquisa e Aprendizado Técnico
+**Descrição**: Estudar fundamentos teóricos e ferramentas avançadas  
+**Data Prevista**: Contínuo ao longo do projeto  
+**Issues**: #63-#66 (4 issues de pesquisa)
+
+### Milestone 0.7: Arquitetura e Padrões
+**Descrição**: Refatorar código para seguir padrões profissionais  
+**Data Prevista**: 3-4 semanas  
+**Issues**: #67-#70 (4 issues de arquitetura)
+
+### Milestone 0.8: Documentação e Divulgação
+**Descrição**: Documentar aprendizados e compartilhar com comunidade  
+**Data Prevista**: Contínuo  
+**Issues**: #71-#73 (3 issues de documentação)
+
+---
+
+## 🏷️ LABELS ADICIONAIS
+
+### Por Categoria de Aprendizado
+- `learning: abm` - Agent-Based Modeling
+- `learning: ui` - Interface de Usuário
+- `learning: iot` - Internet das Coisas
+- `learning: ar` - Realidade Aumentada
+- `learning: architecture` - Arquitetura de Software
+
+### Por Tipo de Protótipo
+- `prototype: mini-game` - Mini-game educacional
+- `prototype: poc` - Proof of Concept
+- `prototype: research` - Pesquisa exploratória
+
+---
+
 ## RESUMO QUANTITATIVO
 
 ### Por Fase
 - **Fase 0 (Fundamentos)**: 10 issues (#1-#10)
+- **Fase 0.5 (Mini-Games)**: 7 issues (#56-#62)
+- **Fase 0.6 (Pesquisa)**: 4 issues (#63-#66)
+- **Fase 0.7 (Arquitetura)**: 4 issues (#67-#70)
+- **Fase 0.8 (Documentação)**: 3 issues (#71-#73)
 - **Fase 1 (Digital)**: 16 issues (#11-#26)
 - **Fase 2 (Hardware)**: 8 issues (#27-#34)
 - **Fase 3 (Maquete)**: 8 issues (#35-#42)
 - **Fase 4 (Expansão)**: 8 issues (#43-#50)
 - **Infraestrutura**: 5 issues (#51-#55)
 
-**Total**: 55 issues detalhadas
+**Total**: 73 issues detalhadas (+18 novas issues baseadas no GDD atualizado)
 
 ### Por Prioridade
-- **Critical**: ~12 issues
-- **High**: ~18 issues
-- **Medium**: ~20 issues
-- **Low**: ~5 issues
+- **Critical**: ~13 issues
+- **High**: ~25 issues
+- **Medium**: ~28 issues
+- **Low**: ~7 issues
 
 ### Por Complexidade
-- **Beginner**: ~12 issues (good first issue)
-- **Intermediate**: ~28 issues
-- **Advanced**: ~15 issues
+- **Beginner**: ~15 issues (good first issue)
+- **Intermediate**: ~40 issues
+- **Advanced**: ~18 issues
 
 ---
 
 ## 📅 CRONOGRAMA SUGERIDO
 
-### Mês 1-2: Fase 0
-- Issues #1-#10
-- Foco: Infraestrutura e aprendizado
+### Mês 1-2: Fase 0 + Fase 0.5-0.8 (Fundamentos + Aprendizado)
+- Issues #1-#10 (Fundamentos)
+- Issues #56-#73 (Mini-games, Pesquisa, Arquitetura, Docs)
+- Foco: Infraestrutura, aprendizado e protótipos
+- **Paralelo**: Mini-games podem ser feitos ao longo do projeto
 
 ### Mês 3: Fase 1.1-1.2
 - Issues #11-#18
 - Foco: Mundo estático e agentes
+- **Aplicar aprendizados** dos mini-games #56-#58
 
 ### Mês 4: Fase 1.3-1.4
 - Issues #19-#26
 - Foco: Economia e transporte virtual
+- **Aplicar aprendizados** do mini-game #57
 
 ### Mês 5-6: Fase 2.1-2.2
 - Issues #27-#31
 - Foco: Arduino, iluminação e sensores
+- **Aplicar aprendizados** dos mini-games #62, #66
 
 ### Mês 7: Fase 2.3
 - Issues #32-#34
@@ -1326,6 +1788,7 @@ Containerizar aplicação com Docker.
 ### Mês 8-9: Fase 3.1-3.2
 - Issues #35-#38
 - Foco: Base física e trilhos
+- **Aplicar aprendizados** do mini-game #60
 
 ### Mês 10-11: Fase 3.3-3.4
 - Issues #39-#42
@@ -1334,9 +1797,11 @@ Containerizar aplicação com Docker.
 ### Mês 12+: Fase 4
 - Issues #43-#50
 - Foco: Expansões conforme interesse
+- **Aplicar aprendizados** do mini-game #61 (AR)
 
-### Contínuo: Infraestrutura
-- Issues #51-#55
+### Contínuo: Infraestrutura e Documentação
+- Issues #51-#55 (Infraestrutura)
+- Issues #71-#73 (Documentação)
 - Manutenção e melhorias
 
 ---
@@ -1349,7 +1814,9 @@ Containerizar aplicação com Docker.
 4. **Criar issues** no GitHub usando as descrições detalhadas acima
 5. **Priorizar** primeiras 5-10 issues para começar
 6. **Começar desenvolvimento** pela Fase 0
+7. **⭐ NOVO**: Iniciar mini-games (#56-#62) para aprendizado prático
+8. **⭐ NOVO**: Documentar aprendizados em `docs/research/`
 
 ---
 
-**Observação**: Este documento é um plano vivo e pode ser atualizado conforme o projeto evolui e novas necessidades surgem.
+**Observação**: Este documento é um plano vivo e pode ser atualizado conforme o projeto evolui e novas necessidades surgem. As novas issues (#56-#73) foram adicionadas baseadas na atualização do GDD com referências a jogos modernos, Unity best practices e pesquisa acadêmica em simulações sérias.
