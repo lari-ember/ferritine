@@ -160,6 +160,18 @@ public class CameraController : MonoBehaviour
     {
         frameCounter++;
         
+        // 🔒 BLOQUEAR INPUT QUANDO UI ESTÁ ABERTA
+        // Evita selecionar entidades "através" de painéis modais
+        if (UIManager.Instance != null && UIManager.Instance.IsAnyPanelOpen())
+        {
+            // Ainda permite movimento de câmera e zoom, mas não seleção
+            HandleCameraMovement();
+            HandleCameraZoom();
+            UpdateFollowMode();
+            UpdatePreviewMode();
+            return;
+        }
+        
         // Log de debug a cada segundo para verificar se Update está rodando
         if (Time.time - lastLogTime >= 1f)
         {

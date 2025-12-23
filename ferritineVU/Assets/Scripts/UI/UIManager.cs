@@ -295,6 +295,16 @@ public class UIManager : MonoBehaviour
     }
     
     /// <summary>
+    /// Verifica se QUALQUER painel modal está aberto.
+    /// Usado pelo CameraController para bloquear seleção de entidades
+    /// enquanto painéis estão abertos (evita selecionar entidades "através" da UI).
+    /// </summary>
+    public bool IsAnyPanelOpen()
+    {
+        return currentInspectorPanel != null || currentTeleportPanel != null;
+    }
+    
+    /// <summary>
     /// Fecha TODOS os painéis abertos (útil para ESC ou reset).
     /// </summary>
     public void CloseAllPanels()

@@ -18,17 +18,41 @@ public class TeleportSelectorUI : MonoBehaviour
     public RectTransform contentContainer;
     public GameObject locationItemPrefab;
     
-    [Header("Controls")]
-    public Button confirmButton;
-    public Button cancelButton;
-    public TMP_Dropdown filterDropdown;
-    public TMP_InputField searchField;
+    [Header("List References")]
+    [SerializeField] private Transform destinationsContent;
+    [SerializeField] private GameObject destinationItemPrefab;
+    
+    [Header("UI Controls")]
+    [SerializeField] private TMP_Dropdown filterDropdown;
+    [SerializeField] private TMP_InputField searchInput;
+    
+    [Header("Footer Buttons")]
+    [SerializeField] private Button confirmButton;
+    [SerializeField] private Button cancelButton;
     
     [Header("Preview")]
     public TextMeshProUGUI previewText;
     
-    // State
+    // ==================== DESTINATION DATA ====================
+    private class DestinationData
+    {
+        public string id;
+        public string name;
+        public Vector3 position;
+        public string type; // "station" | "building"
+    }
+    
+    // ==================== STATE ====================
+    private List<DestinationData> allDestinations = new List<DestinationData>();
+    private DestinationData selectedDestination;
+    private GameObject selectedItemGO;
+    
+    // Entidade sendo teleportada
     private AgentData currentAgent;
+    private VehicleData currentVehicle;
+    private SelectableEntity.EntityType currentEntityType;
+    
+    // Legacy state
     private string selectedLocationType;
     private string selectedLocationId;
     private GameObject selectedLocationObject;
@@ -36,6 +60,13 @@ public class TeleportSelectorUI : MonoBehaviour
     
     // API
     private string apiBaseUrl = "http://localhost:8000";
+
+    // Colors for selection
+    private readonly Color32 defaultItemColor = new Color32(58, 58, 58, 255);
+    private readonly Color32 selectedItemColor = new Color32(80, 80, 80, 255);
+    
+    // ==================== VALIDATION ====================
+    private enum ValidationType { Agent, Destination }
     
     void Awake()
     {
@@ -48,352 +79,724 @@ public class TeleportSelectorUI : MonoBehaviour
         if (filterDropdown != null)
             filterDropdown.onValueChanged.AddListener(OnFilterChanged);
         
-        if (searchField != null)
-            searchField.onValueChanged.AddListener(OnSearchChanged);
+        if (searchInput != null)
+            searchInput.onValueChanged.AddListener(OnSearchChanged);
         
-        // Start hidden
+        if (destinationsContent == null && contentContainer != null)
+            destinationsContent = contentContainer;
+        
+        if (destinationItemPrefab == null && locationItemPrefab != null)
+            destinationItemPrefab = locationItemPrefab;
+        
         if (panel != null)
             panel.SetActive(false);
     }
     
-    /// <summary>
-    /// Opens the teleport selector for an agent.
-    /// </summary>
+    // ==================== OPEN METHODS ====================
+    
     public void Open(AgentData agent)
     {
         if (agent == null) return;
-        
         currentAgent = agent;
+        currentVehicle = null;
+        currentEntityType = SelectableEntity.EntityType.Agent;
+        OpenInternal();
+    }
+    
+    public void Open(VehicleData vehicle)
+    {
+        if (vehicle == null) return;
+        currentVehicle = vehicle;
+        currentAgent = null;
+        currentEntityType = SelectableEntity.EntityType.Vehicle;
+        OpenInternal();
+    }
+    
+    private void OpenInternal()
+    {
         selectedLocationType = null;
         selectedLocationId = null;
+        selectedDestination = null;
+        selectedItemGO = null;
         
         if (panel != null)
             panel.SetActive(true);
         
-        // Populate location list
-        PopulateLocationList();
+        if (previewText != null)
+            previewText.text = "Selecione um destino";
         
+        AddTestDestinations();
         AudioManager.PlayUISound("panel_open");
+        
+        string entityName = currentAgent?.name ?? currentVehicle?.name ?? "?";
+        Debug.Log($"[TeleportSelectorUI] Opened for {currentEntityType}: {entityName}");
     }
     
-    /// <summary>
-    /// Alias for Open() - usado pelo UIManager.
-    /// </summary>
-    public void ShowForAgent(AgentData agent)
-    {
-        Open(agent);
-    }
+    public void ShowForAgent(AgentData agent) => Open(agent);
     
-    /// <summary>
-    /// Closes the teleport selector.
-    /// </summary>
+    // ==================== CLOSE ====================
+    
     public void Close()
     {
-        // Cleanup selected location highlight
         if (selectedLocationObject != null)
         {
             SelectableEntity entity = selectedLocationObject.GetComponent<SelectableEntity>();
-            if (entity != null)
-            {
-                entity.Unhighlight();
-            }
+            if (entity != null) entity.Unhighlight();
             selectedLocationObject = null;
         }
         
-        // Remove preview particle
         if (previewParticle != null)
         {
             ParticleEffectPool.Instance?.Return("teleport_preview", previewParticle);
             previewParticle = null;
         }
         
-        // Stop camera preview
         CameraController cameraController = Camera.main?.GetComponent<CameraController>();
-        if (cameraController != null)
-        {
-            cameraController.StopPreview();
-        }
+        if (cameraController != null) cameraController.StopPreview();
         
-        // Clear selection state
+        selectedDestination = null;
+        selectedItemGO = null;
+        allDestinations.Clear();
         currentAgent = null;
+        currentVehicle = null;
         selectedLocationType = null;
         selectedLocationId = null;
         
-        // Hide panel
         if (panel != null)
             panel.SetActive(false);
         
         AudioManager.PlayUISound("panel_close");
-        
-        // Notify UIManager to destroy this panel (se estiver gerenciado)
         UIManager.Instance?.HideTeleportSelector();
+        Debug.Log("[TeleportSelectorUI] Closed");
     }
     
-    /// <summary>
-    /// Populates the list of available teleport destinations.
-    /// </summary>
-    void PopulateLocationList()
+    // ==================== TEST DATA ====================
+    
+    void AddTestDestinations()
     {
-        // Clear existing items
-        ClearLocationList();
+        allDestinations.Clear();
         
-        // Get stations from WorldController
-        WorldController worldController = FindAnyObjectByType<WorldController>();
-        if (worldController != null)
+        allDestinations.Add(new DestinationData {
+            id = "station_01", name = "Central Station",
+            position = new Vector3(120, 0, 450), type = "station"
+        });
+        allDestinations.Add(new DestinationData {
+            id = "station_02", name = "Estação Jabaquara",
+            position = new Vector3(0, 0, 0), type = "station"
+        });
+        allDestinations.Add(new DestinationData {
+            id = "building_01", name = "Prefeitura",
+            position = new Vector3(300, 0, 210), type = "building"
+        });
+        allDestinations.Add(new DestinationData {
+            id = "building_02", name = "Hospital Municipal",
+            position = new Vector3(450, 0, 180), type = "building"
+        });
+        allDestinations.Add(new DestinationData {
+            id = "station_03", name = "Terminal Rodoviário",
+            position = new Vector3(200, 0, 300), type = "station"
+        });
+        
+        Debug.Log($"[TeleportSelectorUI] Added {allDestinations.Count} test destinations");
+        RefreshList();
+    }
+    
+    // ==================== REFRESH LIST ====================
+    
+    void RefreshList()
+    {
+        Transform content = destinationsContent != null ? destinationsContent : contentContainer;
+        if (content == null)
         {
-            List<StationData> stations = worldController.GetAllStations();
-            foreach (var station in stations)
-            {
-                CreateLocationItem("station", station.id, station.name, station.station_type, 
-                                  new Vector3(station.x, 0, station.y));
-            }
+            Debug.LogError("[TeleportSelectorUI] No content container found!");
+            return;
         }
         
-        // Fetch buildings from API
-        StartCoroutine(FetchAndAddBuildings());
-    }
-    
-    /// <summary>
-    /// Fetches buildings from API and adds them to the list.
-    /// </summary>
-    IEnumerator FetchAndAddBuildings()
-    {
-        string url = $"{apiBaseUrl}/api/buildings?limit=100";
-        
-        using (UnityWebRequest request = UnityWebRequest.Get(url))
+        GameObject prefab = destinationItemPrefab != null ? destinationItemPrefab : locationItemPrefab;
+        if (prefab == null)
         {
-            yield return request.SendWebRequest();
+            Debug.LogError("[TeleportSelectorUI] No destination item prefab found!");
+            return;
+        }
+        
+        foreach (Transform child in content)
+            Destroy(child.gameObject);
+        
+        foreach (var dest in allDestinations)
+        {
+            GameObject itemGO = Instantiate(prefab, content);
+            itemGO.SetActive(true);
             
-            if (request.result == UnityWebRequest.Result.Success)
+            DestinationItemVisual itemVisual = itemGO.GetComponent<DestinationItemVisual>();
+            if (itemVisual == null)
             {
-                string jsonResponse = request.downloadHandler.text;
-                
-                // Parse JSON manually (simple approach)
-                // In production, use JsonUtility or Newtonsoft.Json
-                BuildingListResponse response = JsonUtility.FromJson<BuildingListResponse>("{\"buildings\":" + jsonResponse + "}");
-                
-                if (response != null && response.buildings != null)
-                {
-                    foreach (var building in response.buildings)
-                    {
-                        CreateLocationItem("building", building.id, building.name, building.building_type,
-                                          new Vector3(building.x, 0, building.y));
-                    }
-                }
+                itemVisual = itemGO.AddComponent<DestinationItemVisual>();
+                itemVisual.CreateBorderIfNeeded();
             }
-            else
+            
+            DestinationData capturedDest = dest;
+            GameObject capturedGO = itemGO;
+            string coordsStr = $"({dest.position.x:F0}, {dest.position.y:F0}, {dest.position.z:F0})";
+            itemVisual.Setup(dest.name, coordsStr, () => OnDestinationSelected(capturedDest, capturedGO));
+            
+            Transform textGroup = itemGO.transform.Find("TextGroup");
+            if (textGroup != null)
             {
-                Debug.LogWarning($"[TeleportSelectorUI] Failed to fetch buildings: {request.error}");
+                var nameText = textGroup.Find("NameText")?.GetComponent<TextMeshProUGUI>();
+                var coordsText = textGroup.Find("CoordsText")?.GetComponent<TextMeshProUGUI>();
+                if (nameText != null) nameText.text = dest.name;
+                if (coordsText != null) coordsText.text = coordsStr;
             }
+            
+            Button btn = itemGO.GetComponent<Button>();
+            if (btn != null) btn.enabled = false;
         }
+        
+        Debug.Log($"[TeleportSelectorUI] Refreshed list with {allDestinations.Count} items");
     }
     
-    [System.Serializable]
-    private class BuildingListResponse
-    {
-        public List<BuildingData> buildings;
-    }
+    // ==================== SELECTION ====================
     
-    /// <summary>
-    /// Creates a location item in the scroll view.
-    /// </summary>
-    void CreateLocationItem(string locationType, string locationId, string locationName, 
-                           string subType, Vector3 worldPosition)
+    void OnDestinationSelected(DestinationData dest, GameObject itemGO)
     {
-        if (locationItemPrefab == null || contentContainer == null) return;
-        
-        GameObject item = Instantiate(locationItemPrefab, contentContainer);
-        
-        // Setup item data
-        TeleportLocationItem itemComponent = item.GetComponent<TeleportLocationItem>();
-        if (itemComponent == null)
+        if (selectedItemGO != null)
         {
-            itemComponent = item.AddComponent<TeleportLocationItem>();
+            DestinationItemVisual prevVisual = selectedItemGO.GetComponent<DestinationItemVisual>();
+            if (prevVisual != null) prevVisual.SetSelected(false);
         }
         
-        itemComponent.Setup(locationType, locationId, locationName, subType, worldPosition, this);
-    }
-    
-    /// <summary>
-    /// Called when a location item is selected.
-    /// </summary>
-    public void OnLocationSelected(string locationType, string locationId, string locationName, Vector3 worldPosition)
-    {
-        selectedLocationType = locationType;
-        selectedLocationId = locationId;
+        selectedDestination = dest;
+        selectedItemGO = itemGO;
+        selectedLocationType = dest.type;
+        selectedLocationId = dest.id;
         
-        // Update preview text
+        DestinationItemVisual itemVisual = itemGO.GetComponent<DestinationItemVisual>();
+        if (itemVisual != null) itemVisual.SetSelected(true);
+        
         if (previewText != null)
         {
-            previewText.text = $"Destino: {locationName} ({locationType})";
+            string typeLabel = dest.type == "station" ? "Estação" : "Edifício";
+            previewText.text = $"Destino: {dest.name} ({typeLabel})";
         }
-        
-        // Highlight location in 3D world
-        HighlightLocation(locationType, locationId);
-        
-        // Preview camera position
-        CameraController cameraController = Camera.main?.GetComponent<CameraController>();
-        if (cameraController != null)
-        {
-            cameraController.PreviewLocation(worldPosition);
-        }
-        
-        // Spawn preview particle effect
-        SpawnPreviewParticle(worldPosition);
         
         AudioManager.PlayUISound("button_select");
+        HighlightLocation(dest.type, dest.id);
+        
+        CameraController cameraController = Camera.main?.GetComponent<CameraController>();
+        if (cameraController != null) cameraController.PreviewLocation(dest.position);
+        
+        SpawnPreviewParticle(dest.position);
+        Debug.Log($"[TeleportSelectorUI] Selected: {dest.name} ({dest.type}) at {dest.position}");
+    }
+    
+    // ==================== CONFIRM / TELEPORT ====================
+    
+    void OnConfirmClicked()
+    {
+        if (currentAgent == null && currentVehicle == null)
+        {
+            ShowValidationError("Nenhuma entidade selecionada", ValidationType.Agent);
+            return;
+        }
+        
+        if (selectedDestination == null && string.IsNullOrEmpty(selectedLocationId))
+        {
+            ShowValidationError("Selecione um destino na lista", ValidationType.Destination);
+            return;
+        }
+        
+        if (currentVehicle != null)
+        {
+            string error = ValidateVehicleDestination(currentVehicle, selectedDestination);
+            if (!string.IsNullOrEmpty(error))
+            {
+                ShowValidationError(error, ValidationType.Destination);
+                return;
+            }
+        }
+        
+        ExecuteTeleportWithBackendSync();
+    }
+    
+    string ValidateVehicleDestination(VehicleData vehicle, DestinationData dest)
+    {
+        if (vehicle == null || dest == null) return "Dados inválidos";
+        
+        string vType = vehicle.vehicle_type?.ToLower() ?? "";
+        string dType = dest.type?.ToLower() ?? "";
+        string dName = dest.name?.ToLower() ?? "";
+        
+        // Trens: só estações de trem
+        if (vType.Contains("train") || vType.Contains("trem") || vType.Contains("metro"))
+        {
+            if (dType != "station") return "Trens só podem ir para estações";
+            if (dName.Contains("ônibus") || dName.Contains("bus")) return "Trens não podem ir para pontos de ônibus";
+        }
+        
+        // Ônibus: só estações/terminais
+        if (vType.Contains("bus") || vType.Contains("ônibus"))
+        {
+            if (dType != "station") return "Ônibus só podem ir para estações/terminais";
+        }
+        
+        // Barcos: precisam de portos
+        if (vType.Contains("boat") || vType.Contains("ferry") || vType.Contains("barco"))
+        {
+            if (!dName.Contains("porto") && !dName.Contains("pier") && !dName.Contains("marina"))
+                return "Embarcações precisam de porto ou atracadouro";
+        }
+        
+        // Carros: não podem ir para trilhos
+        if (vType.Contains("car") || vType.Contains("carro") || vType.Contains("taxi"))
+        {
+            if (dName.Contains("trilho") || dName.Contains("ferrovia") || dName.Contains("metrô"))
+                return "Veículos rodoviários não podem ir para trilhos";
+        }
+        
+        return null;
     }
     
     /// <summary>
-    /// Highlights the selected location in the 3D world.
+    /// Executa o teleporte com sincronização do backend.
+    /// Envia requisição para backend antes de atualizar o frontend.
     /// </summary>
+    void ExecuteTeleportWithBackendSync()
+    {
+        string locType = selectedDestination?.type ?? selectedLocationType;
+        string locId = selectedDestination?.id ?? selectedLocationId;
+        string locName = selectedDestination?.name ?? "destino";
+        Vector3 targetPos = selectedDestination?.position ?? Vector3.zero;
+        
+        // Validar entidade
+        string entityId = currentAgent?.id ?? currentVehicle?.id;
+        string entityName = currentAgent?.name ?? currentVehicle?.name ?? "entidade";
+        
+        if (string.IsNullOrEmpty(entityId))
+        {
+            ShowValidationError("Entidade inválida", ValidationType.Agent);
+            return;
+        }
+        
+        // Encontrar GameObject da entidade
+        WorldController worldController = FindAnyObjectByType<WorldController>();
+        if (worldController == null)
+        {
+            ToastNotificationManager.ShowError("WorldController não encontrado!");
+            return;
+        }
+        
+        GameObject entityObj = null;
+        if (currentAgent != null)
+        {
+            entityObj = worldController.GetAgentGameObject(currentAgent.id);
+        }
+        else if (currentVehicle != null)
+        {
+            entityObj = worldController.GetVehicleGameObject(currentVehicle.id);
+        }
+        
+        if (entityObj == null)
+        {
+            ToastNotificationManager.ShowError($"'{entityName}' não encontrado na cena!");
+            return;
+        }
+        
+        // Desabilitar botões enquanto aguarda resposta
+        if (confirmButton != null) confirmButton.interactable = false;
+        if (cancelButton != null) cancelButton.interactable = false;
+        
+        // Tentar enviar requisição para backend
+        BackendTeleportManager teleportManager = BackendTeleportManager.Instance;
+        if (teleportManager != null)
+        {
+            Debug.Log($"[TeleportSelectorUI] Enviando teleporte para backend: {entityId} -> {locType}/{locId}");
+            teleportManager.TeleportAgent(entityId, locType, locId, 
+                (success, message) => OnTeleportBackendResponse(success, message, entityObj, targetPos, locName, entityName));
+        }
+        else
+        {
+            // FALLBACK: BackendTeleportManager não encontrado - executar teleporte local
+            Debug.LogWarning("[TeleportSelectorUI] BackendTeleportManager não encontrado. Executando teleporte local.");
+            
+            if (confirmButton != null) confirmButton.interactable = true;
+            if (cancelButton != null) cancelButton.interactable = true;
+            
+            // Executar teleporte local diretamente
+            StartCoroutine(ExecuteTeleportAnimation(entityObj, targetPos, locName, entityName));
+        }
+    }
+    
+    /// <summary>
+    /// Callback quando o backend responde ao teleporte.
+    /// </summary>
+    void OnTeleportBackendResponse(bool success, string message, GameObject entityObj, 
+                                     Vector3 targetPos, string destName, string entityName)
+    {
+        if (confirmButton != null) confirmButton.interactable = true;
+        if (cancelButton != null) cancelButton.interactable = true;
+        
+        if (success)
+        {
+            // Backend confirmou - executar animação local
+            Debug.Log($"[TeleportSelectorUI] Backend confirmou teleporte de {entityName}");
+            StartCoroutine(ExecuteTeleportAnimation(entityObj, targetPos, destName, entityName));
+        }
+        else
+        {
+            // FALLBACK: Erro no backend - executar teleporte local mesmo assim
+            Debug.LogWarning($"[TeleportSelectorUI] Backend falhou ({message}), executando teleporte local.");
+            StartCoroutine(ExecuteTeleportAnimation(entityObj, targetPos, destName, entityName));
+        }
+    }
+    
+    /// <summary>
+    /// Anima o teleporte localmente após confirmação do backend.
+    /// </summary>
+    IEnumerator ExecuteTeleportAnimation(GameObject entityObj, Vector3 targetPos, string destName, string entityName)
+    {
+        // Spawn efeito de desaparecimento
+        SpawnTeleportEffect("teleport_despawn", entityObj.transform.position);
+        AudioManager.PlayUISound("teleport_woosh");
+        
+        // Aguardar animação
+        yield return new WaitForSeconds(0.3f);
+        
+        // Mover entidade
+        Vector3 finalPos = CalculateTeleportPosition(targetPos, selectedDestination?.type ?? selectedLocationType);
+        entityObj.transform.position = finalPos;
+        
+        VehicleMover mover = entityObj.GetComponent<VehicleMover>();
+        if (mover != null) mover.targetPosition = finalPos;
+        
+        // Spawn efeito de aparecimento
+        SpawnTeleportEffect("teleport_spawn", finalPos);
+        AudioManager.PlayUISound("teleport_arrive");
+        
+        // Atualizar dados locais
+        SelectableEntity selectable = entityObj.GetComponent<SelectableEntity>();
+        if (selectable != null)
+        {
+            if (selectable.agentData != null)
+            {
+                selectable.agentData.location_type = selectedDestination?.type ?? selectedLocationType;
+                selectable.agentData.location_id = selectedDestination?.id ?? selectedLocationId;
+            }
+            else if (selectable.vehicleData != null)
+            {
+                selectable.vehicleData.current_station_id = selectedDestination?.id ?? selectedLocationId;
+            }
+        }
+        
+        string entityType = currentAgent != null ? "Agente" : "Veículo";
+        ToastNotificationManager.ShowSuccess($"{entityType} '{entityName}' teleportado para {destName}!");
+        
+        Debug.Log($"[TeleportSelectorUI] ✓ Teleport complete: {entityName} → {destName}");
+        Close();
+    }
+
+    void ExecuteTeleport()
+    {
+        string locType = selectedDestination?.type ?? selectedLocationType;
+        string locId = selectedDestination?.id ?? selectedLocationId;
+        string locName = selectedDestination?.name ?? "destino";
+        Vector3 targetPos = selectedDestination?.position ?? Vector3.zero;
+        
+        WorldController worldController = FindAnyObjectByType<WorldController>();
+        if (worldController == null)
+        {
+            ToastNotificationManager.ShowError("WorldController não encontrado!");
+            return;
+        }
+        
+        GameObject entityObj = null;
+        string entityName = "";
+        
+        if (currentAgent != null)
+        {
+            entityObj = worldController.GetAgentGameObject(currentAgent.id);
+            entityName = currentAgent.name;
+        }
+        else if (currentVehicle != null)
+        {
+            entityObj = worldController.GetVehicleGameObject(currentVehicle.id);
+            entityName = currentVehicle.name;
+        }
+        
+        if (entityObj == null)
+        {
+            ToastNotificationManager.ShowError($"'{entityName}' não encontrado na cena!");
+            return;
+        }
+        
+        Vector3 finalPos = CalculateTeleportPosition(targetPos, locType);
+        
+        SpawnTeleportEffect("teleport_despawn", entityObj.transform.position);
+        AudioManager.PlayUISound("teleport_woosh");
+        
+        StartCoroutine(TeleportWithDelay(entityObj, finalPos, locName, entityName));
+    }
+    
+    Vector3 CalculateTeleportPosition(Vector3 basePos, string destType)
+    {
+        float offsetX = Random.Range(-2f, 2f);
+        float offsetZ = Random.Range(-2f, 2f);
+        float heightOffset = destType == "station" ? 0.1f : 0f;
+        return new Vector3(basePos.x + offsetX, basePos.y + heightOffset, basePos.z + offsetZ);
+    }
+    
+    IEnumerator TeleportWithDelay(GameObject entityObj, Vector3 targetPos, string destName, string entityName)
+    {
+        yield return new WaitForSeconds(0.3f);
+        
+        entityObj.transform.position = targetPos;
+        
+        VehicleMover mover = entityObj.GetComponent<VehicleMover>();
+        if (mover != null) mover.targetPosition = targetPos;
+        
+        SpawnTeleportEffect("teleport_spawn", targetPos);
+        
+        SelectableEntity selectable = entityObj.GetComponent<SelectableEntity>();
+        if (selectable != null)
+        {
+            if (selectable.agentData != null)
+            {
+                selectable.agentData.location_type = selectedDestination?.type ?? selectedLocationType;
+                selectable.agentData.location_id = selectedDestination?.id ?? selectedLocationId;
+            }
+            else if (selectable.vehicleData != null)
+            {
+                selectable.vehicleData.current_station_id = selectedDestination?.id ?? selectedLocationId;
+            }
+        }
+        
+        string entityType = currentAgent != null ? "Agente" : "Veículo";
+        ToastNotificationManager.ShowSuccess($"{entityType} '{entityName}' teleportado para {destName}!");
+        AudioManager.PlayUISound("teleport_arrive");
+        
+        Debug.Log($"[TeleportSelectorUI] Teleport complete: {entityName} → {destName}");
+        Close();
+    }
+    
+    void SpawnTeleportEffect(string effectName, Vector3 position)
+    {
+        if (ParticleEffectPool.Instance != null)
+            ParticleEffectPool.Instance.Play(effectName, position);
+        else
+            Debug.Log($"[TeleportSelectorUI] Particle '{effectName}' at {position} (no pool)");
+    }
+    
+    // ==================== VALIDATION FEEDBACK ====================
+    
+    void ShowValidationError(string message, ValidationType type)
+    {
+        ToastNotificationManager.ShowWarning(message);
+        AudioManager.PlayUISound("toast_warning");
+        
+        if (type == ValidationType.Destination)
+        {
+            StartCoroutine(FlashDestinationList());
+            if (previewText != null)
+            {
+                previewText.text = "⚠️ Selecione um destino acima";
+                previewText.color = new Color(1f, 0.6f, 0.2f);
+                StartCoroutine(ResetPreviewTextColor());
+            }
+        }
+        else if (type == ValidationType.Agent)
+        {
+            if (confirmButton != null)
+                StartCoroutine(FlashButton(confirmButton, new Color(0.8f, 0.2f, 0.2f)));
+        }
+        
+        Debug.LogWarning($"[TeleportSelectorUI] Validation failed: {message}");
+    }
+    
+    IEnumerator FlashDestinationList()
+    {
+        Transform content = destinationsContent != null ? destinationsContent : contentContainer;
+        if (content == null) yield break;
+        
+        for (int i = 0; i < 2; i++)
+        {
+            foreach (Transform child in content)
+            {
+                child.localScale = Vector3.one * 1.02f;
+                var img = child.GetComponent<Image>();
+                if (img != null) img.color = new Color(0.4f, 0.3f, 0.1f);
+            }
+            yield return new WaitForSeconds(0.15f);
+            
+            foreach (Transform child in content)
+            {
+                child.localScale = Vector3.one;
+                var img = child.GetComponent<Image>();
+                if (img != null) img.color = new Color32(45, 45, 48, 255);
+            }
+            yield return new WaitForSeconds(0.1f);
+        }
+    }
+    
+    IEnumerator FlashButton(Button btn, Color flashColor)
+    {
+        var img = btn.GetComponent<Image>();
+        if (img == null) yield break;
+        
+        var original = img.color;
+        float dur = 0.15f;
+        
+        for (int i = 0; i < 2; i++)
+        {
+            float t = 0f;
+            while (t < dur)
+            {
+                t += Time.deltaTime;
+                img.color = Color.Lerp(original, flashColor, t / dur);
+                yield return null;
+            }
+            t = 0f;
+            while (t < dur)
+            {
+                t += Time.deltaTime;
+                img.color = Color.Lerp(flashColor, original, t / dur);
+                yield return null;
+            }
+        }
+        img.color = original;
+    }
+    
+    IEnumerator ResetPreviewTextColor()
+    {
+        yield return new WaitForSeconds(2f);
+        if (previewText != null)
+        {
+            previewText.color = Color.white;
+            if (selectedDestination == null) previewText.text = "Selecione um destino";
+        }
+    }
+    
+    // ==================== CANCEL ====================
+    
+    void OnCancelClicked() => Close();
+    
+    // ==================== FILTER / SEARCH ====================
+    
+    void OnFilterChanged(int value)
+    {
+        RefreshFilteredList(value, searchInput?.text ?? "");
+    }
+    
+    void OnSearchChanged(string searchText)
+    {
+        int filterValue = filterDropdown?.value ?? 0;
+        RefreshFilteredList(filterValue, searchText);
+    }
+    
+    void RefreshFilteredList(int filterValue, string searchText)
+    {
+        Transform content = destinationsContent != null ? destinationsContent : contentContainer;
+        if (content == null) return;
+        
+        GameObject prefab = destinationItemPrefab != null ? destinationItemPrefab : locationItemPrefab;
+        if (prefab == null) return;
+        
+        foreach (Transform child in content)
+            Destroy(child.gameObject);
+        
+        string searchLower = searchText?.ToLower() ?? "";
+        
+        foreach (var dest in allDestinations)
+        {
+            bool passesTypeFilter = filterValue == 0 ||
+                (filterValue == 1 && dest.type == "station") ||
+                (filterValue == 2 && dest.type == "building");
+            
+            bool passesSearchFilter = string.IsNullOrEmpty(searchLower) ||
+                dest.name.ToLower().Contains(searchLower);
+            
+            if (!passesTypeFilter || !passesSearchFilter) continue;
+            
+            GameObject itemGO = Instantiate(prefab, content);
+            itemGO.SetActive(true);
+            
+            DestinationItemVisual itemVisual = itemGO.GetComponent<DestinationItemVisual>();
+            if (itemVisual == null)
+            {
+                itemVisual = itemGO.AddComponent<DestinationItemVisual>();
+                itemVisual.CreateBorderIfNeeded();
+            }
+            
+            DestinationData capturedDest = dest;
+            GameObject capturedGO = itemGO;
+            string coordsStr = $"({dest.position.x:F0}, {dest.position.y:F0}, {dest.position.z:F0})";
+            itemVisual.Setup(dest.name, coordsStr, () => OnDestinationSelected(capturedDest, capturedGO));
+            
+            bool isSelected = selectedDestination != null && selectedDestination.id == dest.id;
+            itemVisual.SetSelected(isSelected);
+            if (isSelected) selectedItemGO = itemGO;
+            
+            Transform textGroup = itemGO.transform.Find("TextGroup");
+            if (textGroup != null)
+            {
+                var nameText = textGroup.Find("NameText")?.GetComponent<TextMeshProUGUI>();
+                var coordsText = textGroup.Find("CoordsText")?.GetComponent<TextMeshProUGUI>();
+                if (nameText != null) nameText.text = dest.name;
+                if (coordsText != null) coordsText.text = coordsStr;
+            }
+            
+            Button btn = itemGO.GetComponent<Button>();
+            if (btn != null) btn.enabled = false;
+        }
+    }
+    
+    // ==================== HELPER METHODS ====================
+    
     void HighlightLocation(string locationType, string locationId)
     {
         WorldController worldController = FindAnyObjectByType<WorldController>();
         if (worldController == null) return;
         
-        // Get the GameObject for this location
         GameObject locationObj = worldController.GetLocationGameObject(locationType, locationId);
         if (locationObj != null)
         {
             SelectableEntity entity = locationObj.GetComponent<SelectableEntity>();
             if (entity != null)
             {
-                // Unhighlight previous selection
                 if (selectedLocationObject != null)
                 {
                     SelectableEntity prevEntity = selectedLocationObject.GetComponent<SelectableEntity>();
-                    if (prevEntity != null)
-                    {
-                        prevEntity.Unhighlight();
-                    }
+                    if (prevEntity != null) prevEntity.Unhighlight();
                 }
-                
-                // Highlight new selection
                 entity.Highlight();
                 selectedLocationObject = locationObj;
             }
         }
     }
     
-    /// <summary>
-    /// Spawns a preview particle effect at the destination.
-    /// </summary>
     void SpawnPreviewParticle(Vector3 position)
     {
-        // Remove previous preview particle
         if (previewParticle != null)
         {
             ParticleEffectPool.Instance?.Return("teleport_preview", previewParticle);
             previewParticle = null;
         }
-        
-        // Spawn new preview particle
         previewParticle = ParticleEffectPool.Instance?.Get("teleport_preview", position, Quaternion.identity);
     }
     
-    /// <summary>
-    /// Handles Confirm button click.
-    /// </summary>
-    void OnConfirmClicked()
+    public void OnLocationSelected(string locationType, string locationId, string locationName, Vector3 worldPosition)
     {
-        if (currentAgent == null || string.IsNullOrEmpty(selectedLocationId))
-        {
-            ToastNotificationManager.ShowWarning("Por favor, selecione um destino");
-            return;
-        }
+        selectedLocationType = locationType;
+        selectedLocationId = locationId;
         
-        // Send teleport request to API
-        StartCoroutine(SendTeleportRequest());
-    }
-    
-    /// <summary>
-    /// Sends teleport request to API.
-    /// </summary>
-    IEnumerator SendTeleportRequest()
-    {
-        string url = $"{apiBaseUrl}/api/agents/{currentAgent.id}/teleport";
-        string jsonBody = $"{{\"location_type\": \"{selectedLocationType}\", \"location_id\": \"{selectedLocationId}\"}}";
+        if (previewText != null)
+            previewText.text = $"Destino: {locationName} ({locationType})";
         
-        using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
-        {
-            byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonBody);
-            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
-            request.downloadHandler = new DownloadHandlerBuffer();
-            request.SetRequestHeader("Content-Type", "application/json");
-            
-            yield return request.SendWebRequest();
-            
-            if (request.result == UnityWebRequest.Result.Success)
-            {
-                // Success - spawn teleport effects
-                WorldController worldController = FindAnyObjectByType<WorldController>();
-                if (worldController != null)
-                {
-                    GameObject agentObj = worldController.GetAgentGameObject(currentAgent.id);
-                    if (agentObj != null)
-                    {
-                        // Spawn despawn effect at current position
-                        ParticleEffectPool.Instance?.Play("teleport_despawn", agentObj.transform.position);
-                        
-                        // Spawn spawn effect at destination
-                        GameObject destObj = worldController.GetLocationGameObject(selectedLocationType, selectedLocationId);
-                        if (destObj != null)
-                        {
-                            ParticleEffectPool.Instance?.Play("teleport_spawn", destObj.transform.position);
-                        }
-                    }
-                }
-                
-                AudioManager.PlayUISound("teleport_woosh");
-                ToastNotificationManager.ShowSuccess($"Agente {currentAgent.name} teleportado com sucesso!");
-                
-                Close();
-            }
-            else
-            {
-                ToastNotificationManager.ShowError($"Erro ao teleportar agente: {request.error}");
-                AudioManager.PlayUISound("toast_error");
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Handles Cancel button click.
-    /// </summary>
-    void OnCancelClicked()
-    {
-        Close();
-    }
-    
-    /// <summary>
-    /// Handles filter dropdown change.
-    /// </summary>
-    void OnFilterChanged(int value)
-    {
-        // TODO: Implement filtering (All, Stations Only, Buildings Only)
-        PopulateLocationList();
-    }
-    
-    /// <summary>
-    /// Handles search field change.
-    /// </summary>
-    void OnSearchChanged(string searchText)
-    {
-        // TODO: Implement search filtering
-    }
-    
-    /// <summary>
-    /// Clears all items from the location list.
-    /// </summary>
-    void ClearLocationList()
-    {
-        if (contentContainer == null) return;
+        HighlightLocation(locationType, locationId);
         
-        foreach (Transform child in contentContainer)
-        {
-            Destroy(child.gameObject);
-        }
+        CameraController cameraController = Camera.main?.GetComponent<CameraController>();
+        if (cameraController != null) cameraController.PreviewLocation(worldPosition);
+        
+        SpawnPreviewParticle(worldPosition);
+        AudioManager.PlayUISound("button_select");
     }
 }
 
@@ -422,29 +825,18 @@ public class TeleportLocationItem : MonoBehaviour
         worldPosition = position;
         parentUI = ui;
         
-        // Update UI elements
-        if (nameText != null)
-            nameText.text = name;
+        if (nameText != null) nameText.text = name;
+        if (typeText != null) typeText.text = $"{type}: {subType}";
+        if (coordsText != null) coordsText.text = $"({position.x:F0}, {position.z:F0})";
         
-        if (typeText != null)
-            typeText.text = $"{type}: {subType}";
-        
-        if (coordsText != null)
-            coordsText.text = $"({position.x:F0}, {position.z:F0})";
-        
-        // Setup button
         if (selectButton != null)
-        {
             selectButton.onClick.AddListener(OnClicked);
-        }
     }
     
     void OnClicked()
     {
         if (parentUI != null)
-        {
             parentUI.OnLocationSelected(locationType, locationId, locationName, worldPosition);
-        }
     }
 }
 

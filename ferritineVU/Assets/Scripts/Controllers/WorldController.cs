@@ -8,7 +8,7 @@ public class WorldController : MonoBehaviour
 {
     [Header("References")]
     public FerritineAPIClient apiClient;
-    public ObjectPool objectPool;  // Referência ao gerenciador de pools
+    public global::ObjectPool objectPool;  // Referência ao gerenciador de pools (from /Utils/ObjectPool.cs)
     
     [Header("Prefabs")]
     public GameObject stationPrefab;
@@ -41,7 +41,7 @@ public class WorldController : MonoBehaviour
         // Tentar achar automaticamente o ObjectPool na cena se não foi atribuído
         if (objectPool == null)
         {
-            objectPool = UnityEngine.Object.FindAnyObjectByType<ObjectPool>();
+            objectPool = FindAnyObjectByType<global::ObjectPool>();
         }
         
         // Criar containers para organização hierárquica
@@ -476,6 +476,20 @@ public class WorldController : MonoBehaviour
                 selectable.UpdateData(a);
             }
             
+            // ===== SINCRONIZAR ANIMAÇÕES COM STATUS DO BACKEND =====
+            AgentAnimator agentAnimator = currentAgentObj.GetComponent<AgentAnimator>();
+            if (agentAnimator != null)
+            {
+                // Atualizar status da animação baseado no status do backend
+                agentAnimator.UpdateStatus(a.status);
+            }
+            else
+            {
+                // Se não tiver AgentAnimator, criar um
+                agentAnimator = currentAgentObj.AddComponent<AgentAnimator>();
+                agentAnimator.UpdateStatus(a.status);
+            }
+            
             // Atualizar dados do agente incluindo animação
             Agent3D agent3D = currentAgentObj.GetComponent<Agent3D>();
             if (agent3D != null)
@@ -670,6 +684,20 @@ public class WorldController : MonoBehaviour
     }
     
     /// <summary>
+    /// Gets GameObject for a specific vehicle.
+    /// Used by TeleportSelectorUI for teleporting vehicles.
+    /// </summary>
+    public GameObject GetVehicleGameObject(string vehicleId)
+    {
+        if (_vehicles.ContainsKey(vehicleId))
+        {
+            return _vehicles[vehicleId];
+        }
+        
+        return null;
+    }
+    
+    /// <summary>
     /// Attaches SelectableEntity component to a GameObject.
     /// </summary>
     void AttachSelectableEntity(GameObject obj, SelectableEntity.EntityType entityType, object data)
@@ -714,7 +742,7 @@ public class WorldController : MonoBehaviour
             obj.layer = selectableLayerIndex;
         }
     }
-    
+
     void OnDestroy()
     {
         // Limpar inscrições de eventos
@@ -723,7 +751,7 @@ public class WorldController : MonoBehaviour
             apiClient.OnWorldStateReceived -= UpdateWorld;
             apiClient.OnError -= HandleError;
         }
-        
+
         // Log de estatísticas dos pools antes de destruir
         if (objectPool != null)
         {
