@@ -86,15 +86,15 @@ public class DestinationItemVisual : MonoBehaviour, IPointerEnterHandler, IPoint
     
     void Update()
     {
-        // Smooth color transitions
+        // Smooth color transitions (usando unscaledDeltaTime para funcionar quando pausado)
         if (backgroundImage != null)
         {
-            backgroundImage.color = Color.Lerp(backgroundImage.color, targetBackgroundColor, Time.deltaTime * transitionSpeed);
+            backgroundImage.color = Color.Lerp(backgroundImage.color, targetBackgroundColor, Time.unscaledDeltaTime * transitionSpeed);
         }
         
         if (borderImage != null)
         {
-            currentBorderColor = Color.Lerp(currentBorderColor, targetBorderColor, Time.deltaTime * transitionSpeed);
+            currentBorderColor = Color.Lerp(currentBorderColor, targetBorderColor, Time.unscaledDeltaTime * transitionSpeed);
             borderImage.color = currentBorderColor;
         }
     }
@@ -213,13 +213,13 @@ public class DestinationItemVisual : MonoBehaviour, IPointerEnterHandler, IPoint
     
     private System.Collections.IEnumerator PulseEffect()
     {
-        // Quick scale pulse on click
+        // Quick scale pulse on click (usando unscaledDeltaTime para funcionar quando pausado)
         float duration = 0.1f;
         float elapsed = 0f;
         
         while (elapsed < duration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             float scale = 1f + Mathf.Sin(elapsed / duration * Mathf.PI) * 0.05f;
             transform.localScale = Vector3.one * scale;
             yield return null;

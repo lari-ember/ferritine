@@ -256,13 +256,13 @@ public class ToastNotificationManager : MonoBehaviour
         }
         canvasGroup.alpha = 0f;
         
-        // Slide up and fade in
+        // Slide up and fade in (usando unscaledDeltaTime para funcionar quando pausado)
         float elapsed = 0f;
         float slideInDuration = 0.3f;
         
         while (elapsed < slideInDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             float t = elapsed / slideInDuration;
             
             toastRect.anchoredPosition = new Vector2(0, Mathf.Lerp(startY, targetY, t));
@@ -274,8 +274,8 @@ public class ToastNotificationManager : MonoBehaviour
         toastRect.anchoredPosition = new Vector2(0, targetY);
         canvasGroup.alpha = 1f;
         
-        // Wait for display duration
-        yield return new WaitForSeconds(msg.duration);
+        // Wait for display duration (usando Realtime para funcionar quando pausado)
+        yield return new WaitForSecondsRealtime(msg.duration);
         
         // Fade out
         elapsed = 0f;
@@ -283,7 +283,7 @@ public class ToastNotificationManager : MonoBehaviour
         
         while (elapsed < fadeOutDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             canvasGroup.alpha = 1f - (elapsed / fadeOutDuration);
             yield return null;
         }
@@ -370,7 +370,7 @@ public class ToastNotificationManager : MonoBehaviour
         
         while (elapsed < duration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             float t = elapsed / duration;
             
             toastRect.anchoredPosition = new Vector2(0, Mathf.Lerp(startY, targetY, t));

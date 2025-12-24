@@ -13,6 +13,13 @@ namespace Systems
 /// - 1x: 24h = 12 minutos reais (normal)
 /// - 2x: 24h = 6 minutos reais (rápido)
 /// - 3x: 24h = 4 minutos reais (super rápido)
+/// 
+/// Atalhos de teclado:
+/// - Space: Play/Pause
+/// - 1: Velocidade 1x
+/// - 2: Velocidade 2x
+/// - 3: Velocidade 3x
+/// - Backspace: Volta para velocidade 1x
 /// </summary>
 public class TimeManager : MonoBehaviour
 {
@@ -23,11 +30,23 @@ public class TimeManager : MonoBehaviour
     [Header("Speed Multipliers")]
     [SerializeField] private float[] speedMultipliers = { 1f, 2f, 3f };
     
+    [Header("Keyboard Shortcuts")]
+    [SerializeField] private bool enableKeyboardShortcuts = true;
+    [SerializeField] private KeyCode pauseKey = KeyCode.Space;
+    [SerializeField] private KeyCode speed1xKey = KeyCode.Alpha1;
+    [SerializeField] private KeyCode speed2xKey = KeyCode.Alpha2;
+    [SerializeField] private KeyCode speed3xKey = KeyCode.Alpha3;
+    [SerializeField] private KeyCode resetSpeedKey = KeyCode.Backspace;
+    
+    [Header("World Pause Settings")]
+    [SerializeField] private bool pauseWorldOnPause = true; // Usar Time.timeScale para pausar o mundo
+    
     [Header("Events")]
     public Action<float> OnTimeChanged; // Chamado quando o tempo muda (0-24)
     public Action OnHourChanged; // Chamado quando a hora inteira muda
     public Action OnDayChanged; // Chamado quando o dia muda (24h -> 0h)
     public Action OnPauseChanged; // Chamado quando pause/play muda
+    public Action<int> OnSpeedChanged; // Chamado quando velocidade muda (0=1x, 1=2x, 2=3x)
     
     // Singleton
     private static TimeManager _instance;
@@ -51,6 +70,7 @@ public class TimeManager : MonoBehaviour
     private float _currentTimeOfDay; // 0-24 (horas)
     private bool _isPaused;
     private int _currentSpeedMultiplierIndex;
+    private float _savedTimeScale = 1f; // Guarda o timeScale anterior ao pausar
     
     // Propriedades públicas
     public float CurrentTimeOfDay => _currentTimeOfDay;
@@ -58,6 +78,7 @@ public class TimeManager : MonoBehaviour
     public int CurrentMinute => Mathf.FloorToInt((_currentTimeOfDay % 1f) * 60f);
     public bool IsPaused => _isPaused;
     public float CurrentSpeedMultiplier => speedMultipliers[_currentSpeedMultiplierIndex];
+    public int CurrentSpeedIndex => _currentSpeedMultiplierIndex;
     public string TimeString => $"{CurrentHour:D2}:{CurrentMinute:D2}";
     
     void Awake()
@@ -79,11 +100,18 @@ public class TimeManager : MonoBehaviour
     void Start()
     {
         Debug.Log($"[TimeManager] Iniciado às {TimeString} (hora {CurrentHour})");
+        Debug.Log($"[TimeManager] Atalhos: Space=Pause, 1/2/3=Velocidade, Backspace=Reset");
         OnTimeChanged?.Invoke(_currentTimeOfDay);
     }
     
     void Update()
     {
+        // Processar atalhos de teclado (mesmo quando pausado)
+        if (enableKeyboardShortcuts)
+        {
+            HandleKeyboardInput();
+        }
+        
         if (_isPaused) return;
         
         // Calcular delta time ajustado pela velocidade
@@ -116,6 +144,43 @@ public class TimeManager : MonoBehaviour
     }
     
     /// <summary>
+    /// Processa atalhos de teclado para controle de tempo.
+    /// </summary>
+    void HandleKeyboardInput()
+    {
+        // Space = Play/Pause
+        if (Input.GetKeyDown(pauseKey))
+        {
+            TogglePause();
+        }
+        
+        // 1 = Velocidade 1x
+        if (Input.GetKeyDown(speed1xKey))
+        {
+            SetSpeedMultiplier(0);
+        }
+        
+        // 2 = Velocidade 2x
+        if (Input.GetKeyDown(speed2xKey))
+        {
+            SetSpeedMultiplier(1);
+        }
+        
+        // 3 = Velocidade 3x
+        if (Input.GetKeyDown(speed3xKey))
+        {
+            SetSpeedMultiplier(2);
+        }
+        
+        // Backspace = Reset para 1x
+        if (Input.GetKeyDown(resetSpeedKey))
+        {
+            SetSpeedMultiplier(0);
+            Debug.Log("[TimeManager] Velocidade resetada para 1x");
+        }
+    }
+    
+    /// <summary>
     /// Alterna pausa/play da simulação.
     /// </summary>
     public void TogglePause()
@@ -125,14 +190,32 @@ public class TimeManager : MonoBehaviour
     
     /// <summary>
     /// Define se a simulação está pausada.
+    /// Também pausa o mundo inteiro via Time.timeScale se configurado.
     /// </summary>
     public void SetPaused(bool paused)
     {
         if (_isPaused == paused) return;
         
         _isPaused = paused;
+        
+        // Pausar o mundo inteiro via Time.timeScale
+        if (pauseWorldOnPause)
+        {
+            if (_isPaused)
+            {
+                _savedTimeScale = Time.timeScale;
+                Time.timeScale = 0f;
+            }
+            else
+            {
+                // Restaurar o timeScale baseado na velocidade atual
+                Time.timeScale = speedMultipliers[_currentSpeedMultiplierIndex];
+                _savedTimeScale = Time.timeScale;
+            }
+        }
+        
         OnPauseChanged?.Invoke();
-        Debug.Log($"[TimeManager] Simulação {(_isPaused ? "PAUSADA" : "RETOMADA")}");
+        Debug.Log($"[TimeManager] Simulação {(_isPaused ? "PAUSADA" : "RETOMADA")} (TimeScale={Time.timeScale})");
     }
     
     /// <summary>
@@ -140,8 +223,7 @@ public class TimeManager : MonoBehaviour
     /// </summary>
     public void IncreaseSpeed()
     {
-        _currentSpeedMultiplierIndex = (_currentSpeedMultiplierIndex + 1) % speedMultipliers.Length;
-        Debug.Log($"[TimeManager] Velocidade: {CurrentSpeedMultiplier}x");
+        SetSpeedMultiplier((_currentSpeedMultiplierIndex + 1) % speedMultipliers.Length);
     }
     
     /// <summary>
@@ -149,21 +231,36 @@ public class TimeManager : MonoBehaviour
     /// </summary>
     public void DecreaseSpeed()
     {
-        _currentSpeedMultiplierIndex--;
-        if (_currentSpeedMultiplierIndex < 0)
-            _currentSpeedMultiplierIndex = speedMultipliers.Length - 1;
-        Debug.Log($"[TimeManager] Velocidade: {CurrentSpeedMultiplier}x");
+        int newIndex = _currentSpeedMultiplierIndex - 1;
+        if (newIndex < 0)
+            newIndex = speedMultipliers.Length - 1;
+        SetSpeedMultiplier(newIndex);
     }
     
     /// <summary>
     /// Define um multiplicador de velocidade específico (0=1x, 1=2x, 2=3x).
+    /// Também ajusta Time.timeScale para acelerar o mundo inteiro.
     /// </summary>
     public void SetSpeedMultiplier(int index)
     {
         if (index >= 0 && index < speedMultipliers.Length)
         {
+            bool changed = _currentSpeedMultiplierIndex != index;
             _currentSpeedMultiplierIndex = index;
-            Debug.Log($"[TimeManager] Velocidade: {CurrentSpeedMultiplier}x");
+            
+            // Ajustar Time.timeScale para acelerar/desacelerar o mundo inteiro
+            if (pauseWorldOnPause && !_isPaused)
+            {
+                Time.timeScale = speedMultipliers[_currentSpeedMultiplierIndex];
+                _savedTimeScale = Time.timeScale;
+            }
+            
+            if (changed)
+            {
+                OnSpeedChanged?.Invoke(_currentSpeedMultiplierIndex);
+            }
+            
+            Debug.Log($"[TimeManager] Velocidade: {CurrentSpeedMultiplier}x (TimeScale={Time.timeScale})");
         }
     }
     

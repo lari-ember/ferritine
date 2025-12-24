@@ -331,10 +331,18 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
     
     /// <summary>
     /// Closes the panel and notifies UIManager to destroy it.
+    /// Also deselects the entity in CameraController.
     /// </summary>
     public void Close()
     {
         AudioManager.PlayUISound("panel_close");
+        
+        // Deselect entity in CameraController (removes highlight and cone)
+        CameraController cameraController = Camera.main?.GetComponent<CameraController>();
+        if (cameraController != null)
+        {
+            cameraController.DeselectEntity();
+        }
         
         // Unregister from entity updates
         if (currentEntity != null)
@@ -531,6 +539,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
     
     /// <summary>
     /// Animates panel show.
+    /// Uses unscaledDeltaTime so it works when game is paused.
     /// </summary>
     IEnumerator AnimateShow()
     {
@@ -541,7 +550,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
         
         while (elapsed < animationDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             float t = elapsed / animationDuration;
             
             canvasGroup.alpha = t;
@@ -556,6 +565,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
     
     /// <summary>
     /// Animates panel hide.
+    /// Uses unscaledDeltaTime so it works when game is paused.
     /// </summary>
     IEnumerator AnimateHide()
     {
@@ -563,7 +573,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
         
         while (elapsed < animationDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             float t = elapsed / animationDuration;
             
             canvasGroup.alpha = 1f - t;
@@ -577,6 +587,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
     
     /// <summary>
     /// Animates panel expansion/collapse.
+    /// Uses unscaledDeltaTime so it works when game is paused.
     /// </summary>
     IEnumerator AnimateExpand(float targetHeight)
     {
@@ -591,7 +602,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
         
         while (elapsed < animationDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             float t = elapsed / animationDuration;
             
             layoutElement.preferredHeight = Mathf.Lerp(startHeight, targetHeight, t);

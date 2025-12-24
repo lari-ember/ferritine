@@ -67,6 +67,7 @@ public class TimeControlUI : MonoBehaviour
         // Inscrever nos eventos de tempo
         _timeManager.OnTimeChanged += OnTimeChanged;
         _timeManager.OnPauseChanged += OnPauseChanged;
+        _timeManager.OnSpeedChanged += OnSpeedChangedFromManager;
         
         // Atualizar UI inicial
         UpdateClockDisplay();
@@ -74,6 +75,16 @@ public class TimeControlUI : MonoBehaviour
         UpdateSpeedButtonVisuals();
         
         Debug.Log("[TimeControlUI] Inicializado com sucesso");
+        Debug.Log("[TimeControlUI] Atalhos: Space=Pause, 1/2/3=Velocidade, Backspace=Reset");
+    }
+    
+    /// <summary>
+    /// Chamado quando a velocidade muda via TimeManager (ex: atalho de teclado).
+    /// </summary>
+    void OnSpeedChangedFromManager(int newSpeedIndex)
+    {
+        _currentSpeedIndex = newSpeedIndex;
+        UpdateSpeedButtonVisuals();
     }
     
     /// <summary>
@@ -214,6 +225,7 @@ public class TimeControlUI : MonoBehaviour
         {
             _timeManager.OnTimeChanged -= OnTimeChanged;
             _timeManager.OnPauseChanged -= OnPauseChanged;
+            _timeManager.OnSpeedChanged -= OnSpeedChangedFromManager;
         }
     }
 }

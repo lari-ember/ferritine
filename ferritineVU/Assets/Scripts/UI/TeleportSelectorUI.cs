@@ -458,8 +458,8 @@ public class TeleportSelectorUI : MonoBehaviour
         SpawnTeleportEffect("teleport_despawn", entityObj.transform.position);
         AudioManager.PlayUISound("teleport_woosh");
         
-        // Aguardar animação
-        yield return new WaitForSeconds(0.3f);
+        // Aguardar animação (usando Realtime para funcionar quando pausado)
+        yield return new WaitForSecondsRealtime(0.3f);
         
         // Mover entidade
         Vector3 finalPos = CalculateTeleportPosition(targetPos, selectedDestination?.type ?? selectedLocationType);
@@ -546,7 +546,7 @@ public class TeleportSelectorUI : MonoBehaviour
     
     IEnumerator TeleportWithDelay(GameObject entityObj, Vector3 targetPos, string destName, string entityName)
     {
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSecondsRealtime(0.3f);
         
         entityObj.transform.position = targetPos;
         
@@ -624,7 +624,7 @@ public class TeleportSelectorUI : MonoBehaviour
                 var img = child.GetComponent<Image>();
                 if (img != null) img.color = new Color(0.4f, 0.3f, 0.1f);
             }
-            yield return new WaitForSeconds(0.15f);
+            yield return new WaitForSecondsRealtime(0.15f);
             
             foreach (Transform child in content)
             {
@@ -632,7 +632,7 @@ public class TeleportSelectorUI : MonoBehaviour
                 var img = child.GetComponent<Image>();
                 if (img != null) img.color = new Color32(45, 45, 48, 255);
             }
-            yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSecondsRealtime(0.1f);
         }
     }
     
@@ -649,14 +649,14 @@ public class TeleportSelectorUI : MonoBehaviour
             float t = 0f;
             while (t < dur)
             {
-                t += Time.deltaTime;
+                t += Time.unscaledDeltaTime;
                 img.color = Color.Lerp(original, flashColor, t / dur);
                 yield return null;
             }
             t = 0f;
             while (t < dur)
             {
-                t += Time.deltaTime;
+                t += Time.unscaledDeltaTime;
                 img.color = Color.Lerp(flashColor, original, t / dur);
                 yield return null;
             }
@@ -666,7 +666,7 @@ public class TeleportSelectorUI : MonoBehaviour
     
     IEnumerator ResetPreviewTextColor()
     {
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSecondsRealtime(2f);
         if (previewText != null)
         {
             previewText.color = Color.white;
