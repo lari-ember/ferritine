@@ -106,13 +106,19 @@ Cada "bloco" da maquete pode representar uma época ou estilo:
 ### Ônibus e BRT (Prioridade 2)
 **Físico**:
 - Miniaturas motorizadas (motores micro com baterias ou trilho slot car)
-- Canaletas/faixas exclusivas em certas ruas
+- Canaletas/faixas exclusivas em certas ruas para BRT
 - Pontos de parada com LEDs
+- Estações tubo (estilo Curitiba) para BRT biarticulado
 
 **Digital**:
 - Rotas programadas
 - Lotação simulada (agentes virtuais embarcam/desembarcam)
-- Biarticulados para rotas de alto fluxo
+- **BRT Biarticulado** para rotas de alto fluxo (250 passageiros)
+  - Canaleta exclusiva para maior velocidade (60 km/h)
+  - Embarque em nível (estações tubo)
+  - Sistema de transporte rápido inspirado em Curitiba
+- Ônibus convencionais (40 passageiros) para rotas locais
+- Modo expresso para linhas diretas
 
 ### Carros Particulares (Prioridade 3)
 **Físico**:
@@ -411,7 +417,7 @@ Cada era tem paleta e arquitetura própria:
 #### Linguagens e Frameworks
 - **Linguagem Principal**: Python 3.11+
 - **Simulação e Lógica**: Python (backend)
-- **Visualização 3D**: Pygame, Ursina Engine, ou Godot (exportar para Python)
+- **Visualização 3D**: Unity Engine com texturas voxel
 - **Interface Web**: Flask ou FastAPI (dashboard)
 - **Programação Embarcada**: Arduino IDE (C++), MicroPython (ESP32)
 
@@ -1426,7 +1432,7 @@ maquete_viva/
 │
 ├── visualization/
 │   ├── pygame_renderer.py      # Renderização 2D/isométrica
-│   ├── godot_export/           # (futuro: 3D em Godot)
+│   ├── unity_integration/      # Integração com Unity Engine (texturas voxel)
 │   └── ar_overlay/             # (futuro: AR)
 │
 ├── hardware/
@@ -2984,6 +2990,647 @@ Que seus trilhos sejam retos, suas soldas firmes, seus códigos sem bugs (ok, po
 
 ---
 
+## 🧠 VISÃO GERAL CONCEITUAL E APRENDIZADOS DE REFERÊNCIAS
+
+### Contexto: Por Que Este Projeto É Único
+
+Jogos como **Urbek City Builder** e **Technicity** não são interessantes apenas pelo conteúdo visual, mas pelo jeito como **simplificam sistemas complexos sem perder profundidade**. O valor real está em:
+
+- **Abstrações inteligentes** que tornam o complexo compreensível
+- **Loops de feedback** claros e observáveis
+- **UI que ensina jogando** (sem tutoriais longos)
+- **Código orientado a dados** (configuração separada de lógica)
+- **Design que escala** sem explodir em complexidade
+
+O **Ferritine** se posiciona no cruzamento de:
+- **Macro urbano** (como Cities: Skylines)
+- **Logística visível** (como Factorio/Satisfactory)
+- **Agentes sociais legíveis** (como Dwarf Fortress)
+- **Experimentação física/AR** (único do projeto)
+
+---
+
+## 🎯 MATRIZ DE REFERÊNCIAS
+
+### O Que Cada Jogo Realmente Ensina
+
+| Jogo/Referência | Lição Principal Para Ferritine |
+|-----------------|-------------------------------|
+| **Urbek City Builder / Technicity** | Abstração macro, UI pedagógica, cadeias curtas com efeitos longos |
+| **Factorio** | Pensamento sistêmico, gargalos, causalidade explícita |
+| **Satisfactory** | Espacialidade, infraestrutura visível, logística como forma |
+| **Cities: Skylines** | Visualização de dados urbanos, overlays, mapas de calor |
+| **Dwarf Fortress** | Agentes sociais, memória, história emergente |
+| **Minecraft + mods (Create, CustomNPCs)** | Causalidade visível + agentes observáveis |
+
+**Ferritine** fica no cruzamento dessas referências, mas com identidade própria:
+> **"Cidade não é máquina — é conflito organizado"**
+
+---
+
+## 🔧 TECNOLOGIAS E ARQUITETURA PROFISSIONAL
+
+### Stack Técnico Coerente
+
+#### 1. Núcleo Digital (Unity + C#)
+
+**Simulação Discreta em Ticks**
+- Tempo avança em passos discretos (não contínuo)
+- Separação clara: **simulação ≠ visual**
+- Permite aceleração/pausa sem quebrar lógica
+
+**ScriptableObjects**
+- Dados separados de código
+- Economia, edifícios, eras, regras sociais em arquivos
+- Facilita modding e balanceamento
+
+**UI Toolkit + Canvas Híbrido**
+- HUD contextual (informação no hover)
+- Overlays analíticos (transporte, economia, conflito social)
+- Design responsivo e acessível
+
+**NavMesh / Grafos Próprios**
+- Transporte ferroviário
+- Fluxo humano
+- Pathfinding eficiente
+
+#### 2. Simulação & Pesquisa Acadêmica
+
+**Agent-Based Modeling (ABM)**
+- Referência central: Epstein & Axtell
+- Agentes autônomos com regras simples geram emergência complexa
+- Base teórica para NPCs sociais
+
+**Sistemas Complexos**
+- Emergência de comportamentos não programados
+- Feedback loops positivos e negativos
+- Caos organizado como feature, não bug
+
+**Simulação Discreta de Eventos**
+- Eventos com duração e consequências
+- Filas de eventos ordenadas por tempo
+- Ideal para logística e política
+
+**Urban Analytics & Transport Modeling**
+- Modelos simplificados de fluxo (não hiper-realistas)
+- Inspiração em pesquisa de mobilidade urbana
+- Validação conceitual (não numérica exata)
+
+#### 3. AR + Físico + Eletrônica
+
+**AR Foundation (Unity)**
+- Framework multiplataforma (Android/iOS)
+- Sobreposição de dados digitais no mundo físico
+- Maquete como interface aumentada
+
+**Arduino / ESP32 (Futuro)**
+- Sensores simples → eventos no mundo simulado
+- Exemplo: botão físico gera protesto virtual
+- Ponte tangível entre físico e digital
+
+**MQTT / Serial / OSC**
+- Protocolos de comunicação IoT
+- Baixa latência para eventos em tempo real
+- Desacoplamento hardware ↔ software
+
+**Maquete Física como "Interface Lenta"**
+- Não é gamepad, é contemplação
+- Interação tátil complementa digital
+- Estética + funcionalidade
+
+---
+
+## 💡 IDEIAS-CHAVE QUE DIFERENCIAM FERRITINE
+
+### Princípios Filosóficos
+
+1. **Cidade não é máquina — é conflito organizado**
+   - Não há solução "ótima"
+   - Tensões são parte do jogo
+
+2. **Infraestrutura cria comportamento**
+   - Onde colocar estação define quem vai onde
+   - Logística não é neutra, é política
+
+3. **Logística é política material**
+   - Transporte de carga não é invisível
+   - Rotas definem desigualdades
+
+4. **Agentes são poucos, mas densos**
+   - Não milhares genéricos
+   - Dezenas com histórias reais
+
+5. **O jogador observa mais do que otimiza**
+   - Não é sobre "ganhar"
+   - É sobre entender
+
+Essas ideias não cabem bem em city builders tradicionais, mas cabem perfeitamente em uma **simulação híbrida contemplativa**.
+
+---
+
+## ⚙️ MECÂNICAS FUNDAMENTAIS (EXTRAÍDAS + REINTERPRETADAS)
+
+### 1. Logística Visível
+
+**Inspiração**: Factorio, Create (Minecraft mod)
+
+**Aplicação em Ferritine**:
+- Cadeias de produção **curtas** (3-4 passos max)
+- Gargalos **visíveis** (estação congestionada pisca, não mostra "−10%")
+- Transporte como **limitador de crescimento**
+
+**Exemplo Concreto**:
+```
+Mina → Ferrovia → Fábrica → Ferrovia → Cidade
+     ↓ gargalo aqui ↓
+Se trem atrasar → fábrica para → desemprego → migração
+```
+
+### 2. Ferrovias Como Sistema Social
+
+**Inspiração**: Transport Tycoon, Mini Metro
+
+**Aplicação**:
+- Estações são **polos sociais** (onde pessoas se encontram)
+- Atraso → **efeito dominó urbano** (não só número caindo)
+- Capacidade ≠ demanda → tensão constante
+
+**Mecânica de Feedback**:
+- Estação lotada → reclamações → pressão política
+- Linha nova → valorização do bairro → gentrificação
+- Acidente ferroviário → luto coletivo (evento social)
+
+### 3. Agentes Sociais Legíveis
+
+**Inspiração**: Dwarf Fortress, The Sims
+
+**Aplicação em Ferritine**:
+- Agentes com:
+  - **Profissão fixa** (não mudam todo dia)
+  - **Local fixo** (casa + trabalho)
+  - **Memória curta** (última semana)
+  - **Comportamento situado** (não psicologia profunda)
+
+**Exemplo de Agente**:
+```json
+{
+  "nome": "João Silva",
+  "profissao": "Operário",
+  "casa": "Bairro Operário",
+  "trabalho": "Fábrica Norte",
+  "rotina": "6h sai de casa → trem 6h30 → trabalho 7h-17h → trem 17h30 → casa 18h",
+  "humor": "satisfeito" // se trem atrasar: "frustrado"
+}
+```
+
+### 4. Tempo Discreto e Aceleração
+
+**Inspiração**: Rimworld, Oxygen Not Included
+
+**Aplicação**:
+- **Ticks discretos** (ex: 1 tick = 1 hora simulada)
+- **Aceleração como ferramenta analítica** (não obrigação)
+- **Eventos lentos (política) × rápidos (logística)**
+
+**Regra de Ouro**:
+> Nunca usar `deltaTime` para simulação. Usar para visual apenas.
+
+---
+
+## 🎨 UI/UX: ONDE VOCÊ VAI SE DIFERENCIAR
+
+### Princípios de Design de Interface
+
+Inspirado em **Urbek** + **Cities: Skylines**, mas indo além:
+
+#### 1. UI Explica Sistemas, Não "Ganho/Perda"
+
+**Evitar**:
+```
+❌ "Felicidade: -10%"
+```
+
+**Preferir**:
+```
+✅ Ícone de pessoa frustrada piscando na estação
+   Hover: "João Silva esperou 40min pelo trem"
+```
+
+#### 2. Overlays Temáticos
+
+**Camadas Ativáveis**:
+- **Overlay Transporte**: Fluxo de passageiros, gargalos
+- **Overlay Conflito Social**: Tensões, reclamações, protestos
+- **Overlay Acesso**: Quem consegue ir onde (desigualdade espacial)
+
+**Técnica**:
+- Mapa simples por padrão
+- `Tab` ou botão ativa overlay
+- Cores + ícones + animação
+
+#### 3. HUD Contextual (Hover = Causa/Efeito)
+
+**Exemplo**:
+```
+Mouse sobre estação →
+  • 156 passageiros/dia
+  • Atraso médio: 12min
+  • Reclamações: 8
+  • Impacto no bairro: valorização +15%
+```
+
+#### 4. Acessibilidade Como Design Core
+
+**Não é "extra", é base**:
+- Contraste alto (WCAG AAA)
+- Ícones grandes + redundância (cor + forma + texto)
+- Fontes legíveis (TextMeshPro no Unity)
+- Opção de modo alto contraste / modo daltônico
+
+**Referência**: Unity UI Toolkit + amostras "QuizU" e "Dragon Crashers"
+
+---
+
+## 🔁 JOGABILIDADE: LOOPS REAIS DO PROJETO
+
+### Loop Principal
+
+```
+Observar → Intervir → Esperar → Ver Consequências → Interpretar
+```
+
+**Não é sobre**:
+- "Ganhar"
+- Score alto
+- Eficiência máxima
+
+**É sobre**:
+- Entender sistemas
+- Ver emergência
+- Aceitar caos como dado
+
+### Modo de Jogo: Contemplativo ≠ Raso
+
+**Inspiração**: Urbek, Islanders
+
+**Lição**:
+- Não precisa microgerenciar tudo
+- Sistemas bem feitos se auto-explicam
+- Profundidade vem de **interações**, não de menus
+
+**Para Ferritine**:
+- Modo "Observação/Zen" (já descrito no GDD original)
+- Aceleração de tempo permite "deixar rodar"
+- Intervenções pontuais têm impacto longo
+
+---
+
+## 🧩 DESENVOLVIMENTO DE CÓDIGO: ARQUITETURA CORRETA
+
+### Estrutura Recomendada
+
+```
+ferritine/
+├── backend/
+│   └── simulation/          # NÚCLEO (sem Unity)
+│       ├── core/
+│       │   ├── time_system.py      # Ticks discretos
+│       │   ├── event_queue.py      # Fila de eventos
+│       │   └── world_state.py      # Estado global
+│       ├── systems/
+│       │   ├── transport_system.py
+│       │   ├── economy_system.py
+│       │   └── social_system.py
+│       └── agents/
+│           └── agent.py             # Classe Agente
+│
+├── ferritineVU/             # VISUAL (Unity)
+│   └── Assets/
+│       ├── Scripts/
+│       │   ├── Visualization/      # Renderização
+│       │   ├── Input/              # Controle jogador
+│       │   └── AR/                 # AR Foundation
+│       └── ScriptableObjects/      # Dados (edifícios, etc)
+│
+└── hardware/                # IoT (Arduino, futuro)
+    └── arduino_bridge.py
+```
+
+### Padrões de Projeto Essenciais
+
+#### 1. Observer Pattern (Event Bus)
+- Desacopla sistemas
+- Exemplo: `transport_system` emite "train_arrived" → `economy_system` escuta e ajusta demanda
+
+#### 2. Data-Driven Design
+- **ScriptableObjects** no Unity
+- **JSON/YAML** no Python
+- Separa dados de lógica
+
+#### 3. ECS Conceitual (mesmo sem DOTS)
+- Pense em **componentes** (Position, Profession, Mood)
+- Não em **hierarquia** (class Worker extends Person extends Entity...)
+- Unity DOTS é opcional, mas mentalidade ECS não
+
+#### 4. Estado > Comportamento
+- Agentes têm **estado** (onde está, o que sente)
+- Comportamento emerge de **regras simples**
+
+**Exemplo**:
+```python
+# ❌ Evitar:
+class Agent:
+    def decide_what_to_do(self):
+        if self.hour == 7 and self.location == "home":
+            self.go_to_work()
+        elif self.hour == 17:
+            ...
+
+# ✅ Preferir:
+class Agent:
+    state: AgentState  # (location, time, needs)
+    rules: List[Rule]  # regras aplicáveis
+
+def tick(world):
+    for agent in world.agents:
+        for rule in agent.rules:
+            if rule.condition(agent, world):
+                rule.action(agent, world)
+```
+
+---
+
+## 🧪 MINI-GAMES / PROTÓTIPOS TÉCNICOS (O CORAÇÃO DO APRENDIZADO)
+
+### Por Que Mini-Games?
+
+> **"É importante começar pequeno e criar um protótipo"** — Unity Learn
+
+Esses **não são demos**, são **laboratórios reutilizáveis**.
+
+### Lista de Mini-Games Propostos
+
+#### 1. **"Mapa que Reclama"**
+
+**Aprende**: UI, overlays, feedback visual  
+**Descrição**: Um mapa simples onde problemas aparecem **antes** de números.  
+**Exemplo**: Estação congestionada **pisca vermelho**, não mostra "−10%".
+
+✅ **Reaproveitável como**: Sistema de visualização base
+
+---
+
+#### 2. **"Linha que Atrasa"**
+
+**Aprende**: Grafos, simulação logística  
+**Descrição**: Uma única linha ferroviária, poucos trens, atrasos encadeados.  
+**Mecânica**: Se trem 1 atrasa → trem 2 espera → passageiros acumulam → tensão visual.
+
+✅ **Reaproveitável como**: Núcleo do sistema ferroviário
+
+---
+
+#### 3. **"Três Agentes"**
+
+**Aprende**: Agent-Based Modeling básico  
+**Descrição**: Três NPCs com rotinas simples que dependem de transporte.  
+**Exemplo**:
+- João vai trabalhar às 7h
+- Maria às 8h
+- Pedro às 9h
+- Se trem falhar → todos atrasam → humor piora
+
+✅ **Reaproveitável como**: Base da simulação social
+
+---
+
+#### 4. **"Relógio Quebrado"**
+
+**Aprende**: Tempo discreto  
+**Descrição**: Trocar tick rate (1 tick = 1 hora vs 1 tick = 1 minuto) e observar colapsos emergentes.  
+**Lição**: Simulação precisa ser **determinística**, não depender de framerate.
+
+✅ **Reaproveitável como**: Motor temporal do projeto
+
+---
+
+#### 5. **"Terreno Hostil"**
+
+**Aprende**: Geração de terreno + custo espacial  
+**Descrição**: Cidade cresce pior em terrenos difíceis (montanha, pântano).  
+**Mecânica**: Construir trilho em montanha = caro + demorado.
+
+✅ **Reaproveitável como**: Geografia como política (tema central)
+
+---
+
+#### 6. **"AR como Janela"**
+
+**Aprende**: AR Foundation  
+**Descrição**: Apontar celular para maquete física e ver dados emergirem (nomes de ruas, fluxo de passageiros).  
+**Técnica**: ARCore/ARKit + marcadores de imagem.
+
+✅ **Reaproveitável como**: Ponte físico–digital
+
+---
+
+#### 7. **"Botão que Protesta"**
+
+**Aprende**: Eletrônica básica (Arduino)  
+**Descrição**: Um botão físico (na maquete) gera evento social no jogo (protesto na praça).  
+**Técnica**: Arduino → Serial → Unity → Event Bus → mundo reage.
+
+✅ **Reaproveitável como**: Integração maquete → simulação
+
+---
+
+## 📚 REFERÊNCIAS ACADÊMICAS E TÉCNICAS ATUALIZADAS
+
+### 1. Ferramentas Unity Modernas (2024-2025)
+
+**Unity 6 + UI Toolkit**
+- UI Builder (editor WYSIWYG)
+- Data binding (conecta UI a dados sem código manual)
+- Amostras oficiais:
+  - **Dragon Crashers**: Menus complexos, inventário, localização
+  - **QuizU**: Design system modular, transições suaves
+
+**AR Foundation**
+- Framework multiplataforma AR
+- Não requer marcadores (SLAM)
+- Compatível com ARCore (Android) e ARKit (iOS)
+
+**ML-Agents Toolkit**
+- Aprendizado de máquina para NPCs
+- Treinamento por reforço em Unity
+- Open-source (GitHub: Unity-Technologies/ml-agents)
+
+**Terrain Tools**
+- Esculpir terreno dentro do Editor
+- Pintar texturas, colocar vegetação
+- Otimizações automáticas de renderização
+
+### 2. Pesquisa em Serious Games & Simulação Social
+
+**Agent-Based Modeling (ABM)**
+- Livro clássico: *Growing Artificial Societies* (Epstein & Axtell, 1996)
+- NetLogo (framework educacional)
+- Aplicação: simular emergência social de regras simples
+
+**Serious Games em Logística**
+- Estudo (2024): Jogos de cadeia de suprimentos melhoram tomada de decisão sob incerteza
+- Recomendação: Usar VR/AR para imersão
+- Fonte: *European Research Studies Journal*
+
+**Simulação Social em Jogos**
+- *The Sims* (2000): Agentes com necessidades e relacionamentos
+- *Dwarf Fortress*: Memória individual, fofoca, história emergente
+- Lição: Profundidade não vem de complexidade visual, mas de **interações sistêmicas**
+
+### 3. IoT e Integração Física
+
+**Arduino + Unity**
+- Plugin Ardity (comunicação serial)
+- Tutoriais: Sensor físico controla objeto Unity
+- Aplicação: Botões físicos na maquete geram eventos digitais
+
+**MQTT para IoT**
+- Protocolo leve para dispositivos
+- Biblioteca: M2Mqtt (C# para Unity)
+- Uso: Sensores remotos alimentam simulação em tempo real
+
+### 4. Gamificação em Logística e AR
+
+**Estudo (2024, MDPI)**: AR gamificado atrai interesse pelo setor logístico
+- Exemplo: Apps AR para orientação em armazéns
+- Overlay de trajetos virtuais sobre espaço real
+- Aplicação em Ferritine: Visualizar dados logísticos via celular sobre maquete
+
+### 5. Padrões de Código em Unity
+
+**Guia Oficial Unity**:
+- Separar dados (ScriptableObjects) de lógica (MonoBehaviours)
+- Usar eventos reativos (UnityEvents, C# events)
+- Padrões: MVC/MVP, Factory, Command, Observer
+
+**Otimização de UI**:
+- Agrupar elementos para reduzir Draw Calls
+- Usar TextMeshPro (fontes vetoriais)
+- Safe Areas para mobile
+
+---
+
+## 🌍 PERSPECTIVA REALISTA PARA O PROJETO
+
+### O Que Você Ganha Absorvendo Essas Ideias
+
+1. **Maturidade como game designer**
+   - Entender **por que** sistemas funcionam
+   - Não apenas **copiar** mecânicas
+
+2. **Base técnica reutilizável**
+   - Código orientado a dados
+   - Arquitetura escalável
+   - Padrões profissionais
+
+3. **Clareza de escopo**
+   - Não tentar "fazer tudo"
+   - Escolher **um sistema central** (ferrovias)
+   - Expandir depois
+
+### O Que Você Não Está Fazendo
+
+❌ Um city builder comercial  
+❌ Um Factorio clone  
+❌ Um jogo indie para vender  
+
+### O Que Você ESTÁ Fazendo
+
+✅ **Um instrumento para observar sistemas sociais materializados**  
+✅ **Uma simulação híbrida contemplativa**  
+✅ **Um projeto de pesquisa aplicada disfarçado de hobby**
+
+E isso explica:
+- Por que Unity faz sentido (visualização + IoT)
+- Por que mini-games são o caminho (aprendizado iterativo)
+- Por que agentes visíveis importam (legibilidade)
+- Por que o físico e o digital precisam conversar (tangibilidade)
+
+---
+
+## 🎓 APRENDIZADOS META (OS MAIS IMPORTANTES)
+
+### 1. Jogo É Sistema, Não Feature
+
+**Urbek** não vive de:
+- Gráficos bonitos
+- História épica
+- Hype de marketing
+
+Vive de **consistência sistêmica**.
+
+**Lição**: Se seus sistemas fizerem sentido juntos, o jogo funciona. Se não, nem arte 3D salva.
+
+### 2. Pequeno + Coerente > Grande + Caótico
+
+**Technicity** e **Urbek** provam:
+- Escopo controlado
+- Profundidade localizada
+
+**Para Ferritine**:
+- Não tente fazer "tudo" de início
+- Escolha **ferrovias** como sistema central
+- Faça-o **profundo** antes de adicionar aeroportos
+
+### 3. Simulação Antes de Visualização
+
+**Ordem correta**:
+1. Simulação funcionando no **console** (números corretos)
+2. Depois renderizar (visualização)
+
+**Ordem errada**:
+1. "Bonito mas vazio"
+2. Tentar fazer simulação depois
+
+**Por quê?**  
+Porque é mais fácil debugar lógica sem gráficos atrapalhando.
+
+### 4. Erro É Dado, Caos É Esperado
+
+**Dwarf Fortress** ensina:
+- Falhas fazem parte do jogo
+- Histórias emergem de desastres
+
+**Para Ferritine**:
+- Não esconder bugs interessantes
+- Se acidente ferroviário criar luto coletivo → **feature**
+- Se economia quebrar por decisão do jogador → **consequência legítima**
+
+---
+
+## 📖 FONTES E REFERÊNCIAS
+
+### Documentação Técnica
+- Unity Documentation (docs.unity3d.com)
+- Unity Learn (learn.unity.com)
+- AR Foundation Guide (docs.unity3d.com)
+- ML-Agents Toolkit (github.com/Unity-Technologies/ml-agents)
+
+### Publicações Acadêmicas
+- *European Research Studies Journal* (2024) - Serious Games em Logística
+- *MDPI* (2024) - AR e Gamificação em Logística
+- Epstein & Axtell (1996) - *Growing Artificial Societies*
+
+### Tutoriais e Comunidade
+- Arduino + Unity Integration (medium.com)
+- MQTT for Unity (emqx.com)
+- UI Toolkit Samples: Dragon Crashers, QuizU
+
+### Jogos de Referência
+- Urbek City Builder, Technicity, Factorio, Satisfactory, Cities: Skylines, Dwarf Fortress, The Sims, Minecraft (+ mods Create, CustomNPCs)
+
+---
+
 ## APÊNDICES
 
 ### Apêndice A: Glossário Técnico
@@ -3542,7 +4189,6 @@ class EventBus:
 # event_bus.emit("train_arrived", {"train_id": 1, "station": "Norte"})
 ```
 
----
 
 ## 📜 LICENÇA E CRÉDITOS
 

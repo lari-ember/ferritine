@@ -8,18 +8,41 @@ public class FerritineAPIClient : MonoBehaviour
     [Header("API Configuration")]
     public string apiUrl = "http://localhost:5000";
     public float pollInterval = 1f; // Segundos entre requisições
-    
+
     [Header("Events")]
     public Action<WorldState> OnWorldStateReceived;
     public Action<string> OnError;
-    
+    public Action<MetricsData> OnMetricsReceived;
+
+    // DESATIVADO: EntitySpawner causava duplicação com WorldController
+    // Use apenas WorldController com Object Pooling
+    /*
+    [Header("References")]
+    // Referência opcional ao EntitySpawner — se não atribuída, tentamos localizar na cena
+    public EntitySpawner spawner;
+    */
+
     private bool isPolling = false;
-    
+
+    // DESATIVADO: Awake não é mais necessário sem EntitySpawner
+    /*
+    void Awake()
+    {
+        if (spawner == null)
+        {
+            // FindAnyObjectByType é preferível às APIs obsoletas em versões recentes do Unity
+            spawner = UnityEngine.Object.FindAnyObjectByType<EntitySpawner>();
+            if (spawner == null)
+                Debug.LogWarning("FerritineAPIClient: nenhum EntitySpawner encontrado na cena. Atribua pelo Inspector para habilitar spawning automático.");
+        }
+    }
+    */
+
     void Start()
     {
         StartPolling();
     }
-    
+
     public void StartPolling()
     {
         if (!isPolling)
@@ -28,30 +51,31 @@ public class FerritineAPIClient : MonoBehaviour
             StartCoroutine(PollWorldState());
         }
     }
-    
+
     public void StopPolling()
     {
         isPolling = false;
         StopAllCoroutines();
     }
-    
+
     IEnumerator PollWorldState()
     {
         while (isPolling)
         {
             yield return StartCoroutine(GetWorldState());
+            yield return StartCoroutine(GetMetrics());
             yield return new WaitForSeconds(pollInterval);
         }
     }
-    
+
     IEnumerator GetWorldState()
     {
         string url = $"{apiUrl}/api/world/state";
-        
+
         using (UnityWebRequest request = UnityWebRequest.Get(url))
         {
             yield return request.SendWebRequest();
-            
+
             if (request.result == UnityWebRequest.Result.Success)
             {
                 try
@@ -59,7 +83,19 @@ public class FerritineAPIClient : MonoBehaviour
                     string json = request.downloadHandler.text;
                     WorldState state = JsonUtility.FromJson<WorldState>(json);
                     ValidateUUIDs(state);
+
+                    // Notificar assinantes de evento (WorldController se inscreve aqui)
                     OnWorldStateReceived?.Invoke(state);
+
+                    // DESATIVADO: Causava duplicação com WorldController
+                    // Usar apenas WorldController com Object Pooling
+                    /*
+                    // Também encaminhar diretamente para o EntitySpawner (se existir)
+                    if (spawner != null)
+                    {
+                        spawner.UpdateWorldEntities(state);
+                    }
+                    */
                 }
                 catch (Exception e)
                 {
@@ -74,15 +110,15 @@ public class FerritineAPIClient : MonoBehaviour
             }
         }
     }
-    
+
     // Ele valida os UUIDs recebidos
-    
+
     private void ValidateUUIDs(WorldState state)
     {
         if (state == null) return;
-        
+
         int invalid = 0;
-        
+
         // Validar vehicles
         if (state.vehicles != null)
         {
@@ -92,7 +128,7 @@ public class FerritineAPIClient : MonoBehaviour
                     Debug.LogWarning($"⚠️ Vehicle UUID inválido: {v.id}");
                 }
         }
-        
+
         // Validar agents
         if (state.agents != null)
         {
@@ -102,7 +138,7 @@ public class FerritineAPIClient : MonoBehaviour
                     Debug.LogWarning($"⚠️ Agent UUID inválido: {a.id}");
                 }
         }
-        
+
         // Validar stations
         if (state.stations != null)
         {
@@ -112,23 +148,22 @@ public class FerritineAPIClient : MonoBehaviour
                     Debug.LogWarning($"⚠️ Station UUID inválido: {s.id}");
                 }
         }
-        
+
         if (invalid == 0)
             Debug.Log("✅ Todos os UUIDs são válidos!");
         else
             Debug.LogError($"❌ {invalid} UUIDs inválidos encontrados!");
     }
-    
-    
+
     // Método auxiliar para buscar apenas estações
     public IEnumerator GetStations(Action<StationData[]> callback)
     {
         string url = $"{apiUrl}/api/stations";
-        
+
         using (UnityWebRequest request = UnityWebRequest.Get(url))
         {
             yield return request.SendWebRequest();
-            
+
             if (request.result == UnityWebRequest.Result.Success)
             {
                 string json = request.downloadHandler.text;
@@ -139,11 +174,40 @@ public class FerritineAPIClient : MonoBehaviour
             }
         }
     }
-    
+
+    public IEnumerator GetMetrics()
+    {
+        string url = $"{apiUrl}/api/metrics";
+
+        using (UnityWebRequest request = UnityWebRequest.Get(url))
+        {
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                try
+                {
+                    string json = request.downloadHandler.text;
+                    MetricsData metrics = JsonUtility.FromJson<MetricsData>(json);
+                    OnMetricsReceived?.Invoke(metrics);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Erro ao parsear Metrics JSON: {e.Message}");
+                    OnError?.Invoke(e.Message);
+                }
+            }
+            else
+            {
+                Debug.LogError($"Erro na API (metrics): {request.error}");
+                OnError?.Invoke(request.error);
+            }
+        }
+    }
+
     [Serializable]
     private class StationDataWrapper
     {
         public StationData[] items;
     }
 }
-
