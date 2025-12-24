@@ -79,15 +79,15 @@
 - `docs/REQUIREMENTS_FIX.md` - Correção de dependências
 
 #### Documentos Migrados:
-- `docs/QUICKSTART.md`
-- `docs/CONTRIBUTING.md`
+- `docs/guides/QUICKSTART.md`
+- `docs/guides/CONTRIBUTING.md`
 - `docs/CHANGELOG.md`
-- `docs/IMPLEMENTATION_SUMMARY.md`
-- `docs/GDD_FERRITINE.md`
-- `docs/MAQUETE_TECH_DOCS.md`
-- `docs/TROUBLESHOOTING.md`
-- `docs/PYTHONPATH_FIX.md`
-- `docs/NEXT_STEPS.md`
+- `docs/development/IMPLEMENTATION_SUMMARY.md`
+- `docs/architecture/GDD_FERRITINE.md`
+- `docs/architecture/MAQUETE_TECH_DOCS.md`
+- `docs/guides/TROUBLESHOOTING.md`
+- `docs/development/PYTHONPATH_FIX.md`
+- `docs/development/NEXT_STEPS.md`
 
 ### 4. README.md Melhorado
 
@@ -170,12 +170,12 @@ ferritine/
 9. 🆕 `docs/REQUIREMENTS_FIX.md`
 
 ### Migrados para docs/:
-1. ✅ `QUICKSTART.md` → `docs/QUICKSTART.md`
-2. ✅ `CONTRIBUTING.md` → `docs/CONTRIBUTING.md`
+1. ✅ `QUICKSTART.md` → `docs/guides/QUICKSTART.md`
+2. ✅ `CONTRIBUTING.md` → `docs/guides/CONTRIBUTING.md`
 3. ✅ `CHANGELOG.md` → `docs/CHANGELOG.md`
-4. ✅ `IMPLEMENTATION_SUMMARY.md` → `docs/IMPLEMENTATION_SUMMARY.md`
-5. ✅ `gdd_ferritine.md` → `docs/GDD_FERRITINE.md`
-6. ✅ `maquete_tech_docs.md` → `docs/MAQUETE_TECH_DOCS.md`
+4. ✅ `IMPLEMENTATION_SUMMARY.md` → `docs/development/IMPLEMENTATION_SUMMARY.md`
+5. ✅ `gdd_ferritine.md` → `docs/architecture/GDD_FERRITINE.md`
+6. ✅ `maquete_tech_docs.md` → `docs/architecture/MAQUETE_TECH_DOCS.md`
 
 ---
 
@@ -251,21 +251,21 @@ pytest --cov=app
 ## 📚 Documentação de Referência
 
 ### Para Usuários:
-- 📖 [QUICKSTART.md](docs/QUICKSTART.md) - Comece aqui
-- 📖 [README.md](README.md) - Visão geral
+- 📖 [QUICKSTART.md](../guides/QUICKSTART.md) - Comece aqui
+- 📖 [README.md](../../README.md) - Visão geral
 
 ### Para Contribuidores:
-- 🤝 [CONTRIBUTING.md](docs/CONTRIBUTING.md) - Como contribuir
-- 🔧 [WORKFLOWS_GUIDE.md](docs/WORKFLOWS_GUIDE.md) - CI/CD completo
+- 🤝 [CONTRIBUTING.md](../guides/CONTRIBUTING.md) - Como contribuir
+- 🔧 [WORKFLOWS_GUIDE.md](../guides/WORKFLOWS_GUIDE.md) - CI/CD completo
 
 ### Para Resolução de Problemas:
-- 🐛 [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) - Problemas comuns
-- 🐛 [PYTHONPATH_FIX.md](docs/PYTHONPATH_FIX.md) - Fix do ModuleNotFoundError
-- 🐛 [REQUIREMENTS_FIX.md](docs/REQUIREMENTS_FIX.md) - Fix de dependências
+- 🐛 [TROUBLESHOOTING.md](../guides/TROUBLESHOOTING.md) - Problemas comuns
+- 🐛 [PYTHONPATH_FIX.md](PYTHONPATH_FIX.md) - Fix do ModuleNotFoundError
+- 🐛 [REQUIREMENTS_FIX.md](REQUIREMENTS_FIX.md) - Fix de dependências
 
 ### Documentação Técnica:
-- 📊 [GDD_FERRITINE.md](docs/GDD_FERRITINE.md) - Game Design Document
-- 🏗️ [MAQUETE_TECH_DOCS.md](docs/MAQUETE_TECH_DOCS.md) - Specs técnicas
+- 📊 [GDD_FERRITINE.md](../architecture/GDD_FERRITINE.md) - Game Design Document
+- 🏗️ [MAQUETE_TECH_DOCS.md](../architecture/MAQUETE_TECH_DOCS.md) - Specs técnicas
 
 ---
 

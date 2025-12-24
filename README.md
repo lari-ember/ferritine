@@ -38,7 +38,7 @@ O projeto simula uma cidade com agentes que possuem rotinas diárias realistas, 
 - **Docker Compose** 2.0+ (incluído no Docker Desktop)
 - **git** (para clonar o repositório)
 
-📖 **Quick Start Docker**: Ver [DOCKER_README.md](DOCKER_README.md)
+📖 **Quick Start Docker**: Ver [DOCKER_GUIDE_QUICKSTART.md](docs/guides/DOCKER_GUIDE_QUICKSTART.md)
 
 ### Opção 2: Instalação Local
 
@@ -56,7 +56,7 @@ As dependências são gerenciadas através do `requirements.txt`:
 
 ## 🚀 Instalação e Uso
 
-> 📖 **Guia Completo**: Para instruções detalhadas, consulte o [Guia de Início Rápido](docs/QUICKSTART.md)
+> 📖 **Guia Completo**: Para instruções detalhadas, consulte o [Guia de Início Rápido](docs/guides/QUICKSTART.md)
 
 ### Opção A: Usando Docker 🐳 (Recomendado)
 
@@ -84,7 +84,7 @@ chmod +x docker-manage.sh
 ./docker-manage.sh stop        # Parar tudo
 ```
 
-📖 **Guia Docker**: [DOCKER_README.md](DOCKER_README.md) | [docs/DOCKER_GUIDE.md](docs/DOCKER_GUIDE.md)
+📖 **Guia Docker**: [DOCKER_GUIDE_QUICKSTART.md](docs/guides/DOCKER_GUIDE_QUICKSTART.md) | [docs/guides/DOCKER_GUIDE.md](docs/guides/DOCKER_GUIDE.md)
 
 ---
 
@@ -369,7 +369,7 @@ python scripts/init_database.py init
 python scripts/init_database.py seed
 ```
 
-📖 **Documentação Completa**: [Database Guide](docs/DATABASE_GUIDE.md) | [Quick Start](docs/QUICKSTART_DATABASE.md)
+📖 **Documentação Completa**: [Database Guide](docs/database/DATABASE_GUIDE.md)
 print(f"Database URL: {config.DATABASE_URL}")
 print(f"Agent work hours: {config.AGENT_WORK_START_HOUR}h - {config.AGENT_WORK_END_HOUR}h")
 
@@ -515,7 +515,7 @@ Este projeto usa **Release Drafter** para gerar changelogs automaticamente:
 3. **Quando pronto** → Você publica o release (manualmente ou com tag)
 4. **Changelog gerado** → Organizado por categoria baseado nos labels!
 
-📖 **Leia o guia completo**: [docs/WORKFLOWS_GUIDE.md](docs/WORKFLOWS_GUIDE.md)
+📖 **Leia o guia completo**: [docs/guides/WORKFLOWS_GUIDE.md](docs/guides/WORKFLOWS_GUIDE.md)
 
 ### Reportando Bugs
 
@@ -537,7 +537,7 @@ Use o [template de feature request](.github/ISSUE_TEMPLATE/feature_request.md) p
 - **Idioma**: Código e comentários em português
 - **Type Hints**: Use type hints quando possível
 
-📖 **Leia mais**: [Guia Completo de Contribuição](docs/CONTRIBUTING.md)
+📖 **Leia mais**: [Guia Completo de Contribuição](docs/guides/CONTRIBUTING.md)
 
 ## 🔖 Versionamento
 
@@ -595,7 +595,7 @@ O workflow irá:
 
 Para entender todos os workflows, como funcionam os labels, e o fluxo completo de desenvolvimento:
 
-📖 **Leia**: [docs/WORKFLOWS_GUIDE.md](docs/WORKFLOWS_GUIDE.md)
+📖 **Leia**: [docs/guides/WORKFLOWS_GUIDE.md](docs/guides/WORKFLOWS_GUIDE.md)
 
 ### Atualizando a Versão Localmente (para desenvolvimento)
 
@@ -620,19 +620,51 @@ O changelog é gerado automaticamente durante o processo de release, baseado nos
 
 ## 📚 Documentação
 
-Toda a documentação do projeto está organizada na pasta `docs/`. Consulte o [índice da documentação](docs/README.md) para navegação completa.
+Toda a documentação do projeto está organizada na pasta `docs/`. Consulte o [📖 índice da documentação](docs/README.md) para navegação completa.
 
-### Documentos Principais
+### 🚀 Guias de Início Rápido
 
-- 📖 [Guia de Início Rápido](docs/QUICKSTART.md) - Comece a usar em 5 minutos
-- 🤝 [Guia de Contribuição](docs/CONTRIBUTING.md) - Como contribuir para o projeto
-- 🔧 [Guia de Workflows](docs/WORKFLOWS_GUIDE.md) - CI/CD e automações
+- ⚡ [START_HERE](docs/guides/START_HERE.md) - Backend para Unity em 3 comandos
+- 📖 [Guia de Início Rápido](docs/guides/QUICKSTART.md) - Comece a usar em 5 minutos
+- 🐳 [Docker Guide](docs/guides/DOCKER_GUIDE.md) - Usando Docker
+- 🐛 [Troubleshooting](docs/guides/TROUBLESHOOTING.md) - Resolução de problemas
+
+### 👥 Contribuição e Desenvolvimento
+
+- 🤝 [Guia de Contribuição](docs/guides/CONTRIBUTING.md) - Como contribuir para o projeto
+- 🔧 [Guia de Workflows](docs/guides/WORKFLOWS_GUIDE.md) - CI/CD e automações
+- 📋 [Quick Issue Guide](docs/guides/QUICK_ISSUE_GUIDE.md) - Criando issues
+
+### 🏗️ Arquitetura e Design
+
+- 📊 [Game Design Document](docs/architecture/GDD_FERRITINE.md) - Conceito e design completo
+- 🏗️ [Documentação Técnica da Maquete](docs/architecture/MAQUETE_TECH_DOCS.md) - Specs técnicas
+- 📋 [Issues, Milestones & Tags](docs/architecture/ISSUES_MILESTONES_TAGS.md) - Planejamento
+
+### 💾 Banco de Dados
+
+- 💾 [Database Guide](docs/database/DATABASE_GUIDE.md) - Guia completo do banco de dados
+- 🏢 [Building Model](docs/database/DATABASE_BUILDING_USAGE.md) - Modelo de edifícios
+
+### 🎮 Unity
+
+- 🎮 [Unity Integration Guide](docs/unity/UNITY_INTEGRATION_GUIDE.md) - Integração completa
+- 🎨 [Agent Animations](docs/unity/AGENT_ANIMATION_IMPLEMENTATION.md) - Sistema de animações
+- 🔌 [API Endpoints](docs/unity/API_ENDPOINTS.md) - Endpoints da API
+
+### 🔨 Desenvolvimento
+
+- 📝 [Implementation Summary](docs/development/IMPLEMENTATION_SUMMARY.md) - Resumo das implementações
+- 🚀 [Next Steps](docs/development/NEXT_STEPS.md) - Próximos passos
+- 📋 [README TODOs](docs/development/README_TODOS.md) - TODOs prioritários
+
+### 📝 Histórico
+
 - 📝 [Changelog](docs/CHANGELOG.md) - Histórico de mudanças
-- 🐛 [Troubleshooting](docs/TROUBLESHOOTING.md) - Resolução de problemas
-- 📊 [Game Design Document](docs/GDD_FERRITINE.md) - Conceito e design
-- 🏗️ [Documentação Técnica da Maquete](docs/MAQUETE_TECH_DOCS.md) - Specs técnicas
 
-📂 **[Ver todos os documentos →](docs/README.md)**
+---
+
+📂 **[Ver índice completo da documentação →](docs/README.md)**
 
 ## 📄 Licença
 Este projeto está licenciado sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
@@ -646,7 +678,7 @@ O projeto está organizado em **fases bem definidas** com issues e milestones de
 Consulte os seguintes documentos para ver o plano completo de desenvolvimento:
 
 - **[ISSUES_MILESTONES_TAGS.md](ISSUES_MILESTONES_TAGS.md)** - 55 issues detalhadas organizadas em milestones
-- **[docs/QUICK_ISSUE_GUIDE.md](docs/QUICK_ISSUE_GUIDE.md)** - Guia rápido para criar issues no GitHub
+- **[docs/guides/QUICK_ISSUE_GUIDE.md](docs/guides/QUICK_ISSUE_GUIDE.md)** - Guia rápido para criar issues no GitHub
 - **[gdd_ferritine.md](gdd_ferritine.md)** - Game Design Document completo (3600+ linhas)
 
 ### Fases do Projeto
