@@ -2990,566 +2990,6 @@ Que seus trilhos sejam retos, suas soldas firmes, seus códigos sem bugs (ok, po
 
 ---
 
-## APÊNDICES
-
-### Apêndice A: Glossário Técnico
-
-**Arduino**: Microcontrolador programável, cérebro de projetos eletrônicos  
-**DCC (Digital Command Control)**: Sistema que permite controlar múltiplos trens independentemente no mesmo trilho  
-**Agente**: Entidade virtual (habitante) com comportamentos e decisões próprias  
-**IoT (Internet of Things)**: Conexão de dispositivos físicos à internet/redes  
-**MQTT**: Protocolo de comunicação leve para IoT (publish/subscribe)  
-**Reed Switch**: Sensor magnético, fecha circuito quando ímã se aproxima  
-**Servo Motor**: Motor que pode girar para ângulo específico (0-180°)  
-**PWM (Pulse Width Modulation)**: Técnica para controlar intensidade (ex: brilho de LED)  
-**API**: Interface para comunicação entre software (ex: Python ↔ dashboard web)  
-**Emergent Behavior**: Comportamentos complexos surgindo de regras simples  
-**Pathfinding**: Algoritmo para encontrar caminho (ex: A* para rotas)  
-**Weathering**: Técnicas de envelhecimento artificial em maquetes  
-**HO Scale**: Escala 1:87 (1cm na maquete = 87cm real)  
-**N Scale**: Escala 1:160 (menor que HO, permite mais detalhes em menos espaço)
-
-### Apêndice B: Lista de Compras Fase 1 (Simulação Digital)
-
-| Item | Quantidade | Preço Unitário | Total | Onde Comprar |
-|------|------------|----------------|-------|--------------|
-| Arduino Uno Starter Kit | 1 | R$ 200 | R$ 200 | Usinainfo/FilipeFlop |
-| LEDs variados (pacote) | 1 | R$ 15 | R$ 15 | Mercado Livre |
-| Reed Switch | 5 | R$ 5 | R$ 25 | Usinainfo |
-| Ímãs de neodímio pequenos | 10 | R$ 2 | R$ 20 | Mercado Livre |
-| Jumpers (pacote) | 1 | R$ 12 | R$ 12 | Mercado Livre |
-| Protoboard | 2 | R$ 15 | R$ 30 | Usinainfo |
-| Resistores (kit) | 1 | R$ 18 | R$ 18 | Usinainfo |
-| **Total Fase 1** | | | **R$ 320** | |
-
-### Apêndice C: Lista de Compras Fase 2-3 (Maquete Física)
-
-| Item | Quantidade | Preço Unitário | Total | Onde Comprar |
-|------|------------|----------------|-------|--------------|
-| Placa MDF 100x100cm | 1 | R$ 80 | R$ 80 | Madeireira local |
-| Isopor (placas variadas) | - | - | R$ 50 | Loja de materiais |
-| EVA (folhas) | 10 | R$ 2 | R$ 20 | Papelaria |
-| Tinta acrílica (6 cores) | 6 | R$ 12 | R$ 72 | Loja de artes |
-| Cola branca 1kg | 2 | R$ 18 | R$ 36 | Papelaria |
-| Trilho flexível HO (5m) | 5 | R$ 30 | R$ 150 | Frateschi/ML |
-| Desvio manual HO | 2 | R$ 85 | R$ 170 | Frateschi |
-| Locomotiva básica HO | 1 | R$ 350 | R$ 350 | Frateschi |
-| Vagões HO | 3 | R$ 80 | R$ 240 | Frateschi |
-| Fonte DC básica | 1 | R$ 120 | R$ 120 | Frateschi/ML |
-| Servo motor 9g | 3 | R$ 12 | R$ 36 | Usinainfo |
-| LED strip 5m | 1 | R$ 40 | R$ 40 | Mercado Livre |
-| Miniaturas sortidas | - | - | R$ 100 | Frateschi/ML |
-| Pó de grama | 50g | R$ 25 | R$ 25 | Frateschi |
-| Árvores (pacote 10) | 2 | R$ 35 | R$ 70 | Frateschi |
-| Papelão Paraná | 5 | R$ 15 | R$ 75 | Papelaria |
-| Ferramentas básicas | - | - | R$ 150 | Loja de ferramentas |
-| **Total Fase 2-3** | | | **R$ 1.784** | |
-
-**Total Geral Fases 1-3: ~R$ 2.100**
-
-### Apêndice D: Cronograma Detalhado Ano 1
-
-#### Janeiro
-- Semana 1-2: Leitura de tutoriais, compra de Arduino kit
-- Semana 3-4: Primeiros experimentos (Blink, sensores)
-
-#### Fevereiro
-- Semana 1-2: Python básico, primeiras classes
-- Semana 3-4: Simulação simples (10 agentes, mapa 2D)
-
-#### Março
-- Semana 1-2: Comunicação Arduino ↔ Python
-- Semana 3-4: Visualização Pygame
-
-#### Abril
-- Semana 1-2: Economia básica na simulação
-- Semana 3-4: Sistema de transporte virtual
-
-#### Maio
-- Semana 1-2: Desenhar planta da maquete
-- Semana 3-4: Comprar materiais físicos
-
-#### Junho
-- Semana 1-2: Construir base MDF
-- Semana 3-4: Relevo em isopor
-
-#### Julho
-- Semana 1-2: Pintura de base
-- Semana 3-4: Instalar trilhos
-
-#### Agosto
-- Semana 1-2: Testar trem físico
-- Semana 3-4: Instalar sensores nos trilhos
-
-#### Setembro
-- Semana 1-2: Construir primeiros 3 prédios
-- Semana 3-4: Construir mais 3 prédios
-
-#### Outubro
-- Semana 1-2: Sistema de iluminação (LEDs)
-- Semana 3-4: Integrar iluminação com simulação
-
-#### Novembro
-- Semana 1-2: Vegetação e detalhes
-- Semana 3-4: Acabamento geral
-
-#### Dezembro
-- Semana 1-2: Testes finais, calibração
-- Semana 3-4: Primeira "apresentação" para família/amigos
-
-### Apêndice E: Estrutura de Banco de Dados
-
-```sql
--- Tabela de Agentes
-CREATE TABLE agents (
-    id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL,
-    age INTEGER,
-    gender TEXT,
-    home_id INTEGER,
-    job_id INTEGER,
-    workplace_id INTEGER,
-    salary REAL,
-    money REAL,
-    health INTEGER,
-    energy INTEGER,
-    happiness INTEGER,
-    hunger INTEGER,
-    knowledge INTEGER,
-    strength INTEGER,
-    attention INTEGER,
-    laziness INTEGER,
-    ambition INTEGER,
-    is_married BOOLEAN,
-    created_at TIMESTAMP,
-    FOREIGN KEY (home_id) REFERENCES buildings(id),
-    FOREIGN KEY (workplace_id) REFERENCES buildings(id)
-);
-
--- Tabela de Edifícios
-CREATE TABLE buildings (
-    id INTEGER PRIMARY KEY,
-    name TEXT,
-    type TEXT, -- residential, commercial, industrial
-    x INTEGER,
-    y INTEGER,
-    owner_id INTEGER,
-    construction_progress INTEGER, -- 0-100
-    condition INTEGER, -- estado de conservação 0-100
-    value REAL,
-    created_at TIMESTAMP,
-    FOREIGN KEY (owner_id) REFERENCES agents(id)
-);
-
--- Tabela de Veículos (Trens, Ônibus)
-CREATE TABLE vehicles (
-    id INTEGER PRIMARY KEY,
-    type TEXT, -- train, bus
-    model TEXT,
-    current_station_id INTEGER,
-    current_position REAL, -- posição no trilho/rua
-    speed REAL,
-    capacity INTEGER,
-    current_passengers INTEGER,
-    cargo_type TEXT,
-    cargo_amount REAL,
-    condition INTEGER, -- 0-100
-    fuel_level REAL,
-    FOREIGN KEY (current_station_id) REFERENCES buildings(id)
-);
-
--- Tabela de Eventos Históricos
-CREATE TABLE events (
-    id INTEGER PRIMARY KEY,
-    timestamp TIMESTAMP,
-    type TEXT, -- construction, accident, election, disaster
-    description TEXT,
-    impact_happiness INTEGER,
-    impact_economy REAL,
-    related_agent_id INTEGER,
-    related_building_id INTEGER,
-    FOREIGN KEY (related_agent_id) REFERENCES agents(id),
-    FOREIGN KEY (related_building_id) REFERENCES buildings(id)
-);
-
--- Tabela de Estatísticas Econômicas
-CREATE TABLE economy_stats (
-    id INTEGER PRIMARY KEY,
-    date DATE,
-    gdp REAL,
-    unemployment_rate REAL,
-    inflation_rate REAL,
-    average_happiness REAL,
-    population INTEGER,
-    total_money_supply REAL
-);
-
--- Tabela de Relações Familiares
-CREATE TABLE family_relations (
-    id INTEGER PRIMARY KEY,
-    agent_id INTEGER,
-    related_agent_id INTEGER,
-    relation_type TEXT, -- parent, child, spouse, sibling
-    FOREIGN KEY (agent_id) REFERENCES agents(id),
-    FOREIGN KEY (related_agent_id) REFERENCES agents(id)
-);
-
--- Tabela de Rotas de Transporte
-CREATE TABLE routes (
-    id INTEGER PRIMARY KEY,
-    vehicle_id INTEGER,
-    start_station_id INTEGER,
-    end_station_id INTEGER,
-    departure_time TIME,
-    arrival_time TIME,
-    frequency_minutes INTEGER, -- a cada X minutos
-    fare REAL,
-    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id),
-    FOREIGN KEY (start_station_id) REFERENCES buildings(id),
-    FOREIGN KEY (end_station_id) REFERENCES buildings(id)
-);
-```
-
-### Apêndice F: Exemplo de Configuração YAML
-
-```yaml
-# config.yaml - Configurações da Simulação
-
-simulation:
-  time_scale: 60  # 1 minuto real = 60 minutos simulados
-  tick_rate: 1    # Atualização a cada 1 segundo real
-  auto_save_interval: 300  # Salvar a cada 5 minutos
-  
-city:
-  name: "Santópolis"
-  foundation_year: 1887
-  starting_population: 50
-  starting_money: 100000
-  
-world:
-  grid_size: [100, 100]  # células
-  cell_size: 10  # metros por célula
-  
-agents:
-  max_agents: 1000
-  birth_rate: 0.015  # por ano
-  death_rate: 0.008
-  immigration_rate: 0.005
-  
-economy:
-  starting_gdp: 500000
-  inflation_target: 0.03  # 3% ao ano
-  unemployment_natural: 0.04  # 4% desemprego natural
-  
-  prices:
-    food: 15
-    housing_rent: 500
-    train_ticket: 5
-    bus_ticket: 3
-    
-  salaries:
-    teacher: 3000
-    factory_worker: 2500
-    clerk: 2800
-    manager: 5000
-    
-transport:
-  train_max_speed: 80  # km/h
-  bus_max_speed: 50
-  car_max_speed: 60
-  
-  train_capacity: 200  # passageiros
-  bus_capacity: 40
-  
-hardware:
-  arduino_port: "COM3"  # ou /dev/ttyUSB0 no Linux
-  baud_rate: 9600
-  
-  sensors:
-    - id: 1
-      type: "reed_switch"
-      location: "station_north"
-    - id: 2
-      type: "reed_switch"
-      location: "station_south"
-      
-  mqtt:
-    broker: "localhost"
-    port: 1883
-    topics:
-      train_position: "city/train/+/position"
-      train_command: "city/train/+/speed"
-      lights: "city/lights/+"
-      
-visualization:
-  window_size: [1280, 720]
-  fps: 60
-  style: "indie"  # indie, realistic, pixel
-  
-  colors:
-    background: [34, 139, 34]  # verde grama
-    roads: [80, 80, 80]
-    rails: [139, 69, 19]
-    water: [30, 144, 255]
-    
-ai:
-  enabled: true
-  auto_manage: false  # IA só sugere, não executa
-  difficulty: "medium"  # easy, medium, hard
-  
-  features:
-    demand_prediction: true
-    news_generation: true
-    route_optimization: true
-    crisis_management: true
-```
-
-### Apêndice G: Recursos Online Gratuitos
-
-#### Tutoriais em Vídeo (YouTube)
-1. **Eletrônica**:
-   - Canal WR Kits: "Curso Completo Arduino" (playlist)
-   - Brincando com Ideias: Projetos práticos
-   
-2. **Python**:
-   - Curso em Vídeo (Gustavo Guanabara): Mundo 1, 2 e 3
-   - Eduardo Mendes (Live de Python): POO avançada
-   
-3. **Ferromodelismo**:
-   - Ferromodelismo Brasil: Tutoriais básicos
-   - Luke Towan: Técnicas avançadas de paisagem (inglês)
-   
-4. **Simulação e Game Design**:
-   - Coding Train: Processing + simulações
-   - Sebastian Lague: Algoritmos de simulação
-
-#### Documentação Online
-- Arduino Official: arduino.cc/reference
-- Python Docs: docs.python.org/3/
-- Pygame Docs: pygame.org/docs
-- SimPy Docs: simpy.readthedocs.io
-
-#### Ferramentas Gratuitas
-- Tinkercad Circuits: tinkercad.com (simulação Arduino)
-- Fritzing: fritzing.org (desenhar circuitos)
-- GIMP: gimp.org (edição de imagens para texturas)
-- Audacity: audacityteam.org (sons para a cidade)
-
-#### Comunidades BR
-- Fórum Arduino Brasil: arduino.cc/forum (seção português)
-- Grupo Telegram "Python Brasil"
-- Discord "Programação BR"
-- Reddit: r/brasil (perguntas gerais)
-
-### Apêndice H: Ideias de Expansões Futuras
-
-#### Expansão 1: "Vida Noturna"
-- Bares, restaurantes, cinemas
-- Agentes saem à noite
-- Iluminação noturna detalhada (LEDs RGB)
-- Eventos: shows, festas
-
-#### Expansão 2: "Educação e Cultura"
-- Sistema escolar completo (crianças vão à escola)
-- Universidade (agentes estudam, se formam)
-- Museus, bibliotecas
-- Impacto no conhecimento dos agentes
-
-#### Expansão 3: "Saúde e Medicina"
-- Doenças mais complexas (gripe, fraturas, crônicas)
-- Hospital funcional (leitos, médicos)
-- Farmácias
-- Envelhecimento realista (expectativa de vida)
-
-#### Expansão 4: "Criminalidade"
-- Sistema de segurança (polícia)
-- Crimes (furtos, acidentes)
-- Presídio
-- Impacto na felicidade e economia
-
-#### Expansão 5: "Turismo"
-- Hotel
-- Atrações turísticas
-- Turistas (agentes temporários)
-- Receita de turismo
-
-#### Expansão 6: "Religião e Espiritualidade"
-- Igrejas, templos
-- Agentes religiosos
-- Feriados religiosos
-- Eventos (casamentos, funerais)
-
-#### Expansão 7: "Esportes"
-- Estádio
-- Times locais
-- Agentes assistem jogos
-- Rivalidades
-
-#### Expansão 8: "Meio Ambiente"
-- Poluição (ar, água)
-- Reciclagem
-- Parques e preservação
-- Animais (pássaros, cães, gatos)
-
-#### Expansão 9: "Tecnologia Avançada"
-- Internet na cidade (agentes navegam)
-- Smartphones (comunicação instantânea)
-- E-commerce (compras online)
-- Trabalho remoto
-
-#### Expansão 10: "Conectividade Regional"
-- Aeroporto (voos para outras cidades)
-- Porto fluvial/marítimo
-- Rodovia interestadual
-- Comércio inter-regional
-
-### Apêndice I: Templates de Código Úteis
-
-#### Template 1: Classe Base para Entidades
-
-```python
-# backend/simulation/entity.py
-
-from abc import ABC, abstractmethod
-from typing import Dict, Any
-
-class Entity(ABC):
-    """
-    Classe base para todas as entidades do mundo
-    (Agentes, Edifícios, Veículos)
-    """
-    
-    _id_counter = 0
-    
-    def __init__(self, name: str):
-        Entity._id_counter += 1
-        self.id = Entity._id_counter
-        self.name = name
-        self.created_at = None  # Timestamp de criação
-        
-    @abstractmethod
-    def update(self, world, delta_time):
-        """
-        Atualiza o estado da entidade
-        Deve ser implementado por subclasses
-        """
-        pass
-    
-    @abstractmethod
-    def get_state(self) -> Dict[str, Any]:
-        """
-        Retorna estado atual como dicionário
-        Para serialização/salvamento
-        """
-        pass
-    
-    def __repr__(self):
-        return f"{self.__class__.__name__}(id={self.id}, name='{self.name}')"
-```
-
-#### Template 2: Singleton para Gerenciador Global
-
-```python
-# backend/simulation/world_manager.py
-
-class WorldManager:
-    """
-    Singleton que gerencia o mundo inteiro
-    Acesso global de qualquer lugar do código
-    """
-    
-    _instance = None
-    
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
-        return cls._instance
-    
-    def __init__(self):
-        if self._initialized:
-            return
-            
-        self.world = None
-        self.agents = []
-        self.buildings = []
-        self.vehicles = []
-        self.events = []
-        self.current_time = None
-        self._initialized = True
-    
-    def get_agent(self, agent_id):
-        """Busca agente por ID"""
-        for agent in self.agents:
-            if agent.id == agent_id:
-                return agent
-        return None
-    
-    def add_agent(self, agent):
-        """Adiciona novo agente ao mundo"""
-        self.agents.append(agent)
-        
-    def remove_agent(self, agent_id):
-        """Remove agente (morte, emigração)"""
-        self.agents = [a for a in self.agents if a.id != agent_id]
-
-# Uso em qualquer arquivo:
-# from backend.simulation.world_manager import WorldManager
-# manager = WorldManager()
-# agent = manager.get_agent(5)
-```
-
-#### Template 3: Event Bus (Padrão Observer)
-
-```python
-# backend/utils/event_bus.py
-
-from typing import Callable, Dict, List
-
-class EventBus:
-    """
-    Sistema de eventos desacoplado
-    Qualquer parte do código pode emitir/escutar eventos
-    """
-    
-    def __init__(self):
-        self._listeners: Dict[str, List[Callable]] = {}
-    
-    def subscribe(self, event_type: str, callback: Callable):
-        """
-        Registra um listener para um tipo de evento
-        """
-        if event_type not in self._listeners:
-            self._listeners[event_type] = []
-        self._listeners[event_type].append(callback)
-    
-    def emit(self, event_type: str, data: Any = None):
-        """
-        Emite um evento, notificando todos os listeners
-        """
-        if event_type in self._listeners:
-            for callback in self._listeners[event_type]:
-                callback(data)
-    
-    def unsubscribe(self, event_type: str, callback: Callable):
-        """
-        Remove um listener
-        """
-        if event_type in self._listeners:
-            self._listeners[event_type].remove(callback)
-
-# Uso:
-# event_bus = EventBus()
-# 
-# def on_train_arrival(data):
-#     print(f"Trem {data['train_id']} chegou!")
-# 
-# event_bus.subscribe("train_arrived", on_train_arrival)
-# event_bus.emit("train_arrived", {"train_id": 1, "station": "Norte"})
-```
-
----
-
 ## 🧠 VISÃO GERAL CONCEITUAL E APRENDIZADOS DE REFERÊNCIAS
 
 ### Contexto: Por Que Este Projeto É Único
@@ -4190,6 +3630,565 @@ Porque é mais fácil debugar lógica sem gráficos atrapalhando.
 - Urbek City Builder, Technicity, Factorio, Satisfactory, Cities: Skylines, Dwarf Fortress, The Sims, Minecraft (+ mods Create, CustomNPCs)
 
 ---
+
+## APÊNDICES
+
+### Apêndice A: Glossário Técnico
+
+**Arduino**: Microcontrolador programável, cérebro de projetos eletrônicos  
+**DCC (Digital Command Control)**: Sistema que permite controlar múltiplos trens independentemente no mesmo trilho  
+**Agente**: Entidade virtual (habitante) com comportamentos e decisões próprias  
+**IoT (Internet of Things)**: Conexão de dispositivos físicos à internet/redes  
+**MQTT**: Protocolo de comunicação leve para IoT (publish/subscribe)  
+**Reed Switch**: Sensor magnético, fecha circuito quando ímã se aproxima  
+**Servo Motor**: Motor que pode girar para ângulo específico (0-180°)  
+**PWM (Pulse Width Modulation)**: Técnica para controlar intensidade (ex: brilho de LED)  
+**API**: Interface para comunicação entre software (ex: Python ↔ dashboard web)  
+**Emergent Behavior**: Comportamentos complexos surgindo de regras simples  
+**Pathfinding**: Algoritmo para encontrar caminho (ex: A* para rotas)  
+**Weathering**: Técnicas de envelhecimento artificial em maquetes  
+**HO Scale**: Escala 1:87 (1cm na maquete = 87cm real)  
+**N Scale**: Escala 1:160 (menor que HO, permite mais detalhes em menos espaço)
+
+### Apêndice B: Lista de Compras Fase 1 (Simulação Digital)
+
+| Item | Quantidade | Preço Unitário | Total | Onde Comprar |
+|------|------------|----------------|-------|--------------|
+| Arduino Uno Starter Kit | 1 | R$ 200 | R$ 200 | Usinainfo/FilipeFlop |
+| LEDs variados (pacote) | 1 | R$ 15 | R$ 15 | Mercado Livre |
+| Reed Switch | 5 | R$ 5 | R$ 25 | Usinainfo |
+| Ímãs de neodímio pequenos | 10 | R$ 2 | R$ 20 | Mercado Livre |
+| Jumpers (pacote) | 1 | R$ 12 | R$ 12 | Mercado Livre |
+| Protoboard | 2 | R$ 15 | R$ 30 | Usinainfo |
+| Resistores (kit) | 1 | R$ 18 | R$ 18 | Usinainfo |
+| **Total Fase 1** | | | **R$ 320** | |
+
+### Apêndice C: Lista de Compras Fase 2-3 (Maquete Física)
+
+| Item | Quantidade | Preço Unitário | Total | Onde Comprar |
+|------|------------|----------------|-------|--------------|
+| Placa MDF 100x100cm | 1 | R$ 80 | R$ 80 | Madeireira local |
+| Isopor (placas variadas) | - | - | R$ 50 | Loja de materiais |
+| EVA (folhas) | 10 | R$ 2 | R$ 20 | Papelaria |
+| Tinta acrílica (6 cores) | 6 | R$ 12 | R$ 72 | Loja de artes |
+| Cola branca 1kg | 2 | R$ 18 | R$ 36 | Papelaria |
+| Trilho flexível HO (5m) | 5 | R$ 30 | R$ 150 | Frateschi/ML |
+| Desvio manual HO | 2 | R$ 85 | R$ 170 | Frateschi |
+| Locomotiva básica HO | 1 | R$ 350 | R$ 350 | Frateschi |
+| Vagões HO | 3 | R$ 80 | R$ 240 | Frateschi |
+| Fonte DC básica | 1 | R$ 120 | R$ 120 | Frateschi/ML |
+| Servo motor 9g | 3 | R$ 12 | R$ 36 | Usinainfo |
+| LED strip 5m | 1 | R$ 40 | R$ 40 | Mercado Livre |
+| Miniaturas sortidas | - | - | R$ 100 | Frateschi/ML |
+| Pó de grama | 50g | R$ 25 | R$ 25 | Frateschi |
+| Árvores (pacote 10) | 2 | R$ 35 | R$ 70 | Frateschi |
+| Papelão Paraná | 5 | R$ 15 | R$ 75 | Papelaria |
+| Ferramentas básicas | - | - | R$ 150 | Loja de ferramentas |
+| **Total Fase 2-3** | | | **R$ 1.784** | |
+
+**Total Geral Fases 1-3: ~R$ 2.100**
+
+### Apêndice D: Cronograma Detalhado Ano 1
+
+#### Janeiro
+- Semana 1-2: Leitura de tutoriais, compra de Arduino kit
+- Semana 3-4: Primeiros experimentos (Blink, sensores)
+
+#### Fevereiro
+- Semana 1-2: Python básico, primeiras classes
+- Semana 3-4: Simulação simples (10 agentes, mapa 2D)
+
+#### Março
+- Semana 1-2: Comunicação Arduino ↔ Python
+- Semana 3-4: Visualização Pygame
+
+#### Abril
+- Semana 1-2: Economia básica na simulação
+- Semana 3-4: Sistema de transporte virtual
+
+#### Maio
+- Semana 1-2: Desenhar planta da maquete
+- Semana 3-4: Comprar materiais físicos
+
+#### Junho
+- Semana 1-2: Construir base MDF
+- Semana 3-4: Relevo em isopor
+
+#### Julho
+- Semana 1-2: Pintura de base
+- Semana 3-4: Instalar trilhos
+
+#### Agosto
+- Semana 1-2: Testar trem físico
+- Semana 3-4: Instalar sensores nos trilhos
+
+#### Setembro
+- Semana 1-2: Construir primeiros 3 prédios
+- Semana 3-4: Construir mais 3 prédios
+
+#### Outubro
+- Semana 1-2: Sistema de iluminação (LEDs)
+- Semana 3-4: Integrar iluminação com simulação
+
+#### Novembro
+- Semana 1-2: Vegetação e detalhes
+- Semana 3-4: Acabamento geral
+
+#### Dezembro
+- Semana 1-2: Testes finais, calibração
+- Semana 3-4: Primeira "apresentação" para família/amigos
+
+### Apêndice E: Estrutura de Banco de Dados
+
+```sql
+-- Tabela de Agentes
+CREATE TABLE agents (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    age INTEGER,
+    gender TEXT,
+    home_id INTEGER,
+    job_id INTEGER,
+    workplace_id INTEGER,
+    salary REAL,
+    money REAL,
+    health INTEGER,
+    energy INTEGER,
+    happiness INTEGER,
+    hunger INTEGER,
+    knowledge INTEGER,
+    strength INTEGER,
+    attention INTEGER,
+    laziness INTEGER,
+    ambition INTEGER,
+    is_married BOOLEAN,
+    created_at TIMESTAMP,
+    FOREIGN KEY (home_id) REFERENCES buildings(id),
+    FOREIGN KEY (workplace_id) REFERENCES buildings(id)
+);
+
+-- Tabela de Edifícios
+CREATE TABLE buildings (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    type TEXT, -- residential, commercial, industrial
+    x INTEGER,
+    y INTEGER,
+    owner_id INTEGER,
+    construction_progress INTEGER, -- 0-100
+    condition INTEGER, -- estado de conservação 0-100
+    value REAL,
+    created_at TIMESTAMP,
+    FOREIGN KEY (owner_id) REFERENCES agents(id)
+);
+
+-- Tabela de Veículos (Trens, Ônibus)
+CREATE TABLE vehicles (
+    id INTEGER PRIMARY KEY,
+    type TEXT, -- train, bus
+    model TEXT,
+    current_station_id INTEGER,
+    current_position REAL, -- posição no trilho/rua
+    speed REAL,
+    capacity INTEGER,
+    current_passengers INTEGER,
+    cargo_type TEXT,
+    cargo_amount REAL,
+    condition INTEGER, -- 0-100
+    fuel_level REAL,
+    FOREIGN KEY (current_station_id) REFERENCES buildings(id)
+);
+
+-- Tabela de Eventos Históricos
+CREATE TABLE events (
+    id INTEGER PRIMARY KEY,
+    timestamp TIMESTAMP,
+    type TEXT, -- construction, accident, election, disaster
+    description TEXT,
+    impact_happiness INTEGER,
+    impact_economy REAL,
+    related_agent_id INTEGER,
+    related_building_id INTEGER,
+    FOREIGN KEY (related_agent_id) REFERENCES agents(id),
+    FOREIGN KEY (related_building_id) REFERENCES buildings(id)
+);
+
+-- Tabela de Estatísticas Econômicas
+CREATE TABLE economy_stats (
+    id INTEGER PRIMARY KEY,
+    date DATE,
+    gdp REAL,
+    unemployment_rate REAL,
+    inflation_rate REAL,
+    average_happiness REAL,
+    population INTEGER,
+    total_money_supply REAL
+);
+
+-- Tabela de Relações Familiares
+CREATE TABLE family_relations (
+    id INTEGER PRIMARY KEY,
+    agent_id INTEGER,
+    related_agent_id INTEGER,
+    relation_type TEXT, -- parent, child, spouse, sibling
+    FOREIGN KEY (agent_id) REFERENCES agents(id),
+    FOREIGN KEY (related_agent_id) REFERENCES agents(id)
+);
+
+-- Tabela de Rotas de Transporte
+CREATE TABLE routes (
+    id INTEGER PRIMARY KEY,
+    vehicle_id INTEGER,
+    start_station_id INTEGER,
+    end_station_id INTEGER,
+    departure_time TIME,
+    arrival_time TIME,
+    frequency_minutes INTEGER, -- a cada X minutos
+    fare REAL,
+    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id),
+    FOREIGN KEY (start_station_id) REFERENCES buildings(id),
+    FOREIGN KEY (end_station_id) REFERENCES buildings(id)
+);
+```
+
+### Apêndice F: Exemplo de Configuração YAML
+
+```yaml
+# config.yaml - Configurações da Simulação
+
+simulation:
+  time_scale: 60  # 1 minuto real = 60 minutos simulados
+  tick_rate: 1    # Atualização a cada 1 segundo real
+  auto_save_interval: 300  # Salvar a cada 5 minutos
+  
+city:
+  name: "Santópolis"
+  foundation_year: 1887
+  starting_population: 50
+  starting_money: 100000
+  
+world:
+  grid_size: [100, 100]  # células
+  cell_size: 10  # metros por célula
+  
+agents:
+  max_agents: 1000
+  birth_rate: 0.015  # por ano
+  death_rate: 0.008
+  immigration_rate: 0.005
+  
+economy:
+  starting_gdp: 500000
+  inflation_target: 0.03  # 3% ao ano
+  unemployment_natural: 0.04  # 4% desemprego natural
+  
+  prices:
+    food: 15
+    housing_rent: 500
+    train_ticket: 5
+    bus_ticket: 3
+    
+  salaries:
+    teacher: 3000
+    factory_worker: 2500
+    clerk: 2800
+    manager: 5000
+    
+transport:
+  train_max_speed: 80  # km/h
+  bus_max_speed: 50
+  car_max_speed: 60
+  
+  train_capacity: 200  # passageiros
+  bus_capacity: 40
+  
+hardware:
+  arduino_port: "COM3"  # ou /dev/ttyUSB0 no Linux
+  baud_rate: 9600
+  
+  sensors:
+    - id: 1
+      type: "reed_switch"
+      location: "station_north"
+    - id: 2
+      type: "reed_switch"
+      location: "station_south"
+      
+  mqtt:
+    broker: "localhost"
+    port: 1883
+    topics:
+      train_position: "city/train/+/position"
+      train_command: "city/train/+/speed"
+      lights: "city/lights/+"
+      
+visualization:
+  window_size: [1280, 720]
+  fps: 60
+  style: "indie"  # indie, realistic, pixel
+  
+  colors:
+    background: [34, 139, 34]  # verde grama
+    roads: [80, 80, 80]
+    rails: [139, 69, 19]
+    water: [30, 144, 255]
+    
+ai:
+  enabled: true
+  auto_manage: false  # IA só sugere, não executa
+  difficulty: "medium"  # easy, medium, hard
+  
+  features:
+    demand_prediction: true
+    news_generation: true
+    route_optimization: true
+    crisis_management: true
+```
+
+### Apêndice G: Recursos Online Gratuitos
+
+#### Tutoriais em Vídeo (YouTube)
+1. **Eletrônica**:
+   - Canal WR Kits: "Curso Completo Arduino" (playlist)
+   - Brincando com Ideias: Projetos práticos
+   
+2. **Python**:
+   - Curso em Vídeo (Gustavo Guanabara): Mundo 1, 2 e 3
+   - Eduardo Mendes (Live de Python): POO avançada
+   
+3. **Ferromodelismo**:
+   - Ferromodelismo Brasil: Tutoriais básicos
+   - Luke Towan: Técnicas avançadas de paisagem (inglês)
+   
+4. **Simulação e Game Design**:
+   - Coding Train: Processing + simulações
+   - Sebastian Lague: Algoritmos de simulação
+
+#### Documentação Online
+- Arduino Official: arduino.cc/reference
+- Python Docs: docs.python.org/3/
+- Pygame Docs: pygame.org/docs
+- SimPy Docs: simpy.readthedocs.io
+
+#### Ferramentas Gratuitas
+- Tinkercad Circuits: tinkercad.com (simulação Arduino)
+- Fritzing: fritzing.org (desenhar circuitos)
+- GIMP: gimp.org (edição de imagens para texturas)
+- Audacity: audacityteam.org (sons para a cidade)
+
+#### Comunidades BR
+- Fórum Arduino Brasil: arduino.cc/forum (seção português)
+- Grupo Telegram "Python Brasil"
+- Discord "Programação BR"
+- Reddit: r/brasil (perguntas gerais)
+
+### Apêndice H: Ideias de Expansões Futuras
+
+#### Expansão 1: "Vida Noturna"
+- Bares, restaurantes, cinemas
+- Agentes saem à noite
+- Iluminação noturna detalhada (LEDs RGB)
+- Eventos: shows, festas
+
+#### Expansão 2: "Educação e Cultura"
+- Sistema escolar completo (crianças vão à escola)
+- Universidade (agentes estudam, se formam)
+- Museus, bibliotecas
+- Impacto no conhecimento dos agentes
+
+#### Expansão 3: "Saúde e Medicina"
+- Doenças mais complexas (gripe, fraturas, crônicas)
+- Hospital funcional (leitos, médicos)
+- Farmácias
+- Envelhecimento realista (expectativa de vida)
+
+#### Expansão 4: "Criminalidade"
+- Sistema de segurança (polícia)
+- Crimes (furtos, acidentes)
+- Presídio
+- Impacto na felicidade e economia
+
+#### Expansão 5: "Turismo"
+- Hotel
+- Atrações turísticas
+- Turistas (agentes temporários)
+- Receita de turismo
+
+#### Expansão 6: "Religião e Espiritualidade"
+- Igrejas, templos
+- Agentes religiosos
+- Feriados religiosos
+- Eventos (casamentos, funerais)
+
+#### Expansão 7: "Esportes"
+- Estádio
+- Times locais
+- Agentes assistem jogos
+- Rivalidades
+
+#### Expansão 8: "Meio Ambiente"
+- Poluição (ar, água)
+- Reciclagem
+- Parques e preservação
+- Animais (pássaros, cães, gatos)
+
+#### Expansão 9: "Tecnologia Avançada"
+- Internet na cidade (agentes navegam)
+- Smartphones (comunicação instantânea)
+- E-commerce (compras online)
+- Trabalho remoto
+
+#### Expansão 10: "Conectividade Regional"
+- Aeroporto (voos para outras cidades)
+- Porto fluvial/marítimo
+- Rodovia interestadual
+- Comércio inter-regional
+
+### Apêndice I: Templates de Código Úteis
+
+#### Template 1: Classe Base para Entidades
+
+```python
+# backend/simulation/entity.py
+
+from abc import ABC, abstractmethod
+from typing import Dict, Any
+
+class Entity(ABC):
+    """
+    Classe base para todas as entidades do mundo
+    (Agentes, Edifícios, Veículos)
+    """
+    
+    _id_counter = 0
+    
+    def __init__(self, name: str):
+        Entity._id_counter += 1
+        self.id = Entity._id_counter
+        self.name = name
+        self.created_at = None  # Timestamp de criação
+        
+    @abstractmethod
+    def update(self, world, delta_time):
+        """
+        Atualiza o estado da entidade
+        Deve ser implementado por subclasses
+        """
+        pass
+    
+    @abstractmethod
+    def get_state(self) -> Dict[str, Any]:
+        """
+        Retorna estado atual como dicionário
+        Para serialização/salvamento
+        """
+        pass
+    
+    def __repr__(self):
+        return f"{self.__class__.__name__}(id={self.id}, name='{self.name}')"
+```
+
+#### Template 2: Singleton para Gerenciador Global
+
+```python
+# backend/simulation/world_manager.py
+
+class WorldManager:
+    """
+    Singleton que gerencia o mundo inteiro
+    Acesso global de qualquer lugar do código
+    """
+    
+    _instance = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+    
+    def __init__(self):
+        if self._initialized:
+            return
+            
+        self.world = None
+        self.agents = []
+        self.buildings = []
+        self.vehicles = []
+        self.events = []
+        self.current_time = None
+        self._initialized = True
+    
+    def get_agent(self, agent_id):
+        """Busca agente por ID"""
+        for agent in self.agents:
+            if agent.id == agent_id:
+                return agent
+        return None
+    
+    def add_agent(self, agent):
+        """Adiciona novo agente ao mundo"""
+        self.agents.append(agent)
+        
+    def remove_agent(self, agent_id):
+        """Remove agente (morte, emigração)"""
+        self.agents = [a for a in self.agents if a.id != agent_id]
+
+# Uso em qualquer arquivo:
+# from backend.simulation.world_manager import WorldManager
+# manager = WorldManager()
+# agent = manager.get_agent(5)
+```
+
+#### Template 3: Event Bus (Padrão Observer)
+
+```python
+# backend/utils/event_bus.py
+
+from typing import Callable, Dict, List
+
+class EventBus:
+    """
+    Sistema de eventos desacoplado
+    Qualquer parte do código pode emitir/escutar eventos
+    """
+    
+    def __init__(self):
+        self._listeners: Dict[str, List[Callable]] = {}
+    
+    def subscribe(self, event_type: str, callback: Callable):
+        """
+        Registra um listener para um tipo de evento
+        """
+        if event_type not in self._listeners:
+            self._listeners[event_type] = []
+        self._listeners[event_type].append(callback)
+    
+    def emit(self, event_type: str, data: Any = None):
+        """
+        Emite um evento, notificando todos os listeners
+        """
+        if event_type in self._listeners:
+            for callback in self._listeners[event_type]:
+                callback(data)
+    
+    def unsubscribe(self, event_type: str, callback: Callable):
+        """
+        Remove um listener
+        """
+        if event_type in self._listeners:
+            self._listeners[event_type].remove(callback)
+
+# Uso:
+# event_bus = EventBus()
+# 
+# def on_train_arrival(data):
+#     print(f"Trem {data['train_id']} chegou!")
+# 
+# event_bus.subscribe("train_arrived", on_train_arrival)
+# event_bus.emit("train_arrived", {"train_id": 1, "station": "Norte"})
+```
+
 
 ## 📜 LICENÇA E CRÉDITOS
 
