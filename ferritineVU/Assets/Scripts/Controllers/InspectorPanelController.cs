@@ -250,7 +250,7 @@ namespace Controllers
             {
                 Debug.LogError("[InspectorPanelController] CameraController not found!");
                 ToastNotificationManager.ShowError("CameraController não encontrado!");
-                AudioManager.PlayUISound("toast_error");
+                AudioManager.Instance?.Play(AudioManager.Instance.toastError);
                 return;
             }
             
@@ -259,7 +259,7 @@ namespace Controllers
             
             string entityName = _currentEntity.GetDisplayName();
             ToastNotificationManager.ShowSuccess($"📹 Seguindo {entityName}");
-            AudioManager.PlayUISound("button_select");
+            AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
             
             Debug.Log($"[InspectorPanelController] Following entity: {entityName}");
         }
@@ -319,7 +319,7 @@ namespace Controllers
                         : $"▶ Veículo {vehicleName} retomado";
                     
                     ToastNotificationManager.ShowSuccess(message);
-                    AudioManager.PlayUISound("button_toggle");
+                    AudioManager.Instance?.Play(AudioManager.Instance.buttonToggle);
                     
                     Debug.Log($"[InspectorPanelController] Vehicle {vehicleId} {command} successful");
                 }
@@ -327,7 +327,7 @@ namespace Controllers
                 {
                     string errorMessage = $"Erro ao {(command == "pause" ? "pausar" : "retomar")} veículo: {request.error}";
                     ToastNotificationManager.ShowError(errorMessage);
-                    AudioManager.PlayUISound("toast_error");
+                    AudioManager.Instance?.Play(AudioManager.Instance.toastError);
                     
                     Debug.LogError($"[InspectorPanelController] {errorMessage}");
                 }
@@ -370,13 +370,13 @@ namespace Controllers
             {
                 Debug.LogError("[InspectorPanelController] TeleportSelectorUI not found!");
                 ToastNotificationManager.ShowError("TeleportSelectorUI não encontrado!");
-                AudioManager.PlayUISound("toast_error");
+                AudioManager.Instance?.Play(AudioManager.Instance.toastError);
                 return;
             }
             
             // Open teleport selector
             teleportSelectorUI.Open(_currentEntity.agentData);
-            AudioManager.PlayUISound("panel_open");
+            AudioManager.Instance?.Play(AudioManager.Instance.panelOpen);
             
             string agentName = _currentEntity.GetDisplayName();
             Debug.Log($"[InspectorPanelController] Opening teleport selector for agent: {agentName}");
@@ -409,7 +409,7 @@ namespace Controllers
             int maxQueue = _currentEntity.stationData.max_queue;
             
             ToastNotificationManager.ShowInfo($"📊 Fila de {stationName}: {currentQueue}/{maxQueue}");
-            AudioManager.PlayUISound("button_click");
+            AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
             
             Debug.Log($"[InspectorPanelController] Modify queue requested for station: {stationName}");
             
@@ -437,7 +437,7 @@ namespace Controllers
                 if (request.result == UnityWebRequest.Result.Success)
                 {
                     ToastNotificationManager.ShowSuccess($"✅ Fila da estação modificada para {newQueueLength}");
-                    AudioManager.PlayUISound("button_confirm");
+                    AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
                     
                     // Update local data
                     if (_currentEntity.stationData != null)
@@ -452,7 +452,7 @@ namespace Controllers
                 {
                     string errorMessage = $"Erro ao modificar fila: {request.error}";
                     ToastNotificationManager.ShowError(errorMessage);
-                    AudioManager.PlayUISound("toast_error");
+                    AudioManager.Instance?.Play(AudioManager.Instance.toastError);
                     
                     Debug.LogError($"[InspectorPanelController] {errorMessage}");
                 }

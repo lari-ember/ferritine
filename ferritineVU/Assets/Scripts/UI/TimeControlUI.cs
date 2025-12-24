@@ -203,7 +203,7 @@ public class TimeControlUI : MonoBehaviour
     void OnPlayPauseClicked()
     {
         _timeManager.TogglePause();
-        AudioManager.PlayUISound("button_click");
+        AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
     }
     
     /// <summary>
@@ -214,7 +214,7 @@ public class TimeControlUI : MonoBehaviour
         _currentSpeedIndex = speedIndex;
         _timeManager.SetSpeedMultiplier(speedIndex);
         UpdateSpeedButtonVisuals();
-        AudioManager.PlayUISound("button_click");
+        AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
         
         Debug.Log($"[TimeControlUI] Velocidade alterada para {speedIndex + 1}x");
     }

@@ -151,7 +151,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
         StartCoroutine(AnimateShow());
         
         // Play sound
-        AudioManager.PlayUISound("panel_open");
+        AudioManager.Instance?.Play(AudioManager.Instance.panelOpen);
     }
     
     /// <summary>
@@ -322,7 +322,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
     /// </summary>
     void OnTabChanged(string tabName)
     {
-        AudioManager.PlayUISound("button_click");
+        AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
         
         // TODO: Show/hide different content based on tab
         // For now, all tabs show the same content (basic info)
@@ -335,7 +335,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
     /// </summary>
     public void Close()
     {
-        AudioManager.PlayUISound("panel_close");
+        AudioManager.Instance?.Play(AudioManager.Instance.panelClose);
         
         // Deselect entity in CameraController (removes highlight and cone)
         CameraController cameraController = Camera.main?.GetComponent<CameraController>();
@@ -370,7 +370,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
     {
         isExpanded = !isExpanded;
         StartCoroutine(AnimateExpand(isExpanded ? expandedHeight : collapsedHeight));
-        AudioManager.PlayUISound("button_click");
+        AudioManager.Instance?.Play(AudioManager.Instance.buttonToggle);
     }
     
     /// <summary>
@@ -386,7 +386,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
         {
             cameraController.FollowSelectedEntity();
             ToastNotificationManager.ShowSuccess($"Seguindo {currentEntity.GetDisplayName()}");
-            AudioManager.PlayUISound("button_select");
+            AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
         }
         else
         {
@@ -430,12 +430,12 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
                     : $"Veículo {currentEntity.GetDisplayName()} retomado";
                     
                 ToastNotificationManager.ShowSuccess(message);
-                AudioManager.PlayUISound("button_toggle");
+                AudioManager.Instance?.Play(AudioManager.Instance.buttonToggle);
             }
             else
             {
                 ToastNotificationManager.ShowError($"Erro ao {command} veículo: {request.error}");
-                AudioManager.PlayUISound("toast_error");
+                AudioManager.Instance?.Play(AudioManager.Instance.toastError);
             }
         }
     }
@@ -452,7 +452,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
         if (UIManager.Instance != null)
         {
             UIManager.Instance.ShowTeleportSelector(currentEntity.agentData);
-            AudioManager.PlayUISound("panel_open");
+            AudioManager.Instance?.Play(AudioManager.Instance.panelOpen);
         }
         else
         {
@@ -501,7 +501,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
             if (request.result == UnityWebRequest.Result.Success)
             {
                 ToastNotificationManager.ShowSuccess($"Fila da estação modificada para {queueLength}");
-                AudioManager.PlayUISound("button_confirm");
+                AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
                 
                 // Update display
                 if (currentEntity.stationData != null)
@@ -513,7 +513,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
             else
             {
                 ToastNotificationManager.ShowError($"Erro ao modificar fila: {request.error}");
-                AudioManager.PlayUISound("toast_error");
+                AudioManager.Instance?.Play(AudioManager.Instance.toastError);
             }
         }
     }

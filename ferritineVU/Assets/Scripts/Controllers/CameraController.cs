@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
+using Utils;
 
 /// <summary>
 /// Modos de câmera disponíveis no sistema.
@@ -805,7 +806,7 @@ public class CameraController : MonoBehaviour
     public void SaveBookmark(int slot)
     {
         bookmarks[slot] = new CameraBookmark(transform.position, currentYaw, currentPitch);
-        AudioManager.PlayUISound("bookmark_save");
+        AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
         Debug.Log($"[CameraController] Bookmark {slot} saved");
     }
     
@@ -814,7 +815,7 @@ public class CameraController : MonoBehaviour
         if (bookmarks.TryGetValue(slot, out CameraBookmark bm) && bm.isSet)
         {
             StartCoroutine(TransitionToBookmark(bm));
-            AudioManager.PlayUISound("bookmark_restore");
+            AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
         }
     }
     
@@ -858,7 +859,7 @@ public class CameraController : MonoBehaviour
         currentSelectedEntity.Highlight();
         SpawnSelectionPin(currentSelectedEntity.transform);
         
-        AudioManager.PlayUISound("entity_select");
+        AudioManager.Instance?.Play(AudioManager.Instance.entitySelect);
         OnEntitySelected?.Invoke(entity);
         
         Debug.Log($"[CameraController] Selected: {entity.GetDisplayName()}");

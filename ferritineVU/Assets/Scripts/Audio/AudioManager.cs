@@ -13,7 +13,22 @@ public class AudioManager : MonoBehaviour
     [Header("Audio Mixer")]
     public AudioMixer mainMixer;
     
-    [Header("Audio Clips")]
+    [Header("UI / Buttons")]
+    public AudioClip buttonClick;
+    public AudioClip buttonToggle;
+    public AudioClip panelOpen;
+    public AudioClip panelClose;
+    
+    [Header("Entity / World")]
+    public AudioClip entitySelect;
+    public AudioClip teleportWoosh;
+    
+    [Header("Toasts / Feedback")]
+    public AudioClip toastInfo;
+    public AudioClip toastSuccess;
+    public AudioClip toastError;
+    
+    [Header("Audio Clips (Legacy Arrays)")]
     public AudioClip[] uiClips;
     public AudioClip[] sfxClips;
     public AudioClip[] musicClips;
@@ -167,6 +182,34 @@ public class AudioManager : MonoBehaviour
         
         activeAudioSources[channelName].Remove(source);
         audioSourcePools[channelName].Enqueue(source);
+    }
+    
+    /// <summary>
+    /// Plays an AudioClip directly on the UI channel.
+    /// Usage: AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
+    /// </summary>
+    public void Play(AudioClip clip)
+    {
+        if (clip == null) return;
+        PlayClipOnChannel(clip, "UI");
+    }
+    
+    /// <summary>
+    /// Internal method to play a clip on a specific channel.
+    /// </summary>
+    void PlayClipOnChannel(AudioClip clip, string channelName)
+    {
+        if (clip == null) return;
+        
+        AudioSource source = GetAudioSource(channelName);
+        if (source == null) return;
+        
+        source.clip = clip;
+        source.loop = false;
+        source.spatialBlend = 0f;
+        source.Play();
+        
+        StartCoroutine(ReturnAfterPlayback(channelName, source, clip.length));
     }
     
     /// <summary>

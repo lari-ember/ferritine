@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
+using Entities;
+using Utils;
 
 namespace Controllers
 {
@@ -8,7 +10,7 @@ public class WorldController : MonoBehaviour
 {
     [Header("References")]
     public FerritineAPIClient apiClient;
-    public global::ObjectPool objectPool;  // Referência ao gerenciador de pools (from /Utils/ObjectPool.cs)
+    public Utils.ObjectPool objectPool;  // Referência ao gerenciador de pools (from /Utils/ObjectPool.cs)
     
     [Header("Prefabs")]
     public GameObject stationPrefab;
@@ -41,7 +43,7 @@ public class WorldController : MonoBehaviour
         // Tentar achar automaticamente o ObjectPool na cena se não foi atribuído
         if (objectPool == null)
         {
-            objectPool = FindAnyObjectByType<global::ObjectPool>();
+            objectPool = FindAnyObjectByType<Utils.ObjectPool>();
         }
         
         // Criar containers para organização hierárquica
@@ -50,10 +52,16 @@ public class WorldController : MonoBehaviour
 
     void Start()
     {
+        Debug.Log("[WorldController] ===== START INICIADO =====");
+        
         if (apiClient == null)
         {
             Debug.LogError("WorldController: apiClient is not assigned and none was found in the scene. Please assign it in the Inspector.");
             return;
+        }
+        else
+        {
+            Debug.Log($"[WorldController] ✅ apiClient encontrado: {apiClient.gameObject.name}");
         }
         
         if (objectPool == null)
@@ -61,6 +69,15 @@ public class WorldController : MonoBehaviour
             Debug.LogError("WorldController: objectPool is not assigned and none was found in the scene. Please assign it in the Inspector.");
             return;
         }
+        else
+        {
+            Debug.Log($"[WorldController] ✅ objectPool encontrado: {objectPool.gameObject.name}");
+        }
+        
+        // Verificar prefabs
+        Debug.Log($"[WorldController] stationPrefab: {(stationPrefab != null ? stationPrefab.name : "NULL")}");
+        Debug.Log($"[WorldController] vehiclePrefab: {(vehiclePrefab != null ? vehiclePrefab.name : "NULL")}");
+        Debug.Log($"[WorldController] agentPrefab: {(agentPrefab != null ? agentPrefab.name : "NULL")}");
 
         // Inicializar pools com prewarm
         InitializePools();
@@ -68,6 +85,9 @@ public class WorldController : MonoBehaviour
         // Inscrever no evento de atualização
         apiClient.OnWorldStateReceived += UpdateWorld;
         apiClient.OnError += HandleError;
+        
+        Debug.Log("[WorldController] ✅ Inscrito nos eventos da API");
+        Debug.Log("[WorldController] ===== START COMPLETO =====");
     }
     
     /// <summary>
@@ -126,7 +146,14 @@ public class WorldController : MonoBehaviour
     
     void UpdateWorld(WorldState state)
     {
-        if (state == null) return;
+        if (state == null)
+        {
+            Debug.LogWarning("[WorldController] UpdateWorld recebeu state NULL!");
+            return;
+        }
+
+        Debug.Log($"[WorldController] UpdateWorld chamado - Timestamp: {state.timestamp}");
+        Debug.Log($"[WorldController] Stations: {state.stations?.Count ?? 0}, Vehicles: {state.vehicles?.Count ?? 0}, Agents: {state.agents?.Count ?? 0}");
 
         // Atualizar estações (checar null)
         if (state.stations != null)
@@ -491,7 +518,7 @@ public class WorldController : MonoBehaviour
             }
             
             // Atualizar dados do agente incluindo animação
-            Agent3D agent3D = currentAgentObj.GetComponent<Agent3D>();
+            Entities.Agent3D agent3D = currentAgentObj.GetComponent<Entities.Agent3D>();
             if (agent3D != null)
             {
                 agent3D.UpdateAgentData(a);

@@ -315,7 +315,7 @@ public class UIManager : MonoBehaviour
         if (currentTeleportPanel != null)
         {
             HideTeleportSelector();
-            AudioManager.PlayUISound("panel_close");
+            AudioManager.Instance?.Play(AudioManager.Instance.panelClose);
             Debug.Log("[UIManager] ESC: Teleport Selector fechado (topo da pilha)");
             return true;
         }
@@ -323,7 +323,7 @@ public class UIManager : MonoBehaviour
         if (currentInspectorPanel != null)
         {
             HideInspector();
-            AudioManager.PlayUISound("panel_close");
+            AudioManager.Instance?.Play(AudioManager.Instance.panelClose);
             Debug.Log("[UIManager] ESC: Inspector fechado");
             return true;
         }

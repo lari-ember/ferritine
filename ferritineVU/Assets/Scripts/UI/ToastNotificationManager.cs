@@ -242,10 +242,23 @@ public class ToastNotificationManager : MonoBehaviour
         // Activate
         toast.SetActive(true);
         
-        // Play sound
-        if (styleDict.ContainsKey(msg.type) && !string.IsNullOrEmpty(styleDict[msg.type].soundName))
+        // Play sound based on toast type
+        if (AudioManager.Instance != null)
         {
-            AudioManager.PlayUISound(styleDict[msg.type].soundName);
+            switch (msg.type)
+            {
+                case ToastType.Success:
+                    AudioManager.Instance.Play(AudioManager.Instance.toastSuccess);
+                    break;
+                case ToastType.Warning:
+                case ToastType.Error:
+                    AudioManager.Instance.Play(AudioManager.Instance.toastError);
+                    break;
+                case ToastType.Info:
+                default:
+                    AudioManager.Instance.Play(AudioManager.Instance.toastInfo);
+                    break;
+            }
         }
         
         // Get CanvasGroup for fade

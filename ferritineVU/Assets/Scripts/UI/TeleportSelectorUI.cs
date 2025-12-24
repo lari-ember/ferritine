@@ -126,7 +126,7 @@ public class TeleportSelectorUI : MonoBehaviour
             previewText.text = "Selecione um destino";
         
         AddTestDestinations();
-        AudioManager.PlayUISound("panel_open");
+        AudioManager.Instance?.Play(AudioManager.Instance.panelOpen);
         
         string entityName = currentAgent?.name ?? currentVehicle?.name ?? "?";
         Debug.Log($"[TeleportSelectorUI] Opened for {currentEntityType}: {entityName}");
@@ -165,7 +165,7 @@ public class TeleportSelectorUI : MonoBehaviour
         if (panel != null)
             panel.SetActive(false);
         
-        AudioManager.PlayUISound("panel_close");
+        AudioManager.Instance?.Play(AudioManager.Instance.panelClose);
         UIManager.Instance?.HideTeleportSelector();
         Debug.Log("[TeleportSelectorUI] Closed");
     }
@@ -176,28 +176,58 @@ public class TeleportSelectorUI : MonoBehaviour
     {
         allDestinations.Clear();
         
-        allDestinations.Add(new DestinationData {
-            id = "station_01", name = "Central Station",
-            position = new Vector3(120, 0, 450), type = "station"
-        });
-        allDestinations.Add(new DestinationData {
-            id = "station_02", name = "Estação Jabaquara",
-            position = new Vector3(0, 0, 0), type = "station"
-        });
-        allDestinations.Add(new DestinationData {
-            id = "building_01", name = "Prefeitura",
-            position = new Vector3(300, 0, 210), type = "building"
-        });
-        allDestinations.Add(new DestinationData {
-            id = "building_02", name = "Hospital Municipal",
-            position = new Vector3(450, 0, 180), type = "building"
-        });
-        allDestinations.Add(new DestinationData {
-            id = "station_03", name = "Terminal Rodoviário",
-            position = new Vector3(200, 0, 300), type = "station"
-        });
+        // Obter estações reais do WorldController
+        Controllers.WorldController worldController = FindAnyObjectByType<Controllers.WorldController>();
+        if (worldController != null)
+        {
+            // Adicionar estações reais
+            var stations = worldController.GetAllStations();
+            if (stations != null)
+            {
+                foreach (var station in stations)
+                {
+                    allDestinations.Add(new DestinationData {
+                        id = station.id,
+                        name = station.name,
+                        position = new Vector3(station.x, 0, station.y), // CORRIGIDO: usar x e y do backend
+                        type = "station"
+                    });
+                }
+                Debug.Log($"[TeleportSelectorUI] Loaded {stations.Count} real stations from WorldController");
+            }
+            
+            // Adicionar buildings reais (se disponível)
+            var buildings = worldController.GetAllBuildings();
+            if (buildings != null)
+            {
+                foreach (var building in buildings)
+                {
+                    allDestinations.Add(new DestinationData {
+                        id = building.id,
+                        name = building.name,
+                        position = new Vector3(building.x, 0, building.y), // CORRIGIDO: usar x e y do backend
+                        type = "building"
+                    });
+                }
+                Debug.Log($"[TeleportSelectorUI] Loaded {buildings.Count} real buildings from WorldController");
+            }
+        }
         
-        Debug.Log($"[TeleportSelectorUI] Added {allDestinations.Count} test destinations");
+        // Fallback: Adicionar destinos de teste apenas se não houver dados reais
+        if (allDestinations.Count == 0)
+        {
+            Debug.LogWarning("[TeleportSelectorUI] No real data available, using test destinations");
+            allDestinations.Add(new DestinationData {
+                id = "test_station_01", name = "Test Station 1",
+                position = new Vector3(0, 0, 0), type = "station"
+            });
+            allDestinations.Add(new DestinationData {
+                id = "test_station_02", name = "Test Station 2",
+                position = new Vector3(10, 0, 10), type = "station"
+            });
+        }
+        
+        Debug.Log($"[TeleportSelectorUI] Total destinations: {allDestinations.Count}");
         RefreshList();
     }
     
@@ -279,7 +309,7 @@ public class TeleportSelectorUI : MonoBehaviour
             previewText.text = $"Destino: {dest.name} ({typeLabel})";
         }
         
-        AudioManager.PlayUISound("button_select");
+        AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
         HighlightLocation(dest.type, dest.id);
         
         CameraController cameraController = Camera.main?.GetComponent<CameraController>();
@@ -456,7 +486,7 @@ public class TeleportSelectorUI : MonoBehaviour
     {
         // Spawn efeito de desaparecimento
         SpawnTeleportEffect("teleport_despawn", entityObj.transform.position);
-        AudioManager.PlayUISound("teleport_woosh");
+        AudioManager.Instance?.Play(AudioManager.Instance.teleportWoosh);
         
         // Aguardar animação (usando Realtime para funcionar quando pausado)
         yield return new WaitForSecondsRealtime(0.3f);
@@ -470,7 +500,7 @@ public class TeleportSelectorUI : MonoBehaviour
         
         // Spawn efeito de aparecimento
         SpawnTeleportEffect("teleport_spawn", finalPos);
-        AudioManager.PlayUISound("teleport_arrive");
+        AudioManager.Instance?.Play(AudioManager.Instance.teleportWoosh);
         
         // Atualizar dados locais
         SelectableEntity selectable = entityObj.GetComponent<SelectableEntity>();
@@ -531,17 +561,33 @@ public class TeleportSelectorUI : MonoBehaviour
         Vector3 finalPos = CalculateTeleportPosition(targetPos, locType);
         
         SpawnTeleportEffect("teleport_despawn", entityObj.transform.position);
-        AudioManager.PlayUISound("teleport_woosh");
+        AudioManager.Instance?.Play(AudioManager.Instance.teleportWoosh);
         
         StartCoroutine(TeleportWithDelay(entityObj, finalPos, locName, entityName));
     }
     
     Vector3 CalculateTeleportPosition(Vector3 basePos, string destType)
     {
-        float offsetX = Random.Range(-2f, 2f);
-        float offsetZ = Random.Range(-2f, 2f);
-        float heightOffset = destType == "station" ? 0.1f : 0f;
-        return new Vector3(basePos.x + offsetX, basePos.y + heightOffset, basePos.z + offsetZ);
+        // Usar offset determinístico baseado no ID da entidade sendo teleportada
+        // Isso garante que a mesma entidade sempre vai para a mesma posição relativa
+        string entityId = currentAgent?.id ?? currentVehicle?.id ?? "";
+        int hash = Mathf.Abs(entityId.GetHashCode());
+        
+        // Ângulo determinístico baseado no hash
+        float angle = (hash % 360) * Mathf.Deg2Rad;
+        
+        // Raio pequeno para espalhar entidades
+        float radius = 0.5f + ((hash % 5) * 0.3f); // 0.5 a 1.7 unidades
+        
+        float offsetX = Mathf.Cos(angle) * radius;
+        float offsetZ = Mathf.Sin(angle) * radius;
+        float heightOffset = destType == "station" ? 0.2f : 0.3f;
+        
+        Vector3 finalPos = new Vector3(basePos.x + offsetX, basePos.y + heightOffset, basePos.z + offsetZ);
+        
+        Debug.Log($"[TeleportSelectorUI] CalculateTeleportPosition: base={basePos} final={finalPos} offset=({offsetX:F2}, {offsetZ:F2})");
+        
+        return finalPos;
     }
     
     IEnumerator TeleportWithDelay(GameObject entityObj, Vector3 targetPos, string destName, string entityName)
@@ -571,7 +617,7 @@ public class TeleportSelectorUI : MonoBehaviour
         
         string entityType = currentAgent != null ? "Agente" : "Veículo";
         ToastNotificationManager.ShowSuccess($"{entityType} '{entityName}' teleportado para {destName}!");
-        AudioManager.PlayUISound("teleport_arrive");
+        AudioManager.Instance?.Play(AudioManager.Instance.teleportWoosh);
         
         Debug.Log($"[TeleportSelectorUI] Teleport complete: {entityName} → {destName}");
         Close();
@@ -590,7 +636,7 @@ public class TeleportSelectorUI : MonoBehaviour
     void ShowValidationError(string message, ValidationType type)
     {
         ToastNotificationManager.ShowWarning(message);
-        AudioManager.PlayUISound("toast_warning");
+        AudioManager.Instance?.Play(AudioManager.Instance.toastError);
         
         if (type == ValidationType.Destination)
         {
@@ -796,7 +842,7 @@ public class TeleportSelectorUI : MonoBehaviour
         if (cameraController != null) cameraController.PreviewLocation(worldPosition);
         
         SpawnPreviewParticle(worldPosition);
-        AudioManager.PlayUISound("button_select");
+        AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
     }
 }
 
