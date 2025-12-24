@@ -305,6 +305,34 @@ public class UIManager : MonoBehaviour
     }
     
     /// <summary>
+    /// Fecha o painel do topo da pilha hierárquica (prioridade: Teleport > Inspector).
+    /// Retorna true se fechou algum painel, false se nenhum estava aberto.
+    /// Usado pelo CameraController quando ESC é pressionado.
+    /// </summary>
+    public bool CloseTopPanel()
+    {
+        // Prioridade: Teleport Selector é mais "em cima" que Inspector
+        if (currentTeleportPanel != null)
+        {
+            HideTeleportSelector();
+            AudioManager.PlayUISound("panel_close");
+            Debug.Log("[UIManager] ESC: Teleport Selector fechado (topo da pilha)");
+            return true;
+        }
+        
+        if (currentInspectorPanel != null)
+        {
+            HideInspector();
+            AudioManager.PlayUISound("panel_close");
+            Debug.Log("[UIManager] ESC: Inspector fechado");
+            return true;
+        }
+        
+        Debug.Log("[UIManager] ESC: Nenhum painel para fechar");
+        return false;
+    }
+    
+    /// <summary>
     /// Fecha TODOS os painéis abertos (útil para ESC ou reset).
     /// </summary>
     public void CloseAllPanels()
