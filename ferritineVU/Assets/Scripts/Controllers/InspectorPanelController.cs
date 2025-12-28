@@ -242,6 +242,7 @@ namespace Controllers
             if (_currentEntity == null)
             {
                 Debug.LogWarning("[InspectorPanelController] Cannot follow: no entity selected");
+                GameEventManager.RaiseInvalidAction("Nenhuma entidade selecionada");
                 ToastNotificationManager.ShowWarning("Nenhuma entidade selecionada");
                 return;
             }
@@ -249,6 +250,7 @@ namespace Controllers
             if (cameraController == null)
             {
                 Debug.LogError("[InspectorPanelController] CameraController not found!");
+                GameEventManager.RaiseInvalidAction("CameraController não encontrado");
                 ToastNotificationManager.ShowError("CameraController não encontrado!");
                 AudioManager.Instance?.Play(AudioManager.Instance.toastError);
                 return;
@@ -258,6 +260,7 @@ namespace Controllers
             cameraController.FollowSelectedEntity();
             
             string entityName = _currentEntity.GetDisplayName();
+            GameEventManager.RaiseOperationSuccess($"Seguindo {entityName}");
             ToastNotificationManager.ShowSuccess($"📹 Seguindo {entityName}");
             AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
             
@@ -318,6 +321,7 @@ namespace Controllers
                         ? $"⏸ Veículo {vehicleName} pausado" 
                         : $"▶ Veículo {vehicleName} retomado";
                     
+                    GameEventManager.RaiseOperationSuccess(message);
                     ToastNotificationManager.ShowSuccess(message);
                     AudioManager.Instance?.Play(AudioManager.Instance.buttonToggle);
                     
@@ -326,6 +330,7 @@ namespace Controllers
                 else
                 {
                     string errorMessage = $"Erro ao {(command == "pause" ? "pausar" : "retomar")} veículo: {request.error}";
+                    GameEventManager.RaiseOperationFailed("Falha ao pausar/retomar veículo");
                     ToastNotificationManager.ShowError(errorMessage);
                     AudioManager.Instance?.Play(AudioManager.Instance.toastError);
                     
@@ -344,6 +349,7 @@ namespace Controllers
             if (_currentEntity == null)
             {
                 Debug.LogWarning("[InspectorPanelController] Cannot teleport: _currentEntity is NULL");
+                GameEventManager.RaiseInvalidAction("Nenhuma entidade selecionada");
                 ToastNotificationManager.ShowWarning("Nenhuma entidade selecionada");
                 return;
             }
@@ -355,6 +361,7 @@ namespace Controllers
             if (_currentEntity.entityType != SelectableEntity.EntityType.Agent)
             {
                 Debug.LogWarning($"[InspectorPanelController] Cannot teleport: entityType is {_currentEntity.entityType}, not Agent");
+                GameEventManager.RaiseInvalidAction("Apenas agentes podem ser teleportados");
                 ToastNotificationManager.ShowWarning("Apenas agentes podem ser teleportados");
                 return;
             }
@@ -362,6 +369,7 @@ namespace Controllers
             if (_currentEntity.agentData == null)
             {
                 Debug.LogError("[InspectorPanelController] Agent data is null!");
+                GameEventManager.RaiseInvalidAction("Dados do agente não disponíveis");
                 ToastNotificationManager.ShowError("Dados do agente não disponíveis");
                 return;
             }
@@ -369,6 +377,7 @@ namespace Controllers
             if (teleportSelectorUI == null)
             {
                 Debug.LogError("[InspectorPanelController] TeleportSelectorUI not found!");
+                GameEventManager.RaiseInvalidAction("TeleportSelectorUI não encontrado");
                 ToastNotificationManager.ShowError("TeleportSelectorUI não encontrado!");
                 AudioManager.Instance?.Play(AudioManager.Instance.toastError);
                 return;
@@ -391,6 +400,7 @@ namespace Controllers
             if (_currentEntity == null || _currentEntity.entityType != SelectableEntity.EntityType.Station)
             {
                 Debug.LogWarning("[InspectorPanelController] Cannot modify queue: not a station");
+                GameEventManager.RaiseInvalidAction("Apenas estações podem ter filas modificadas");
                 ToastNotificationManager.ShowWarning("Apenas estações podem ter filas modificadas");
                 return;
             }
@@ -398,6 +408,7 @@ namespace Controllers
             if (_currentEntity.stationData == null)
             {
                 Debug.LogError("[InspectorPanelController] Station data is null!");
+                GameEventManager.RaiseInvalidAction("Dados da estação não disponíveis");
                 ToastNotificationManager.ShowError("Dados da estação não disponíveis");
                 return;
             }
@@ -451,6 +462,7 @@ namespace Controllers
                 else
                 {
                     string errorMessage = $"Erro ao modificar fila: {request.error}";
+                    GameEventManager.RaiseOperationFailed("Falha ao modificar fila da estação");
                     ToastNotificationManager.ShowError(errorMessage);
                     AudioManager.Instance?.Play(AudioManager.Instance.toastError);
                     

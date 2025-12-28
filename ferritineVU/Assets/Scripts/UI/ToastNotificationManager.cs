@@ -63,6 +63,8 @@ public class ToastNotificationManager : MonoBehaviour
         public float duration;
     }
     
+    private bool isInitialized = false;
+    
     void Awake()
     {
         // Singleton
@@ -75,8 +77,28 @@ public class ToastNotificationManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+    }
+    
+    void Start()
+    {
+        // Try to initialize on Start if not already done
+        // This handles both scene-placed and dynamically-added components
+        if (!isInitialized)
+        {
+            TryInitialize();
+        }
+    }
+    
+    /// <summary>
+    /// Attempts to initialize the toast system.
+    /// Called automatically on Start, or manually after setting prefab and container.
+    /// </summary>
+    public void TryInitialize()
+    {
+        if (isInitialized) return;
         
         // Build style dictionary
+        styleDict.Clear();
         foreach (var style in toastStyles)
         {
             styleDict[style.type] = style;
@@ -93,22 +115,26 @@ public class ToastNotificationManager : MonoBehaviour
     {
         if (toastPrefab == null)
         {
-            Debug.LogError("[ToastNotificationManager] Toast prefab not assigned!");
+            Debug.LogWarning("[ToastNotificationManager] Toast prefab not assigned! Toast notifications will not work until prefab is assigned.");
             return;
         }
         
         if (toastContainer == null)
         {
-            Debug.LogError("[ToastNotificationManager] Toast container not assigned!");
+            Debug.LogWarning("[ToastNotificationManager] Toast container not assigned! Toast notifications will not work until container is assigned.");
             return;
         }
+        
+        // Clear any existing toasts from previous initialization
+        availableToasts.Clear();
         
         for (int i = 0; i < prewarmCount; i++)
         {
             CreateToast();
         }
         
-        Debug.Log($"[ToastNotificationManager] Initialized with {prewarmCount} toasts");
+        isInitialized = true;
+        Debug.Log($"[ToastNotificationManager] ✓ Initialized with {prewarmCount} toasts");
     }
     
     /// <summary>
@@ -166,7 +192,19 @@ public class ToastNotificationManager : MonoBehaviour
     {
         if (Instance == null)
         {
-            Debug.LogWarning("[ToastNotificationManager] Instance not found!");
+            Debug.LogWarning($"[ToastNotificationManager] Instance not found! Message: {message}");
+            return;
+        }
+        
+        // Try to initialize if not yet done
+        if (!Instance.isInitialized)
+        {
+            Instance.TryInitialize();
+        }
+        
+        if (!Instance.isInitialized)
+        {
+            Debug.LogWarning($"[ToastNotificationManager] Not initialized! Message: {message}");
             return;
         }
         
@@ -268,18 +306,23 @@ public class ToastNotificationManager : MonoBehaviour
             canvasGroup = toast.AddComponent<CanvasGroup>();
         }
         canvasGroup.alpha = 0f;
+        // Toasts should never block input
+        canvasGroup.blocksRaycasts = false;
+        canvasGroup.interactable = false;
         
-        // Slide up and fade in (usando unscaledDeltaTime para funcionar quando pausado)
+        // Slide up and fade in - fast for polish (0.12s)
         float elapsed = 0f;
-        float slideInDuration = 0.3f;
+        float slideInDuration = 0.12f;
         
         while (elapsed < slideInDuration)
         {
             elapsed += Time.unscaledDeltaTime;
-            float t = elapsed / slideInDuration;
+            float t = Mathf.Clamp01(elapsed / slideInDuration);
+            // Ease out for smooth feel
+            float easedT = 1f - Mathf.Pow(1f - t, 2f);
             
-            toastRect.anchoredPosition = new Vector2(0, Mathf.Lerp(startY, targetY, t));
-            canvasGroup.alpha = t;
+            toastRect.anchoredPosition = new Vector2(0, Mathf.Lerp(startY, targetY, easedT));
+            canvasGroup.alpha = easedT;
             
             yield return null;
         }
@@ -290,14 +333,14 @@ public class ToastNotificationManager : MonoBehaviour
         // Wait for display duration (usando Realtime para funcionar quando pausado)
         yield return new WaitForSecondsRealtime(msg.duration);
         
-        // Fade out
+        // Fade out - slightly longer (0.2s)
         elapsed = 0f;
-        float fadeOutDuration = 0.3f;
+        float fadeOutDuration = 0.2f;
         
         while (elapsed < fadeOutDuration)
         {
             elapsed += Time.unscaledDeltaTime;
-            canvasGroup.alpha = 1f - (elapsed / fadeOutDuration);
+            canvasGroup.alpha = 1f - Mathf.Clamp01(elapsed / fadeOutDuration);
             yield return null;
         }
         

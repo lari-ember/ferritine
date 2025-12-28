@@ -59,7 +59,8 @@ public class TeleportSelectorUI : MonoBehaviour
     private GameObject previewParticle;
     
     // API
-    private string apiBaseUrl = "http://localhost:8000";
+    // Reserved for future use (suppress CS0414 warning)
+    // private string apiBaseUrl = "http://localhost:8000";
 
     // Colors for selection
     private readonly Color32 defaultItemColor = new Color32(58, 58, 58, 255);
@@ -162,12 +163,12 @@ public class TeleportSelectorUI : MonoBehaviour
         selectedLocationType = null;
         selectedLocationId = null;
         
-        if (panel != null)
-            panel.SetActive(false);
-        
         AudioManager.Instance?.Play(AudioManager.Instance.panelClose);
+        
+        // Delegate closing to UIManager (handles animation and destruction)
+        // Don't set panel inactive directly - UIManager animation will fade out
         UIManager.Instance?.HideTeleportSelector();
-        Debug.Log("[TeleportSelectorUI] Closed");
+        Debug.Log("[TeleportSelectorUI] Close requested");
     }
     
     // ==================== TEST DATA ====================
@@ -469,12 +470,14 @@ public class TeleportSelectorUI : MonoBehaviour
         {
             // Backend confirmou - executar animação local
             Debug.Log($"[TeleportSelectorUI] Backend confirmou teleporte de {entityName}");
+            GameEventManager.RaiseTeleportSuccess(entityName, destName);
             StartCoroutine(ExecuteTeleportAnimation(entityObj, targetPos, destName, entityName));
         }
         else
         {
             // FALLBACK: Erro no backend - executar teleporte local mesmo assim
             Debug.LogWarning($"[TeleportSelectorUI] Backend falhou ({message}), executando teleporte local.");
+            GameEventManager.RaiseTeleportFailed(entityName, message);
             StartCoroutine(ExecuteTeleportAnimation(entityObj, targetPos, destName, entityName));
         }
     }

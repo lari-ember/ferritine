@@ -11,6 +11,7 @@ public class UIManager : MonoBehaviour
     [Header("UI Prefabs")]
     [SerializeField] private GameObject entityInspectorPrefab;
     [SerializeField] private GameObject teleportSelectorPrefab;
+    [SerializeField] private GameObject toastNotificationPrefab;
     
     [Header("UI Containers")]
     [SerializeField] private Transform uiCanvasTransform;
@@ -22,6 +23,10 @@ public class UIManager : MonoBehaviour
     // Teleport Selector
     private GameObject currentTeleportPanel;
     private TeleportSelectorUI currentTeleportSelector;
+    
+    // Toast Notification
+    private ToastNotificationManager toastManager;
+    private RectTransform toastContainer;
     
     // Singleton
     private static UIManager _instance;
@@ -71,6 +76,7 @@ public class UIManager : MonoBehaviour
         }
         
         ValidatePrefabs();
+        InitializeToastManager();
     }
     
     void Start()
@@ -122,6 +128,99 @@ public class UIManager : MonoBehaviour
                 Debug.Log($"[UIManager] ✓ Prefab tem componente TeleportSelectorUI");
             }
         }
+    }
+    
+    /// <summary>
+    /// Initializes the Toast Notification Manager.
+    /// Creates container and adds the manager component if not already present.
+    /// </summary>
+    void InitializeToastManager()
+    {
+        // Check if there's already a ToastNotificationManager in the scene
+        toastManager = FindFirstObjectByType<ToastNotificationManager>();
+        
+        if (toastManager != null)
+        {
+            Debug.Log("[UIManager] ✓ ToastNotificationManager already exists in scene");
+            return;
+        }
+        
+        if (toastNotificationPrefab == null)
+        {
+            Debug.LogWarning("[UIManager] ⚠️ Toast Notification prefab not assigned. Toast notifications will not work.");
+            return;
+        }
+        
+        // Create toast container
+        GameObject containerObj = new GameObject("ToastContainer");
+        containerObj.transform.SetParent(uiCanvasTransform, false);
+        
+        toastContainer = containerObj.AddComponent<RectTransform>();
+        toastContainer.anchorMin = new Vector2(0.5f, 0f);
+        toastContainer.anchorMax = new Vector2(0.5f, 0f);
+        toastContainer.pivot = new Vector2(0.5f, 0f);
+        toastContainer.anchoredPosition = new Vector2(0, 20);
+        toastContainer.sizeDelta = new Vector2(400, 200);
+        
+        // Add ToastNotificationManager component to this GameObject (UIManager)
+        toastManager = gameObject.AddComponent<ToastNotificationManager>();
+        toastManager.toastPrefab = toastNotificationPrefab;
+        toastManager.toastContainer = toastContainer;
+        
+        // Setup default styles
+        SetupToastStyles();
+        
+        // Initialize the toast system (since we're setting fields after Awake)
+        toastManager.TryInitialize();
+        
+        Debug.Log("[UIManager] ✓ ToastNotificationManager initialized successfully");
+    }
+    
+    /// <summary>
+    /// Sets up default toast styles for success, warning, error, and info.
+    /// </summary>
+    void SetupToastStyles()
+    {
+        if (toastManager == null) return;
+        
+        // Clear existing styles
+        toastManager.toastStyles.Clear();
+        
+        // Success style - Green
+        toastManager.toastStyles.Add(new ToastNotificationManager.ToastStyle
+        {
+            type = ToastNotificationManager.ToastType.Success,
+            backgroundColor = new Color(0.2f, 0.7f, 0.3f, 0.95f),
+            icon = null,
+            soundName = "toast_success"
+        });
+        
+        // Warning style - Orange
+        toastManager.toastStyles.Add(new ToastNotificationManager.ToastStyle
+        {
+            type = ToastNotificationManager.ToastType.Warning,
+            backgroundColor = new Color(0.9f, 0.6f, 0.1f, 0.95f),
+            icon = null,
+            soundName = "toast_warning"
+        });
+        
+        // Error style - Red
+        toastManager.toastStyles.Add(new ToastNotificationManager.ToastStyle
+        {
+            type = ToastNotificationManager.ToastType.Error,
+            backgroundColor = new Color(0.8f, 0.2f, 0.2f, 0.95f),
+            icon = null,
+            soundName = "toast_error"
+        });
+        
+        // Info style - Blue
+        toastManager.toastStyles.Add(new ToastNotificationManager.ToastStyle
+        {
+            type = ToastNotificationManager.ToastType.Info,
+            backgroundColor = new Color(0.2f, 0.5f, 0.8f, 0.95f),
+            icon = null,
+            soundName = "toast_info"
+        });
     }
     
     void ConnectToCameraController()
@@ -199,19 +298,48 @@ public class UIManager : MonoBehaviour
         Debug.Log($"[UIManager] Chamando ShowEntity({entity.entityType})...");
         currentInspector.ShowEntity(entity);
         
+        // Play open animation - add UIAnimation if not present
+        UIAnimation anim = currentInspectorPanel.GetComponent<UIAnimation>();
+        if (anim == null)
+        {
+            anim = currentInspectorPanel.AddComponent<UIAnimation>();
+        }
+        anim.PlayOpen();
+        
         Debug.Log($"[UIManager] ✅ Inspector exibido com sucesso para {entity.entityType}: {entity.GetDisplayName()}");
     }
     
     /// <summary>
-    /// Hides and destroys the current inspector panel.
+    /// Hides and destroys the current inspector panel with animation.
     /// </summary>
     public void HideInspector()
     {
         if (currentInspectorPanel != null)
         {
-            Destroy(currentInspectorPanel);
-            currentInspectorPanel = null;
-            currentInspector = null;
+            UIAnimation anim = currentInspectorPanel.GetComponent<UIAnimation>();
+            
+            if (anim != null)
+            {
+                // Store reference before clearing (to avoid double-close)
+                GameObject panelToDestroy = currentInspectorPanel;
+                currentInspectorPanel = null;
+                currentInspector = null;
+                
+                anim.PlayClose(() =>
+                {
+                    if (panelToDestroy != null)
+                    {
+                        Destroy(panelToDestroy);
+                    }
+                });
+            }
+            else
+            {
+                // No animation, destroy immediately
+                Destroy(currentInspectorPanel);
+                currentInspectorPanel = null;
+                currentInspector = null;
+            }
             
             Debug.Log("[UIManager] Inspector panel hidden");
         }
@@ -268,19 +396,48 @@ public class UIManager : MonoBehaviour
         // Show selector for agent
         currentTeleportSelector.ShowForAgent(agent);
         
+        // Play open animation - add UIAnimation if not present
+        UIAnimation anim = currentTeleportPanel.GetComponent<UIAnimation>();
+        if (anim == null)
+        {
+            anim = currentTeleportPanel.AddComponent<UIAnimation>();
+        }
+        anim.PlayOpen();
+        
         Debug.Log($"[UIManager] ✅ Teleport Selector exibido para {agent.name}");
     }
     
     /// <summary>
-    /// Fecha o seletor de teleporte.
+    /// Fecha o seletor de teleporte com animação.
     /// </summary>
     public void HideTeleportSelector()
     {
         if (currentTeleportPanel != null)
         {
-            Destroy(currentTeleportPanel);
-            currentTeleportPanel = null;
-            currentTeleportSelector = null;
+            UIAnimation anim = currentTeleportPanel.GetComponent<UIAnimation>();
+            
+            if (anim != null)
+            {
+                // Store reference before clearing (to avoid double-close)
+                GameObject panelToDestroy = currentTeleportPanel;
+                currentTeleportPanel = null;
+                currentTeleportSelector = null;
+                
+                anim.PlayClose(() =>
+                {
+                    if (panelToDestroy != null)
+                    {
+                        Destroy(panelToDestroy);
+                    }
+                });
+            }
+            else
+            {
+                // No animation, destroy immediately
+                Destroy(currentTeleportPanel);
+                currentTeleportPanel = null;
+                currentTeleportSelector = null;
+            }
             
             Debug.Log("[UIManager] Teleport Selector fechado");
         }

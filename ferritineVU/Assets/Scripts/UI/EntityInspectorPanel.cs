@@ -9,6 +9,26 @@ using UnityEngine.Networking;
 /// Entity inspector panel - displays detailed information about selected entities.
 /// Draggable, tabbed interface with interactive controls.
 /// Implements Observer pattern to auto-update when entity data changes.
+/// 
+/// === SONS UTILIZADOS ===
+/// 
+/// | Ação                      | AudioClip      | Arquivo              |
+/// |---------------------------|----------------|----------------------|
+/// | Abrir painel              | panelOpen      | panel_open.wav.mp3   |
+/// | Fechar painel             | panelClose     | panel_close.mp3      |
+/// | Expandir/Colapsar         | buttonToggle   | button_toggle.ogg    |
+/// | Mudar tab                 | buttonClick    | button_click.ogg     |
+/// | Botão Follow              | buttonClick    | button_click.ogg     |
+/// | Botão Pause/Resume        | buttonClick    | button_click.ogg     |
+/// | Pause/Resume sucesso      | buttonToggle   | button_toggle.ogg    |
+/// | Pause/Resume erro         | toastError     | toast_error.mp3      |
+/// | Botão Teleport            | panelOpen      | panel_open.wav.mp3   |
+/// | Botão Modify Queue        | buttonClick    | button_click.ogg     |
+/// | Modify Queue sucesso      | buttonClick    | button_click.ogg     |
+/// | Modify Queue erro         | toastError     | toast_error.mp3      |
+/// 
+/// Uso: AudioManager.Instance?.Play(AudioManager.Instance.clipName);
+/// O operador ?. evita crash se AudioManager não existir.
 /// </summary>
 public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler
 {
@@ -403,6 +423,8 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
         if (currentEntity == null || currentEntity.entityType != SelectableEntity.EntityType.Vehicle)
             return;
         
+        AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
+        
         string vehicleId = currentEntity.vehicleData.id;
         string endpoint = isPaused ? "resume" : "pause";
         
@@ -470,6 +492,8 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
         
         if (stationQueueInput == null) return;
         
+        AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
+        
         if (int.TryParse(stationQueueInput.text, out int newQueueLength))
         {
             string stationId = currentEntity.stationData.id;
@@ -478,6 +502,7 @@ public class EntityInspectorPanel : MonoBehaviour, IDragHandler, IBeginDragHandl
         else
         {
             ToastNotificationManager.ShowWarning("Por favor, insira um número válido");
+            AudioManager.Instance?.Play(AudioManager.Instance.toastError);
         }
     }
     

@@ -20,7 +20,8 @@ public class BackendTeleportManager : MonoBehaviour
     [SerializeField] private string apiBaseUrl = "http://localhost:8000";
     
     [Header("Teleport Settings")]
-    [SerializeField] private float teleportDuration = 0.5f; // Duração da animação de teleporte
+    // Reserved for future use (suppress CS0414 warning)
+    [SerializeField] private float teleportDuration = 0.5f; // Used for future teleport animation features
     
     [Header("Events")]
     public Action<bool, string> OnTeleportCompleted; // (success, message)
@@ -110,11 +111,13 @@ public class BackendTeleportManager : MonoBehaviour
                     TeleportResponse response = JsonUtility.FromJson<TeleportResponse>(responseText);
                     
                     Debug.Log($"[BackendTeleportManager] ✓ Teleporte confirmado para {agentId}");
+                    GameEventManager.RaiseBackendOnline();
                     onComplete?.Invoke(true, "Teleporte realizado com sucesso");
                 }
                 catch (System.Exception e)
                 {
                     Debug.LogError($"[BackendTeleportManager] ✗ Erro ao parsear resposta: {e.Message}");
+                    GameEventManager.RaiseBackendError(500, "Erro ao processar resposta");
                     onComplete?.Invoke(false, "Erro ao processar resposta do servidor");
                 }
             }
@@ -126,7 +129,9 @@ public class BackendTeleportManager : MonoBehaviour
                     errorMsg = webRequest.downloadHandler.text;
                 }
                 
-                Debug.LogError($"[BackendTeleportManager] ✗ Erro HTTP {webRequest.responseCode}: {errorMsg}");
+                int errorCode = (int)webRequest.responseCode;
+                Debug.LogError($"[BackendTeleportManager] ✗ Erro HTTP {errorCode}: {errorMsg}");
+                GameEventManager.RaiseBackendError(errorCode, errorMsg);
                 onComplete?.Invoke(false, $"Erro: {errorMsg}");
             }
         }
@@ -155,4 +160,3 @@ public class BackendTeleportManager : MonoBehaviour
         public string message;
     }
 }
-

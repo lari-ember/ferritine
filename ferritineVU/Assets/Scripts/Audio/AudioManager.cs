@@ -5,6 +5,33 @@ using System.Collections.Generic;
 /// <summary>
 /// Centralized audio manager for UI sounds, SFX, music, and ambient audio.
 /// Supports multi-channel audio mixing and spatial audio.
+/// 
+/// === CONFIGURAÇÃO DE AUDIO SOURCES ===
+/// 
+/// No GameObject AudioManager, configure 4 AudioSources:
+/// 
+/// | AudioSource    | Output Group | Uso                          |
+/// |----------------|--------------|------------------------------|
+/// | masterSource   | Master       | Sons gerais, música          |
+/// | uiSource       | UI           | Botões, painéis, toasts      |
+/// | sfxSource      | SFX          | Efeitos do mundo, entidades  |
+/// | ambientSource  | Ambient      | Sons ambiente, loops         |
+/// 
+/// === CLIPS DISPONÍVEIS ===
+/// 
+/// | Campo          | Arquivo              | Canal |
+/// |----------------|----------------------|-------|
+/// | buttonClick    | button_click.ogg     | UI    |
+/// | buttonToggle   | button_toggle.ogg    | UI    |
+/// | panelOpen      | panel_open.wav.mp3   | UI    |
+/// | panelClose     | panel_close.mp3      | UI    |
+/// | entitySelect   | entity_select.mp3    | SFX   |
+/// | teleportWoosh  | teleport_woosh.mp3   | SFX   |
+/// | toastInfo      | toast_info.mp3       | UI    |
+/// | toastSuccess   | toast_success.mp3    | UI    |
+/// | toastError     | toast_error.mp3      | UI    |
+/// 
+/// Uso: AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
 /// </summary>
 public class AudioManager : MonoBehaviour
 {
@@ -12,6 +39,19 @@ public class AudioManager : MonoBehaviour
     
     [Header("Audio Mixer")]
     public AudioMixer mainMixer;
+    
+    [Header("Audio Sources (Configurar no Inspector)")]
+    [Tooltip("AudioSource com output = Master")]
+    public AudioSource masterSource;
+    
+    [Tooltip("AudioSource com output = UI")]
+    public AudioSource uiSource;
+    
+    [Tooltip("AudioSource com output = SFX")]
+    public AudioSource sfxSource;
+    
+    [Tooltip("AudioSource com output = Ambient")]
+    public AudioSource ambientSource;
     
     [Header("UI / Buttons")]
     public AudioClip buttonClick;
@@ -185,17 +225,106 @@ public class AudioManager : MonoBehaviour
     }
     
     /// <summary>
-    /// Plays an AudioClip directly on the UI channel.
+    /// Plays an AudioClip on the appropriate channel.
+    /// Automatically routes to UI for interface sounds, SFX for world sounds.
     /// Usage: AudioManager.Instance?.Play(AudioManager.Instance.buttonClick);
     /// </summary>
     public void Play(AudioClip clip)
     {
         if (clip == null) return;
-        PlayClipOnChannel(clip, "UI");
+        
+        // Determina o canal baseado no tipo de clip
+        if (clip == buttonClick || clip == buttonToggle || 
+            clip == panelOpen || clip == panelClose ||
+            clip == toastInfo || clip == toastSuccess || clip == toastError)
+        {
+            PlayUI(clip);
+        }
+        else if (clip == entitySelect || clip == teleportWoosh)
+        {
+            PlaySFX(clip);
+        }
+        else
+        {
+            // Default: UI channel
+            PlayUI(clip);
+        }
     }
     
     /// <summary>
-    /// Internal method to play a clip on a specific channel.
+    /// Plays a clip on the UI AudioSource.
+    /// </summary>
+    public void PlayUI(AudioClip clip)
+    {
+        if (clip == null) return;
+        
+        if (uiSource != null)
+        {
+            uiSource.PlayOneShot(clip);
+        }
+        else
+        {
+            // Fallback to pool system
+            PlayClipOnChannel(clip, "UI");
+        }
+    }
+    
+    /// <summary>
+    /// Plays a clip on the SFX AudioSource.
+    /// </summary>
+    public void PlaySFX(AudioClip clip)
+    {
+        if (clip == null) return;
+        
+        if (sfxSource != null)
+        {
+            sfxSource.PlayOneShot(clip);
+        }
+        else
+        {
+            // Fallback to pool system
+            PlayClipOnChannel(clip, "SFX");
+        }
+    }
+    
+    /// <summary>
+    /// Plays a clip on the Ambient AudioSource (supports looping).
+    /// </summary>
+    public void PlayAmbient(AudioClip clip, bool loop = true)
+    {
+        if (clip == null || ambientSource == null) return;
+        
+        ambientSource.clip = clip;
+        ambientSource.loop = loop;
+        ambientSource.Play();
+    }
+    
+    /// <summary>
+    /// Stops the ambient audio.
+    /// </summary>
+    public void StopAmbient()
+    {
+        if (ambientSource != null)
+        {
+            ambientSource.Stop();
+        }
+    }
+    
+    /// <summary>
+    /// Plays a clip on the Master AudioSource.
+    /// </summary>
+    public void PlayMaster(AudioClip clip)
+    {
+        if (clip == null) return;
+        
+        if (masterSource != null)
+        {
+            masterSource.PlayOneShot(clip);
+        }
+    }
+    
+    /// <summary>
+    /// Internal method to play a clip on a specific channel (pool fallback).
     /// </summary>
     void PlayClipOnChannel(AudioClip clip, string channelName)
     {
