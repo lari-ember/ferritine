@@ -10,15 +10,26 @@ namespace Voxel {
 
     public class Chunk {
         public const int Largura = 32;
-        public const int Altura = 128;
+        public const int Altura = 32;
         public float EscalaVoxel = 0.1f; // 10 cm
 
         public byte[,,] Dados = new byte[Largura, Altura, Largura];
+
+        // Referência para o mundo que gerencia chunks (usada quando consultamos voxels fora deste chunk)
+        private VoxelWorld _world;
+        // Posição deste chunk no grid do mundo (em chunks)
+        public Vector2Int PosicaoNoMundo;
 
         // Listas para construção da malha
         private List<Vector3> _vertices = new List<Vector3>();
         private List<int> _triangles = new List<int>();
         private List<Vector2> _uvs = new List<Vector2>();
+
+        // Construtor que recebe a referência ao mundo e a posição do chunk
+        public Chunk(VoxelWorld world, Vector2Int posicao) {
+            this._world = world;
+            this.PosicaoNoMundo = posicao;
+        }
 
         public void PopulateFromHeightmap(Texture2D mapa, int offsetX, int offsetZ) {
             for (int x = 0; x < Largura; x++) {
@@ -68,7 +79,27 @@ namespace Voxel {
             if (GetVoxel(x, y, z - 1) == 0) CreateFace(x, y, z, Vector3.back);
         }
 
+        // Se a coordenada está dentro deste chunk, lê direto daqui.
+        // Se estiver fora, delega a consulta ao VoxelWorld para ler o chunk vizinho e evitar costuras.
         byte GetVoxel(int x, int y, int z) {
+            if (x >= 0 && x < Largura && y >= 0 && y < Altura && z >= 0 && z < Largura)
+                return Dados[x, y, z];
+
+            // Se saiu do limite deste chunk, converte para coordenadas globais e pergunta ao world
+            if (_world == null) {
+                // Sem referência ao world, considera ar (0) para evitar crashs
+                return 0;
+            }
+
+            int globalX = x + (PosicaoNoMundo.x * Largura);
+            int globalY = y;
+            int globalZ = z + (PosicaoNoMundo.y * Largura);
+
+            return _world.GetVoxelNoMundo(globalX, globalY, globalZ);
+        }
+
+        // Função auxiliar usada pelo World para ler este chunk localmente
+        public byte GetVoxelLocal(int x, int y, int z) {
             if (x < 0 || x >= Largura || y < 0 || y >= Altura || z < 0 || z >= Largura) return 0;
             return Dados[x, y, z];
         }
