@@ -32,6 +32,7 @@ Bem-vindo à documentação completa do projeto Ferritine! Esta página serve co
 - **[PLANNING_INDEX.md](architecture/PLANNING_INDEX.md)** - Índice de planejamento
 - **[PLANNING_STRUCTURE.md](architecture/PLANNING_STRUCTURE.md)** - Estrutura de planejamento
 - **[ISSUES_MILESTONES_TAGS.md](architecture/ISSUES_MILESTONES_TAGS.md)** - Issues, milestones e tags
+- **[DECISOES_ARQUITETURA.md](architecture/DECISOES_ARQUITETURA.md)** - Decisões de arquitetura congeladas (Fase 0)
 
 ## 💾 Banco de Dados
 
@@ -114,7 +115,8 @@ docs/
 │   ├── MAQUETE_TECH_DOCS.md
 │   ├── PLANNING_INDEX.md
 │   ├── PLANNING_STRUCTURE.md
-│   └── ISSUES_MILESTONES_TAGS.md
+│   ├── ISSUES_MILESTONES_TAGS.md
+│   └── DECISOES_ARQUITETURA.md
 │
 ├── database/                    # Documentação do banco de dados
 │   ├── DATABASE_GUIDE.md

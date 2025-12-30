@@ -229,6 +229,9 @@ ferritine/
 - Documentação de string em cada módulo
 - Testes co-localizados com a estrutura
 
+**Arquitetura Fase 0 (Decisões Congeladas)**:
+- Ver decisões congeladas: [docs/architecture/DECISOES_ARQUITETURA.md](docs/architecture/DECISOES_ARQUITETURA.md)
+
 ### Descrição dos Componentes
 
 **Core Simulation**:
@@ -737,4 +740,3 @@ Se você tiver dúvidas, sugestões ou quiser contribuir, sinta-se à vontade pa
 [![Forks](https://img.shields.io/github/forks/ferritine/ferritine?style=social)](https://github.com/ferritine/ferritine/network/members)
 
 </div>
-
