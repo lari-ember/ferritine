@@ -1,63 +1,48 @@
-using System.Collections.Generic;
 using UnityEngine;
+using System;
+using System.Collections.Generic;
 
 namespace Voxel {
-    public enum ZonaTipo { Invalido, Residencial, Comercial, Industrial, Parque, Via }
-
-    [System.Serializable]
-    public class Lote {
-        public Vector2Int posicaoGlobal;
-        public ZonaTipo zona;
-        public bool estaValido;
-        public string motivoInvalidez;
-        
-        // O DetailWorld usará isso para saber o que spawnar
-        public int nivelDensidade; 
-    }
-
+    // CityLayer é a autoridade lógica para zoneamento urbano. Ela não cria visual nem altera o terreno.
+    // Responsabilidades:
+    // - Armazenar um dicionário esparso de lotes pintados pelo jogador
+    // - Validar lotes consultando o TerrainWorld (autoridade física)
+    // - Emitir eventos semânticos (OnLoteChanged) para o DetailWorld usar como entrada visual
     public class CityLayer : MonoBehaviour {
-        private VoxelWorld _world;
-        private Dictionary<Vector2Int, Lote> gradeUrbana = new Dictionary<Vector2Int, Lote>();
+        public TerrainWorld terrain;
+        private Dictionary<Vector2Int, Lote> _mapaUrbano = new Dictionary<Vector2Int, Lote>();
 
-        public void Inicializar(VoxelWorld voxelWorld) {
-            this._world = voxelWorld;
+        // Evento público que notifica mudanças em lotes. DetailWorld e outros sistemas escutam isto.
+        public static event Action<Lote> OnLoteChanged;
+
+        // PintarZona: chamada quando o jogador pinta/edita um lote
+        public void PintarZona(Vector2Int pos, ZonaTipo tipo) {
+            if (!_mapaUrbano.ContainsKey(pos)) _mapaUrbano[pos] = new Lote { pos = pos };
+            
+            Lote lote = _mapaUrbano[pos];
+            lote.zona = tipo;
+
+            // Validação usando o TerrainWorld (Autoridade Física)
+            float slope = terrain.GetSlope(pos.x, pos.y);
+            SoilStats soil = terrain.GetSoilStats(pos.x, pos.y);
+
+            // Regras compostas: inclinação + permeabilidade/erosão
+            bool okSlope = slope < 0.5f; // 50cm threshold
+            bool okSoil = soil.permeability > 0.05f && soil.erosionRate < 0.8f;
+
+            lote.estaValido = okSlope && okSoil;
+            if (!okSlope) lote.motivo = "Terreno muito inclinado";
+            else if (!okSoil) lote.motivo = "Solo impróprio (erosao/permeabilidade)";
+            else lote.motivo = "";
+
+            // Notifica os ouvintes (ex: DetailWorld) que algo mudou no lote
+            OnLoteChanged?.Invoke(lote);
         }
 
-        // A regra madura: CityLayer pergunta ao Terrain
-        public void AvaliarLote(Vector2Int pos) {
-            Lote novoLote = new Lote { posicaoGlobal = pos, zona = ZonaTipo.Residencial };
-            
-            // Consulta o mundo físico
-            float inclinacao = _world.GetInclinacao(pos.x, pos.y);
-            float alturaM = _world.GetAlturaBase(pos.x, pos.y);
-
-            // Converte a altura (metros) para índice de voxel (y)
-            int yIndex = Mathf.Clamp(Mathf.RoundToInt(alturaM / _world.escalaVoxel), 0, Chunk.Altura - 1);
-            byte tipoSolo = _world.GetVoxelNoMundo(pos.x, yIndex, pos.y);
-
-            if (inclinacao > 15f) {
-                novoLote.estaValido = false;
-                novoLote.motivoInvalidez = "Muito inclinado";
-            } else if (tipoSolo == (byte)BlockType.Agua) {
-                novoLote.estaValido = false;
-                novoLote.motivoInvalidez = "Sobre a água";
-            } else {
-                novoLote.estaValido = true;
-            }
-
-            gradeUrbana[pos] = novoLote;
-            
-            // Notifica o DetailWorld que algo mudou (Event-Driven)
-            OnZoneChanged?.Invoke(novoLote);
-        }
-
-        public delegate void ZoneAction(Lote lote);
-        public static event ZoneAction OnZoneChanged;
-
-        // Leitura externa da grade urbana
-        public Lote GetLote(Vector2Int pos) {
-            if (gradeUrbana.ContainsKey(pos)) return gradeUrbana[pos];
-            return null;
+        // Revalida um lote existente (usado quando o TerrainWorld muda um local)
+        public void RevalidarLote(Vector2Int pos) {
+            if (!_mapaUrbano.ContainsKey(pos)) return;
+            PintarZona(pos, _mapaUrbano[pos].zona);
         }
     }
 }

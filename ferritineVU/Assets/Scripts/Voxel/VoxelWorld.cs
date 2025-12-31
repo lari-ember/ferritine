@@ -1,220 +1,226 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace Voxel {
     public class VoxelWorld : MonoBehaviour {
-        [Header("Configurações do Mundo")]
-        public Texture2D heightmap;
+        public TerrainWorld terrain;
+        public Transform terrainHolder;
         public Material voxelMaterial;
-        public float escalaVoxel = 0.1f; // 10cm
+        public float raioPreload = 200f;
 
-        [Header("Performance/LOD")]
-        public int renderDistance = 8; // Chunks ao redor da câmera
+        // Quantos chunks manter como dados em RAM ao redor da câmera (em chunks)
+        public int dadosRetencaoRadius = 4; // padrão pedido
+        // Quantos chunks de dados descartar por frame para evitar picos
+        public int dadosRetencaoBatchPerFrame = 4; // padrão pedido
+        // Intervalo entre checagens de descarte (segundos)
+        public float unloadInterval = 1.0f;
 
-        [Header("Preload")]
-        public PreloadProfile config;
-        public Transform cameraTransform;
-        [SerializeField] private Transform chunksParent;
+        private Dictionary<Vector2Int, GameObject> _chunkObjects = new Dictionary<Vector2Int, GameObject>();
+        private Transform _cam;
 
-         // O "Cérebro" que conhece todos os pedaços de Curitiba
-        private Dictionary<Vector2Int, Chunk> _chunks = new Dictionary<Vector2Int, Chunk>();
-        // Armazena os GameObjects visuais (instanciados) por chunk
-        private Dictionary<Vector2Int, GameObject> chunkObjects = new Dictionary<Vector2Int, GameObject>();
-        // Marca chunks em criação para evitar duplicatas
-        private HashSet<Vector2Int> creatingChunks = new HashSet<Vector2Int>();
-
-        private Vector3 lastCameraPos;
-        private int totalChunksX = 0;
-        private int totalChunksZ = 0;
+        // Centro do chunk atualmente considerado para preload
+        private Vector2Int _currentChunkCenter = new Vector2Int(int.MinValue, int.MinValue);
 
         void Start() {
-            // Inicializa dados puros (mas não cria objetos visuais em massa)
-            InicializarMundo();
-
-            // Auto-wire CityLayer para facilitar testes
-            CityLayer city = GetComponent<CityLayer>();
-            if (city == null) city = gameObject.AddComponent<CityLayer>();
-            city.Inicializar(this);
-
-            // Preload defaults
-            if (cameraTransform == null && Camera.main != null) cameraTransform = Camera.main.transform;
-            if (config == null) config = ScriptableObject.CreateInstance<PreloadProfile>();
-            lastCameraPos = cameraTransform != null ? cameraTransform.position : Vector3.zero;
-
-            // Calcula limites
-            totalChunksX = heightmap.width / Chunk.Largura;
-            totalChunksZ = heightmap.height / Chunk.Largura;
-
-            // Garante que exista um parent para todos os chunks (evita que fiquem na raiz da cena)
-            if (chunksParent == null) {
-                GameObject parentGO = new GameObject("Chunks");
-                parentGO.transform.SetParent(this.transform, false);
-                chunksParent = parentGO.transform;
-            }
-
-            // Inicia rotina de atualização (não cria tudo de uma vez)
-            StartCoroutine(UpdateChunksRoutine());
+            // Safe assignment: Camera.main can be null in edit mode or tests
+            if (Camera.main != null) _cam = Camera.main.transform;
         }
 
-        void InicializarMundo() {
-            int chunksX = heightmap.width / Chunk.Largura;
-            int chunksZ = heightmap.height / Chunk.Largura;
+        void Update() {
+            if (_cam == null || terrain == null) return; // safety guard
 
-            // Apenas cria os dados em memória — objetos visuais serão instanciados sob demanda
-            for (int x = 0; x < chunksX; x++) {
-                for (int z = 0; z < chunksZ; z++) {
-                    Vector2Int pos = new Vector2Int(x, z);
-                    Chunk novoChunk = new Chunk(this, pos);
-                    novoChunk.PopulateFromHeightmap(heightmap, x * Chunk.Largura, z * Chunk.Largura);
-                    _chunks.Add(pos, novoChunk);
-                }
+            // Calcula em qual chunk a câmera está
+            int camX = Mathf.FloorToInt(_cam.position.x / (ChunkData.Largura * terrain.escalaVoxel));
+            int camZ = Mathf.FloorToInt(_cam.position.z / (ChunkData.Largura * terrain.escalaVoxel));
+            var center = new Vector2Int(camX, camZ);
+
+            // Só atualiza se a câmera mudou de chunk
+            if (center != _currentChunkCenter) {
+                _currentChunkCenter = center;
+                AtualizarChunks(center);
+            }
+
+            // Periodicamente agendamos descarte de chunks distantes
+            if (Time.time - _lastUnloadTime >= unloadInterval) {
+                _lastUnloadTime = Time.time;
+                AgendarDescarte(_currentChunkCenter); // Usa o centro fixo
             }
         }
+        
+        private bool _estaProcessando = false;
+        private Queue<Vector2Int> _filaDeCriacao = new Queue<Vector2Int>();
 
-        void CriarObjetoChunk(Chunk chunk) {
-            GameObject chunkObj = new GameObject($"Chunk_{chunk.PosicaoNoMundo.x}_{chunk.PosicaoNoMundo.y}");
-            chunkObj.transform.SetParent(chunksParent, false);
-            chunkObj.transform.position = new Vector3(
-                chunk.PosicaoNoMundo.x * Chunk.Largura * escalaVoxel,
-                0,
-                chunk.PosicaoNoMundo.y * Chunk.Largura * escalaVoxel
-            );
+        // Rastreia quais chunk data foram garantidos (criamos ou solicitados)
+        // Usado para decidir o que pode ser desalocado do TerrainWorld
+        private HashSet<Vector2Int> _knownChunkData = new HashSet<Vector2Int>();
 
-            MeshFilter mf = chunkObj.AddComponent<MeshFilter>();
-            MeshRenderer mr = chunkObj.AddComponent<MeshRenderer>();
-            mr.material = voxelMaterial;
+        // Fila de descarte de dados (chunk positions) e controle de processamento
+        private Queue<Vector2Int> _filaDescarteDados = new Queue<Vector2Int>();
+        private HashSet<Vector2Int> _dadosAgendadosDescarte = new HashSet<Vector2Int>();
+        private bool _descarteProcessando = false;
 
-            mf.mesh = chunk.GenerateMesh();
-            chunkObj.AddComponent<MeshCollider>().sharedMesh = mf.mesh;
+        private float _lastUnloadTime = 0f;
 
-            // Guarda referência
-            chunkObjects[chunk.PosicaoNoMundo] = chunkObj;
-        }
-
-        IEnumerator UpdateChunksRoutine() {
-            while (true) {
-                if (cameraTransform != null && config != null) {
-                    GerenciarVisibilidade();
-                }
-                yield return new WaitForSeconds(config != null ? config.intervaloChecagem : 0.5f);
-            }
-        }
-
-        void GerenciarVisibilidade() {
-            // Regra: Distância base + (Velocidade x Fator)
-            float velocidade = 0f;
-            if (cameraTransform != null) {
-                velocidade = (cameraTransform.position - lastCameraPos).magnitude / (config != null ? config.intervaloChecagem : 0.5f);
-            }
-            float raioPreload = (config != null ? config.distanciaBase : 500f) + (velocidade * (config != null ? config.fatorVelocidade : 2f));
-            lastCameraPos = cameraTransform != null ? cameraTransform.position : lastCameraPos;
-
-            if (cameraTransform == null) return;
-
-            int camChunkX = Mathf.FloorToInt(cameraTransform.position.x / (Chunk.Largura * escalaVoxel));
-            int camChunkZ = Mathf.FloorToInt(cameraTransform.position.z / (Chunk.Largura * escalaVoxel));
-
-            int raioChunks = Mathf.CeilToInt(raioPreload / (Chunk.Largura * escalaVoxel));
-
-            // Percorre apenas a vizinhança ao redor da câmera
-            for (int x = camChunkX - raioChunks; x <= camChunkX + raioChunks; x++) {
-                for (int z = camChunkZ - raioChunks; z <= camChunkZ + raioChunks; z++) {
-                    // Verifica limites
-                    if (x < 0 || z < 0 || x >= totalChunksX || z >= totalChunksZ) continue;
-
-                    Vector2Int pos = new Vector2Int(x, z);
-                    // Distância real do centro do chunk
-                    Vector3 worldPos = new Vector3(x * Chunk.Largura * escalaVoxel, 0, z * Chunk.Largura * escalaVoxel);
-                    float dist = Vector3.Distance(cameraTransform.position, worldPos);
-
-                    if (dist <= raioPreload) {
-                        // Precisa ativar/instanciar
-                        if (!chunkObjects.ContainsKey(pos) && !creatingChunks.Contains(pos)) {
-                            StartCoroutine(CriarChunkGradualmente(pos));
-                        } else if (chunkObjects.ContainsKey(pos) && chunkObjects[pos] != null) {
-                            chunkObjects[pos].SetActive(true);
-                        }
-                    } else {
-                        // Desativa se existir
-                        if (chunkObjects.ContainsKey(pos) && chunkObjects[pos] != null) {
-                            chunkObjects[pos].SetActive(false);
-                        }
+        // AtualizarChunks: determina quais chunks precisam existir visualmente e enfileira
+        // a criação para ser processada aos poucos (evita travamentos ao criar muitos objetos em um frame)
+        void AtualizarChunks(Vector2Int centro) {
+            int raioEmChunks = Mathf.CeilToInt(raioPreload / (ChunkData.Largura * terrain.escalaVoxel));
+            // Carrega apenas dentro do raio de preload
+            for (int x = -raioEmChunks; x <= raioEmChunks; x++) {
+                for (int z = -raioEmChunks; z <= raioEmChunks; z++) {
+                    Vector2Int p = centro + new Vector2Int(x, z);
+                    if (!_chunkObjects.ContainsKey(p) && !_filaDeCriacao.Contains(p)) {
+                        _filaDeCriacao.Enqueue(p); // Adiciona na fila em vez de criar na hora
                     }
                 }
             }
+            if (!_estaProcessando && _filaDeCriacao.Count > 0) {
+                StartCoroutine(ProcessarFila());
+            }
         }
 
-        IEnumerator CriarChunkGradualmente(Vector2Int pos) {
-            if (!_chunks.ContainsKey(pos)) yield break;
-            creatingChunks.Add(pos);
+        // Processa a fila de criação um por frame. Isto é uma estratégia simples de batch
+        // para distribuir a carga de criação de meshes/objetos ao longo do tempo.
+        System.Collections.IEnumerator ProcessarFila() {
+            _estaProcessando = true;
+            while (_filaDeCriacao.Count > 0) {
+                Vector2Int p = _filaDeCriacao.Dequeue();
 
-            // Reserva espaço para evitar duplicatas
-            chunkObjects.Add(pos, null);
+                // Se já existe (pode ter sido criado enquanto aguardava), pule
+                if (_chunkObjects.ContainsKey(p)) continue;
 
-            // Cria dados se necessário (já temos no _chunks)
-            Chunk novoChunk = _chunks[pos];
-
-            // Permite que Unity respire um frame
-            yield return null;
-
-            // Cria o objeto visual
-            InstantiateChunkObject(novoChunk);
-
-            creatingChunks.Remove(pos);
+                CriarObjetoChunk(p);
+                yield return null; // Espera o próximo frame
+            }
+            _estaProcessando = false;
         }
 
-        void InstantiateChunkObject(Chunk chunk) {
-            // Cria GameObject e guarda em chunkObjects
-            GameObject chunkObj = new GameObject($"Chunk_{chunk.PosicaoNoMundo.x}_{chunk.PosicaoNoMundo.y}");
-            chunkObj.transform.SetParent(chunksParent, false);
-            chunkObj.transform.position = new Vector3(
-                chunk.PosicaoNoMundo.x * Chunk.Largura * escalaVoxel,
-                0,
-                chunk.PosicaoNoMundo.y * Chunk.Largura * escalaVoxel
-            );
+        // Cria o GameObject do chunk, gera a mesh via ChunkMeshGenerator e adiciona collider.
+        void CriarObjetoChunk(Vector2Int p) {
+            // Garante que os dados do chunk existam
+            ChunkData dados = terrain.GetGarantirChunk(p);
 
-            MeshFilter mf = chunkObj.AddComponent<MeshFilter>();
-            MeshRenderer mr = chunkObj.AddComponent<MeshRenderer>();
-            mr.material = voxelMaterial;
+            terrain.GetGarantirChunk(new Vector2Int(p.x - 1, p.y));
+            terrain.GetGarantirChunk(new Vector2Int(p.x + 1, p.y));
+            terrain.GetGarantirChunk(new Vector2Int(p.x, p.y - 1));
+            terrain.GetGarantirChunk(new Vector2Int(p.x, p.y + 1));
+            // Cancela qualquer descarte agendado para este chunk (evita remoção de dados que voltou a ser visível)
+            CancelScheduledDiscard(p);
 
-            mf.mesh = chunk.GenerateMesh();
-            chunkObj.AddComponent<MeshCollider>().sharedMesh = mf.mesh;
+            // Marca que temos dados deste chunk (para posterior descarte em lote)
+            _knownChunkData.Add(p);
 
-            chunkObjects[chunk.PosicaoNoMundo] = chunkObj;
+            GameObject obj = new GameObject($"Chunk_{p.x}_{p.y}");
+            obj.transform.SetParent(terrainHolder);
+            obj.transform.position = new Vector3(p.x * ChunkData.Largura * terrain.escalaVoxel, 0, p.y * ChunkData.Largura * terrain.escalaVoxel);
+
+            MeshFilter mf = obj.AddComponent<MeshFilter>();
+            mf.mesh = ChunkMeshGenerator.BuildMesh(terrain, dados, terrain.escalaVoxel);
+            obj.AddComponent<MeshRenderer>().material = voxelMaterial;
+            obj.AddComponent<MeshCollider>().sharedMesh = mf.mesh;
+
+            _chunkObjects.Add(p, obj);
         }
 
-         // Função crucial: Busca um voxel em qualquer lugar do mundo
-         public byte GetVoxelNoMundo(int x, int y, int z) {
-             // Converte coordenada global para coordenada de chunk
-             int cx = Mathf.FloorToInt(x / (float)Chunk.Largura);
-             int cz = Mathf.FloorToInt(z / (float)Chunk.Largura);
+        // Cancela um descarte previamente agendado para um chunk
+        void CancelScheduledDiscard(Vector2Int pos) {
+            if (_dadosAgendadosDescarte.Contains(pos)) _dadosAgendadosDescarte.Remove(pos);
+            if (_filaDescarteDados.Count == 0) return;
 
-             // Coordenada local dentro do chunk
-             int lx = x - (cx * Chunk.Largura);
-             int lz = z - (cz * Chunk.Largura);
+            // Rebuild queue without pos
+            var q = new Queue<Vector2Int>(_filaDescarteDados.Count);
+            while (_filaDescarteDados.Count > 0) {
+                var item = _filaDescarteDados.Dequeue();
+                if (item != pos) q.Enqueue(item);
+            }
+            _filaDescarteDados = q;
+        }
 
-             Vector2Int cPos = new Vector2Int(cx, cz);
-            if (_chunks.ContainsKey(cPos)) {
-                return _chunks[cPos].GetVoxelLocal(lx, y, lz);
-             }
-             return 0; // Ar se o chunk não existir
-         }
+        // AgendarDescarte: calcula quais chunks estão fora do raio visual e do raio de retenção de dados,
+        // remove visuais imediatamente e agenda dados para descarte em lote.
+        void AgendarDescarte(Vector2Int centro) {
+            int raioEmChunks = Mathf.CeilToInt(raioPreload / (ChunkData.Largura * terrain.escalaVoxel));
+            int visualDiscard = raioEmChunks + 2; // Histerese: descarte só além do preload+2
 
-         // Retorna a altura (em metros) do topo mais alto do solo não-ar na coluna (x,z)
-         public float GetAlturaBase(int x, int z) {
-             for (int y = Chunk.Altura - 1; y >= 0; y--) {
-                 if (GetVoxelNoMundo(x, y, z) != (byte)BlockType.Ar) 
-                     return y * escalaVoxel;
-             }
-             return 0;
-         }
-         
-         // Retorna uma medida simples de inclinação entre (x,z) e (x+1,z) em "porcentagem" aproximada
-         public float GetInclinacao(int x, int z) {
-             float h1 = GetAlturaBase(x, z);
-             float h2 = GetAlturaBase(x + 1, z);
-             return Mathf.Abs(h1 - h2) * 100f; // Escala simples para comparação
-         }
-     }
- }
+            // 1) Remover visuais (GameObjects) que estão muito longe
+            var visualsToRemove = new List<Vector2Int>();
+            foreach (var kvp in _chunkObjects) {
+                Vector2Int pos = kvp.Key;
+                float dist = Vector2Int.Distance(pos, centro);
+                if (dist > visualDiscard) {
+                    visualsToRemove.Add(pos);
+                }
+            }
+            foreach (var pos in visualsToRemove) {
+                DestruirVisualChunk(pos);
+            }
+
+            // 2) Agendar remoção de dados para chunks que estão fora do raio de retenção
+            foreach (var pos in _knownChunkData) {
+                float dist = Vector2Int.Distance(pos, centro);
+                if (dist > dadosRetencaoRadius) {
+                    if (!_dadosAgendadosDescarte.Contains(pos)) {
+                        _dadosAgendadosDescarte.Add(pos);
+                        _filaDescarteDados.Enqueue(pos);
+                    }
+                }
+            }
+
+            // Inicia o processo de descarte em lote se houver itens
+            if (!_descarteProcessando && _filaDescarteDados.Count > 0) {
+                StartCoroutine(ProcessarDescarteDados());
+            }
+        }
+
+        // Destrói o GameObject visual do chunk (mantém os dados na memória)
+        void DestruirVisualChunk(Vector2Int pos) {
+            if (_chunkObjects.ContainsKey(pos)) {
+                var go = _chunkObjects[pos];
+                if (go != null) Destroy(go);
+                _chunkObjects.Remove(pos);
+
+                // Se estava na fila de criação, removemos a entrada para não recriar desnecessariamente
+                if (_filaDeCriacao.Contains(pos)) {
+                    // Rebuild a new queue without pos
+                    var q = new Queue<Vector2Int>(_filaDeCriacao.Count);
+                    while (_filaDeCriacao.Count > 0) {
+                        var item = _filaDeCriacao.Dequeue();
+                        if (item != pos) q.Enqueue(item);
+                    }
+                    _filaDeCriacao = q;
+                }
+            }
+        }
+
+        // Processa a fila de descarte de dados em lotes (batch) para evitar GC spikes
+        System.Collections.IEnumerator ProcessarDescarteDados() {
+            _descarteProcessando = true;
+
+            while (_filaDescarteDados.Count > 0) {
+                int batch = Mathf.Min(dadosRetencaoBatchPerFrame, _filaDescarteDados.Count);
+
+                for (int i = 0; i < batch; i++) {
+                    Vector2Int pos = _filaDescarteDados.Dequeue();
+                    _dadosAgendadosDescarte.Remove(pos);
+
+                    // Se o visual reapareceu, cancela o descarte desse dado
+                    if (_chunkObjects.ContainsKey(pos)) {
+                        // ainda está visível, reter dados
+                        continue;
+                    }
+
+                    // Remove os dados do TerrainWorld (free RAM)
+                    terrain.RemoveChunkData(pos);
+                    _knownChunkData.Remove(pos);
+
+                    // Força uma pequena espera para distribuir a carga
+                }
+
+                // Espera 1 frame entre batches para não travar
+                yield return null;
+            }
+
+            _descarteProcessando = false;
+        }
+    }
+}
