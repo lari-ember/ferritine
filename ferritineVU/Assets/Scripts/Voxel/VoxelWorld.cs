@@ -21,9 +21,57 @@ namespace Voxel {
         // Centro do chunk atualmente considerado para preload
         private Vector2Int _currentChunkCenter = new Vector2Int(int.MinValue, int.MinValue);
 
+        // Pool de GameObjects para chunks visuais
+        private Stack<GameObject> _chunkPool = new Stack<GameObject>();
+        private int _poolInitialSize = 32;
+
+        /// <summary>
+        /// Inicializa o pool de objetos de chunk para reaproveitamento.
+        /// </summary>
+        private void InicializarPool() {
+            for (int i = 0; i < _poolInitialSize; i++) {
+                var go = CriarChunkGameObject();
+                go.SetActive(false);
+                _chunkPool.Push(go);
+            }
+        }
+
+        /// <summary>
+        /// Obtém um GameObject do pool ou cria um novo se necessário.
+        /// </summary>
+        private GameObject ObterChunkDoPool() {
+            if (_chunkPool.Count > 0) {
+                var go = _chunkPool.Pop();
+                go.SetActive(true);
+                return go;
+            }
+            return CriarChunkGameObject();
+        }
+
+        /// <summary>
+        /// Devolve um GameObject ao pool, desativando-o.
+        /// </summary>
+        private void DevolverChunkAoPool(GameObject go) {
+            go.SetActive(false);
+            _chunkPool.Push(go);
+        }
+
+        /// <summary>
+        /// Cria um novo GameObject de chunk (sem mesh/collider).
+        /// </summary>
+        private GameObject CriarChunkGameObject() {
+            var go = new GameObject("Chunk_Pooled");
+            go.transform.SetParent(terrainHolder);
+            go.AddComponent<MeshFilter>();
+            go.AddComponent<MeshRenderer>();
+            go.AddComponent<MeshCollider>();
+            return go;
+        }
+
         void Start() {
             // Safe assignment: Camera.main can be null in edit mode or tests
             if (Camera.main != null) _cam = Camera.main.transform;
+            InicializarPool();
         }
 
         void Update() {
@@ -95,8 +143,11 @@ namespace Voxel {
             _estaProcessando = false;
         }
 
-        // Cria o GameObject do chunk, gera a mesh via ChunkMeshGenerator e adiciona collider.
-        void CriarObjetoChunk(Vector2Int p) {
+        /// <summary>
+        /// Cria ou reaproveita o GameObject do chunk, gera a mesh via ChunkMeshGenerator e adiciona collider.
+        /// </summary>
+        /// <param name="p">Posição do chunk</param>
+        private void CriarObjetoChunk(Vector2Int p) {
             // Garante que os dados do chunk existam
             ChunkData dados = terrain.GetGarantirChunk(p);
 
@@ -110,14 +161,17 @@ namespace Voxel {
             // Marca que temos dados deste chunk (para posterior descarte em lote)
             _knownChunkData.Add(p);
 
-            GameObject obj = new GameObject($"Chunk_{p.x}_{p.y}");
+            GameObject obj = ObterChunkDoPool();
+            obj.name = $"Chunk_{p.x}_{p.y}";
             obj.transform.SetParent(terrainHolder);
             obj.transform.position = new Vector3(p.x * ChunkData.Largura * terrain.escalaVoxel, 0, p.y * ChunkData.Largura * terrain.escalaVoxel);
 
-            MeshFilter mf = obj.AddComponent<MeshFilter>();
+            var mf = obj.GetComponent<MeshFilter>();
+            var mr = obj.GetComponent<MeshRenderer>();
+            var mc = obj.GetComponent<MeshCollider>();
             mf.mesh = ChunkMeshGenerator.BuildMesh(terrain, dados, terrain.escalaVoxel);
-            obj.AddComponent<MeshRenderer>().material = voxelMaterial;
-            obj.AddComponent<MeshCollider>().sharedMesh = mf.mesh;
+            mr.material = voxelMaterial;
+            mc.sharedMesh = mf.mesh;
 
             _chunkObjects.Add(p, obj);
         }
@@ -172,11 +226,14 @@ namespace Voxel {
             }
         }
 
-        // Destrói o GameObject visual do chunk (mantém os dados na memória)
-        void DestruirVisualChunk(Vector2Int pos) {
+        /// <summary>
+        /// Remove o GameObject visual do chunk e devolve ao pool.
+        /// </summary>
+        /// <param name="pos">Posição do chunk</param>
+        private void DestruirVisualChunk(Vector2Int pos) {
             if (_chunkObjects.ContainsKey(pos)) {
                 var go = _chunkObjects[pos];
-                if (go != null) Destroy(go);
+                if (go != null) DevolverChunkAoPool(go);
                 _chunkObjects.Remove(pos);
 
                 // Se estava na fila de criação, removemos a entrada para não recriar desnecessariamente
@@ -222,5 +279,11 @@ namespace Voxel {
 
             _descarteProcessando = false;
         }
+
+        /// <summary>
+        /// Retorna o dicionário de chunks visíveis para debug visual.
+        /// </summary>
+        /// <returns>Dicionário de chunks visuais ativos</returns>
+        public Dictionary<Vector2Int, GameObject> GetChunkObjects() { return _chunkObjects; }
     }
 }
