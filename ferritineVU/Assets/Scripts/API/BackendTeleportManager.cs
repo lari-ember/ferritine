@@ -20,8 +20,9 @@ public class BackendTeleportManager : MonoBehaviour
     [SerializeField] private string apiBaseUrl = "http://localhost:8000";
     
     [Header("Teleport Settings")]
-    // Reserved for future use (suppress CS0414 warning)
-    [SerializeField] private float teleportDuration = 0.5f; // Used for future teleport animation features
+#pragma warning disable 0414
+    [SerializeField] private float teleportDuration = 0.5f;
+#pragma warning restore 0414
     
     [Header("Events")]
     public Action<bool, string> OnTeleportCompleted; // (success, message)

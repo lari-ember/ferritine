@@ -21,7 +21,9 @@ public class SkyboxController : MonoBehaviour
     [Header("Lighting")]
     [SerializeField] private Light mainLight; // Luz direcional (sol)
     [SerializeField] private float dayLightIntensity = 1.2f;
+#pragma warning disable 0414
     [SerializeField] private float nightLightIntensity = 0.2f; // Used for future night lighting features
+#pragma warning restore 0414
     
     [Header("Ambient Light")]
     [SerializeField] private Color ambientDayColor = new Color(0.8f, 0.8f, 0.8f);
