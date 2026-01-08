@@ -6,14 +6,25 @@ namespace Voxel {
         public TerrainWorld terrain;
         public Transform terrainHolder;
         public Material voxelMaterial;
+        
+        [Header("Configuração de Carregamento")]
+        [Tooltip("Perfil de configuração (opcional). Se não definido, usa os valores manuais abaixo.")]
+        public PreloadProfile preloadProfile;
+        
+        [Tooltip("Raio em metros para preload (usado se preloadProfile = null)")]
         public float raioPreload = 200f;
 
+        [Header("Limites de Performance (Manual)")]
+        [Tooltip("Usados apenas se preloadProfile = null")]
         // Quantos chunks manter como dados em RAM ao redor da câmera (em chunks)
-        public int dadosRetencaoRadius = 4; // padrão pedido
-        // Quantos chunks de dados descartar por frame para evitar picos
-        public int dadosRetencaoBatchPerFrame = 4; // padrão pedido
+        public int dadosRetencaoRadius = 2; // Reduzido de 4 para 2 para liberar RAM mais rápido
+        // Quantos chunks de dados descartar por frame para evitar picos (aumentado para liberar RAM mais rápido)
+        public int dadosRetencaoBatchPerFrame = 32; // Aumentado de 16 para 32 para liberar RAM mais rápido
         // Intervalo entre checagens de descarte (segundos)
-        public float unloadInterval = 1.0f;
+        public float unloadInterval = 0.5f;
+        
+        // Limite máximo de raio em chunks (evita explosão quando escalaVoxel diminui)
+        [Range(4, 64)] public int maxChunkRadius = 24;
 
         private Dictionary<Vector2Int, GameObject> _chunkObjects = new Dictionary<Vector2Int, GameObject>();
         private Transform _cam;
@@ -24,6 +35,7 @@ namespace Voxel {
         // Pool de GameObjects para chunks visuais
         private Stack<GameObject> _chunkPool = new Stack<GameObject>();
         private int _poolInitialSize = 32;
+        private int _poolMaxSize = 128; // Limite máximo do pool
 
         /// <summary>
         /// Inicializa o pool de objetos de chunk para reaproveitamento.
@@ -49,9 +61,31 @@ namespace Voxel {
         }
 
         /// <summary>
-        /// Devolve um GameObject ao pool, desativando-o.
+        /// Devolve um GameObject ao pool, desativando-o e limpando meshes.
+        /// Se o pool estiver cheio, destrói o objeto para liberar memória.
         /// </summary>
         private void DevolverChunkAoPool(GameObject go) {
+            if (go == null) return;
+            
+            // Limpa as meshes para liberar memória
+            var mf = go.GetComponent<MeshFilter>();
+            var mc = go.GetComponent<MeshCollider>();
+            
+            if (mf != null && mf.sharedMesh != null) {
+                Destroy(mf.sharedMesh);
+                mf.sharedMesh = null;
+            }
+            
+            if (mc != null && mc.sharedMesh != null) {
+                mc.sharedMesh = null; // MeshCollider compartilha a mesh do MeshFilter
+            }
+            
+            // Se o pool já está no tamanho máximo, destrói o GameObject
+            if (_chunkPool.Count >= _poolMaxSize) {
+                Destroy(go);
+                return;
+            }
+            
             go.SetActive(false);
             _chunkPool.Push(go);
         }
@@ -72,6 +106,26 @@ namespace Voxel {
             // Safe assignment: Camera.main can be null in edit mode or tests
             if (Camera.main != null) _cam = Camera.main.transform;
             InicializarPool();
+            
+            // Força carregamento inicial de chunks ao redor da origem ou da câmera
+            // Isso garante que haja terreno visível imediatamente
+            Vector2Int initialCenter = new Vector2Int(0, 0);
+            if (_cam != null && terrain != null) {
+                int camX = Mathf.FloorToInt(_cam.position.x / (ChunkData.Largura * terrain.escalaVoxel));
+                int camZ = Mathf.FloorToInt(_cam.position.z / (ChunkData.Largura * terrain.escalaVoxel));
+                initialCenter = new Vector2Int(camX, camZ);
+            }
+            
+            _currentChunkCenter = initialCenter;
+            AtualizarChunks(initialCenter);
+            
+            // Log de debug com informações do perfil
+            if (preloadProfile != null) {
+                Debug.Log($"[VoxelWorld] Inicializado com PreloadProfile.\n{preloadProfile.GetDebugInfo(terrain.escalaVoxel)}\nPool Max: {_poolMaxSize}, GC Interval: {_gcInterval}s");
+            } else {
+                int raio = GetRaioEmChunks();
+                Debug.Log($"[VoxelWorld] Inicializado (modo manual). Centro: {initialCenter}, Escala: {terrain.escalaVoxel}m, Raio: {raio} chunks\nPool Max: {_poolMaxSize}, GC Interval: {_gcInterval}s");
+            }
         }
 
         void Update() {
@@ -89,9 +143,24 @@ namespace Voxel {
             }
 
             // Periodicamente agendamos descarte de chunks distantes
-            if (Time.time - _lastUnloadTime >= unloadInterval) {
+            var (_, _, interval) = GetParametrosDescarte();
+            if (Time.time - _lastUnloadTime >= interval) {
                 _lastUnloadTime = Time.time;
                 AgendarDescarte(_currentChunkCenter); // Usa o centro fixo
+            }
+            
+            // Força coleta de lixo periódica se houver chunks descartados
+            if (Time.time - _lastGCTime >= _gcInterval && _chunksDescartadosDesdeUltimoGC > 0) {
+                _lastGCTime = Time.time;
+                
+                // Log de monitoramento ANTES do GC
+                Debug.Log($"[VoxelWorld] Chunks Data: {_knownChunkData.Count}, " +
+                          $"Fila Descarte: {_filaDescarteDados.Count}, " +
+                          $"Visuais: {_chunkObjects.Count}, " +
+                          $"Descartados: {_chunksDescartadosDesdeUltimoGC}");
+                
+                System.GC.Collect();
+                _chunksDescartadosDesdeUltimoGC = 0;
             }
         }
         
@@ -108,11 +177,40 @@ namespace Voxel {
         private bool _descarteProcessando = false;
 
         private float _lastUnloadTime = 0f;
+        private float _lastGCTime = 0f;
+        private float _gcInterval = 5f; // Reduzido de 10s para 5s - Força GC mais frequentemente
+        private int _chunksDescartadosDesdeUltimoGC = 0;
+
+        /// <summary>
+        /// Calcula o raio em chunks, usando PreloadProfile se disponível, senão usa cálculo manual.
+        /// </summary>
+        private int GetRaioEmChunks() {
+            if (preloadProfile != null) {
+                return preloadProfile.CalcularRaioEmChunks(terrain.escalaVoxel);
+            }
+            
+            // Fallback: cálculo manual
+            int raioCalculado = Mathf.CeilToInt(raioPreload / (ChunkData.Largura * terrain.escalaVoxel));
+            return Mathf.Min(raioCalculado, maxChunkRadius);
+        }
+        
+        /// <summary>
+        /// Retorna os parâmetros de descarte, usando PreloadProfile se disponível.
+        /// </summary>
+        private (int retencaoRadius, int batchPerFrame, float interval) GetParametrosDescarte() {
+            if (preloadProfile != null) {
+                return (preloadProfile.dadosRetencaoRadius, 
+                        preloadProfile.dadosRetencaoBatchPerFrame, 
+                        preloadProfile.unloadInterval);
+            }
+            return (dadosRetencaoRadius, dadosRetencaoBatchPerFrame, unloadInterval);
+        }
 
         // AtualizarChunks: determina quais chunks precisam existir visualmente e enfileira
         // a criação para ser processada aos poucos (evita travamentos ao criar muitos objetos em um frame)
         void AtualizarChunks(Vector2Int centro) {
-            int raioEmChunks = Mathf.CeilToInt(raioPreload / (ChunkData.Largura * terrain.escalaVoxel));
+            int raioEmChunks = GetRaioEmChunks();
+            
             // Carrega apenas dentro do raio de preload
             for (int x = -raioEmChunks; x <= raioEmChunks; x++) {
                 for (int z = -raioEmChunks; z <= raioEmChunks; z++) {
@@ -151,10 +249,10 @@ namespace Voxel {
             // Garante que os dados do chunk existam
             ChunkData dados = terrain.GetGarantirChunk(p);
 
-            terrain.GetGarantirChunk(new Vector2Int(p.x - 1, p.y));
-            terrain.GetGarantirChunk(new Vector2Int(p.x + 1, p.y));
-            terrain.GetGarantirChunk(new Vector2Int(p.x, p.y - 1));
-            terrain.GetGarantirChunk(new Vector2Int(p.x, p.y + 1));
+            // REMOVIDO: Pré-carregamento dos 4 vizinhos
+            // Isso causava vazamento de memória pois os vizinhos não eram registrados
+            // em _knownChunkData e nunca eram descarregados
+            
             // Cancela qualquer descarte agendado para este chunk (evita remoção de dados que voltou a ser visível)
             CancelScheduledDiscard(p);
 
@@ -170,7 +268,12 @@ namespace Voxel {
             var mr = obj.GetComponent<MeshRenderer>();
             var mc = obj.GetComponent<MeshCollider>();
             mf.mesh = ChunkMeshGenerator.BuildMesh(terrain, dados, terrain.escalaVoxel);
-            mr.material = voxelMaterial;
+            // --- Propaga o material do TerrainWorld ---
+            if (terrain.voxelMaterial != null) {
+                mr.material = terrain.voxelMaterial;
+            } else {
+                Debug.LogWarning("VoxelWorld: Material do voxel não atribuído no TerrainWorld. Chunk ficará sem material.");
+            }
             mc.sharedMesh = mf.mesh;
 
             _chunkObjects.Add(p, obj);
@@ -193,8 +296,10 @@ namespace Voxel {
         // AgendarDescarte: calcula quais chunks estão fora do raio visual e do raio de retenção de dados,
         // remove visuais imediatamente e agenda dados para descarte em lote.
         void AgendarDescarte(Vector2Int centro) {
-            int raioEmChunks = Mathf.CeilToInt(raioPreload / (ChunkData.Largura * terrain.escalaVoxel));
+            int raioEmChunks = GetRaioEmChunks();
             int visualDiscard = raioEmChunks + 2; // Histerese: descarte só além do preload+2
+            
+            var (retencaoRadius, _, _) = GetParametrosDescarte();
 
             // 1) Remover visuais (GameObjects) que estão muito longe
             var visualsToRemove = new List<Vector2Int>();
@@ -212,7 +317,7 @@ namespace Voxel {
             // 2) Agendar remoção de dados para chunks que estão fora do raio de retenção
             foreach (var pos in _knownChunkData) {
                 float dist = Vector2Int.Distance(pos, centro);
-                if (dist > dadosRetencaoRadius) {
+                if (dist > retencaoRadius) {
                     if (!_dadosAgendadosDescarte.Contains(pos)) {
                         _dadosAgendadosDescarte.Add(pos);
                         _filaDescarteDados.Enqueue(pos);
@@ -254,23 +359,19 @@ namespace Voxel {
             _descarteProcessando = true;
 
             while (_filaDescarteDados.Count > 0) {
-                int batch = Mathf.Min(dadosRetencaoBatchPerFrame, _filaDescarteDados.Count);
+                var (_, batchPerFrame, _) = GetParametrosDescarte();
+                int batch = Mathf.Min(batchPerFrame, _filaDescarteDados.Count);
 
                 for (int i = 0; i < batch; i++) {
                     Vector2Int pos = _filaDescarteDados.Dequeue();
                     _dadosAgendadosDescarte.Remove(pos);
 
-                    // Se o visual reapareceu, cancela o descarte desse dado
-                    if (_chunkObjects.ContainsKey(pos)) {
-                        // ainda está visível, reter dados
-                        continue;
-                    }
-
-                    // Remove os dados do TerrainWorld (free RAM)
+                    // CORREÇÃO: Remove dados INCONDICIONALMENTE
+                    // Se o chunk voltou a ser visível, ele será re-carregado quando necessário
+                    // Isso evita o acúmulo infinito de dados em RAM
                     terrain.RemoveChunkData(pos);
                     _knownChunkData.Remove(pos);
-
-                    // Força uma pequena espera para distribuir a carga
+                    _chunksDescartadosDesdeUltimoGC++;
                 }
 
                 // Espera 1 frame entre batches para não travar
@@ -285,5 +386,26 @@ namespace Voxel {
         /// </summary>
         /// <returns>Dicionário de chunks visuais ativos</returns>
         public Dictionary<Vector2Int, GameObject> GetChunkObjects() { return _chunkObjects; }
+        
+        /// <summary>
+        /// Retorna estatísticas de uso de memória do VoxelWorld.
+        /// </summary>
+        public string GetMemoryStats() {
+            int chunksVisuais = _chunkObjects.Count;
+            int chunksDados = _knownChunkData.Count;
+            int poolSize = _chunkPool.Count;
+            int filaDescarte = _filaDescarteDados.Count;
+            int filaCriacao = _filaDeCriacao.Count;
+            
+            long memoryUsed = System.GC.GetTotalMemory(false) / (1024 * 1024); // MB
+            
+            return $"[VoxelWorld Memory Stats]\n" +
+                   $"Chunks Visuais: {chunksVisuais}\n" +
+                   $"Chunks Dados (RAM): {chunksDados}\n" +
+                   $"Pool Size: {poolSize}/{_poolMaxSize}\n" +
+                   $"Fila Descarte: {filaDescarte}\n" +
+                   $"Fila Criação: {filaCriacao}\n" +
+                   $"Memória Total: ~{memoryUsed} MB";
+        }
     }
 }
