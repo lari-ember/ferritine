@@ -3,24 +3,24 @@ using UnityEngine.InputSystem;
 
 namespace Voxel {
     /// <summary>
-    /// Controlador de interação com voxels usando o novo Input System.
+    /// [DEBUG/DESENVOLVIMENTO] Controlador de interação direta com voxels.
     /// 
-    /// Este componente gerencia:
+    /// ATENÇÃO: Este componente é para TESTES e DESENVOLVIMENTO apenas!
+    /// 
+    /// Na versão final do jogo:
+    /// - Jogadores NÃO destroem/colocam blocos diretamente
+    /// - Agentes de construção e máquinas modificam o terreno
+    /// - Use CityCursor para feedback visual estilo Cities: Skylines
+    /// 
+    /// Este componente gerencia (para debug):
     /// - Clique esquerdo: Destruir/minerar voxel
     /// - Clique direito: Colocar novo voxel adjacente
     /// - Preview: Mostra qual voxel será afetado
     /// 
-    /// SETUP:
-    /// 1. Adicione este componente a um GameObject (ex: Player ou Camera)
-    /// 2. Configure as referências no Inspector:
-    ///    - Arraste o TerrainWorld
-    ///    - Arraste a Camera principal
-    ///    - Configure as Input Actions (Click, SecondaryClick, MousePosition)
-    /// 3. Opcionalmente, configure um prefab de preview para feedback visual
-    /// 
-    /// IMPORTANTE: Certifique-se de que os chunks têm a Layer "Terrain" configurada
-    /// para que o Physics.Raycast funcione corretamente como fallback.
+    /// Para desabilitar, simplesmente desative o componente no Inspector
+    /// ou remova-o da cena.
     /// </summary>
+    [AddComponentMenu("Voxel/[DEBUG] Voxel Interaction Controller")]
     public class VoxelInteractionController : MonoBehaviour {
         
         [Header("Referências")]

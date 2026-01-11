@@ -1,0 +1,37 @@
+{
+  "meta": {
+    "generatedAt": "2025-12-26T14:48:17.432Z",
+    "app": "GeoForge",
+    "description": "Import this file into Unity/Unreal procedural generator script."
+  },
+  "config": {
+    "resolution": 2048,
+    "realWorldAreaKm2": 0.01,
+    "maxAltitudeMeters": 2900,
+    "seaLevel": 0.1,
+    "mixMode": "blend",
+    "resourcesEnabled": true,
+    "globalTemperature": 0,
+    "globalHumidity": 0,
+    "profile1": {
+      "scale": 3,
+      "octaves": 4,
+      "persistence": 0.4,
+      "lacunarity": 2,
+      "seed": 95.91517200773968,
+      "weight": 1,
+      "offsetX": 0,
+      "offsetY": 0
+    },
+    "profile2": {
+      "scale": 8,
+      "octaves": 5,
+      "persistence": 0.6,
+      "lacunarity": 2.5,
+      "seed": 750.1335596325528,
+      "weight": 0.8,
+      "offsetX": 100,
+      "offsetY": 100
+    }
+  }
+}
