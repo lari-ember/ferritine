@@ -2,9 +2,37 @@ using UnityEngine;
 using System.Collections.Generic;
 
 namespace Voxel {
+    /// <summary>
+    /// Gerenciador principal do mundo de voxels.
+    /// 
+    /// Responsabilidades:
+    /// - Carregamento/descarregamento dinâmico de chunks baseado na posição da câmera
+    /// - Pool de GameObjects para reaproveitamento e redução de GC
+    /// - Gerenciamento de memória com descarte progressivo de chunks distantes
+    /// - Integração com TerrainWorld para dados de altura
+    /// 
+    /// Arquitetura:
+    /// - _chunkObjects: chunks visuais ativos (GameObject com mesh)
+    /// - _knownChunkData: dados de voxel em memória (byte[,,])
+    /// - _chunkPool: pool de GameObjects inativos para reuso
+    /// 
+    /// Performance:
+    /// - Usa PreloadProfile para configuração baseada em qualidade
+    /// - Descarte progressivo evita picos de GC
+    /// - Pool de objetos reduz alocações
+    /// </summary>
     public class VoxelWorld : MonoBehaviour {
+        
+        #region Referências e Configuração
+        
+        [Header("Referências")]
+        [Tooltip("Fonte de dados de altura do terreno")]
         public TerrainWorld terrain;
+        
+        [Tooltip("Container pai para os chunks instanciados")]
         public Transform terrainHolder;
+        
+        [Tooltip("Material aplicado a todos os chunks")]
         public Material voxelMaterial;
         
         [Header("Configuração de Carregamento")]
@@ -15,36 +43,52 @@ namespace Voxel {
         public float raioPreload = 200f;
 
         [Header("Limites de Performance (Manual)")]
-        [Tooltip("Usados apenas se preloadProfile = null")]
-        // Quantos chunks manter como dados em RAM ao redor da câmera (em chunks)
-        public int dadosRetencaoRadius = 2; // Reduzido de 4 para 2 para liberar RAM mais rápido
-        // Quantos chunks de dados descartar por frame para evitar picos (aumentado para liberar RAM mais rápido)
-        public int dadosRetencaoBatchPerFrame = 32; // Aumentado de 16 para 32 para liberar RAM mais rápido
-        // Intervalo entre checagens de descarte (segundos)
+        [Tooltip("Raio de retenção de dados em chunks (RAM)")]
+        public int dadosRetencaoRadius = 2;
+        
+        [Tooltip("Chunks a descartar por frame (evita picos)")]
+        public int dadosRetencaoBatchPerFrame = 32;
+        
+        [Tooltip("Intervalo entre checagens de descarte (segundos)")]
         public float unloadInterval = 0.5f;
         
-        // Limite máximo de raio em chunks (evita explosão quando escalaVoxel diminui)
+        [Tooltip("Limite máximo de raio em chunks")]
         [Range(4, 64)] public int maxChunkRadius = 24;
-
+        
+        #endregion
+        
+        #region Estado Interno
+        
+        /// <summary>Chunks visuais ativos (posição → GameObject)</summary>
         private Dictionary<Vector2Int, GameObject> _chunkObjects = new Dictionary<Vector2Int, GameObject>();
+        
+        /// <summary>Referência à transform da câmera</summary>
         private Transform _cam;
 
-        // Controle para evitar spam de warnings
-        private bool _terrainLayerWarningShown = false;
+        /// <summary>Controle para evitar spam de warnings</summary>
+        private bool _terrainLayerWarningShown;
 
-        // Centro do chunk atualmente considerado para preload
+        /// <summary>Centro atual para cálculo de preload</summary>
         private Vector2Int _currentChunkCenter = new Vector2Int(int.MinValue, int.MinValue);
 
-        // Pool de GameObjects para chunks visuais
+        /// <summary>Pool de GameObjects inativos</summary>
         private Stack<GameObject> _chunkPool = new Stack<GameObject>();
-        private int _poolInitialSize = 32;
-        private int _poolMaxSize = 128; // Limite máximo do pool
+        
+        /// <summary>Tamanho inicial do pool</summary>
+        private const int PoolInitialSize = 32;
+        
+        /// <summary>Tamanho máximo do pool (evita uso excessivo de RAM)</summary>
+        private const int PoolMaxSize = 128;
+        
+        #endregion
 
+        #region Pool de Objetos
+        
         /// <summary>
         /// Inicializa o pool de objetos de chunk para reaproveitamento.
         /// </summary>
         private void InicializarPool() {
-            for (int i = 0; i < _poolInitialSize; i++) {
+            for (int i = 0; i < PoolInitialSize; i++) {
                 var go = CriarChunkGameObject();
                 go.SetActive(false);
                 _chunkPool.Push(go);
@@ -84,7 +128,7 @@ namespace Voxel {
             }
             
             // Se o pool já está no tamanho máximo, destrói o GameObject
-            if (_chunkPool.Count >= _poolMaxSize) {
+            if (_chunkPool.Count >= PoolMaxSize) {
                 Destroy(go);
                 return;
             }
@@ -104,6 +148,10 @@ namespace Voxel {
             go.AddComponent<MeshCollider>();
             return go;
         }
+        
+        #endregion
+
+        #region Lifecycle
 
         void Start() {
             // Safe assignment: Camera.main can be null in edit mode or tests
@@ -129,10 +177,10 @@ namespace Voxel {
             
             // Log de debug com informações do perfil
             if (preloadProfile != null) {
-                Debug.Log($"[VoxelWorld] Inicializado com PreloadProfile.\n{preloadProfile.GetDebugInfo(terrain.escalaVoxel)}\nPool Max: {_poolMaxSize}, GC Interval: {_gcInterval}s");
+                Debug.Log($"[VoxelWorld] Inicializado com PreloadProfile.\n{preloadProfile.GetDebugInfo(terrain.escalaVoxel)}\nPool Max: {PoolMaxSize}, GC Interval: {_gcInterval}s");
             } else {
                 int raio = GetRaioEmChunks();
-                Debug.Log($"[VoxelWorld] Inicializado (modo manual). Centro: {initialCenter}, Escala: {terrain.escalaVoxel}m, Raio: {raio} chunks\nPool Max: {_poolMaxSize}, GC Interval: {_gcInterval}s");
+                Debug.Log($"[VoxelWorld] Inicializado (modo manual). Centro: {initialCenter}, Escala: {terrain.escalaVoxel}m, Raio: {raio} chunks\nPool Max: {PoolMaxSize}, GC Interval: {_gcInterval}s");
             }
         }
 
@@ -297,7 +345,11 @@ namespace Voxel {
             }
         }
         
-        private bool _estaProcessando = false;
+        #endregion
+        
+        #region Estado de Processamento
+        
+        private bool _estaProcessando;
         private Queue<Vector2Int> _filaDeCriacao = new Queue<Vector2Int>();
 
         // Rastreia quais chunk data foram garantidos (criamos ou solicitados)
@@ -307,12 +359,16 @@ namespace Voxel {
         // Fila de descarte de dados (chunk positions) e controle de processamento
         private Queue<Vector2Int> _filaDescarteDados = new Queue<Vector2Int>();
         private HashSet<Vector2Int> _dadosAgendadosDescarte = new HashSet<Vector2Int>();
-        private bool _descarteProcessando = false;
+        private bool _descarteProcessando;
 
-        private float _lastUnloadTime = 0f;
-        private float _lastGCTime = 0f;
-        private float _gcInterval = 5f; // Reduzido de 10s para 5s - Força GC mais frequentemente
-        private int _chunksDescartadosDesdeUltimoGC = 0;
+        private float _lastUnloadTime;
+        private float _lastGCTime;
+        private float _gcInterval = 5f; // Força GC a cada 5 segundos
+        private int _chunksDescartadosDesdeUltimoGC;
+        
+        #endregion
+        
+        #region Gerenciamento de Chunks
 
         /// <summary>
         /// Calcula o raio em chunks, usando PreloadProfile se disponível, senão usa cálculo manual.
@@ -547,10 +603,12 @@ namespace Voxel {
             return $"[VoxelWorld Memory Stats]\n" +
                    $"Chunks Visuais: {chunksVisuais}\n" +
                    $"Chunks Dados (RAM): {chunksDados}\n" +
-                   $"Pool Size: {poolSize}/{_poolMaxSize}\n" +
+                   $"Pool Size: {poolSize}/{PoolMaxSize}\n" +
                    $"Fila Descarte: {filaDescarte}\n" +
                    $"Fila Criação: {filaCriacao}\n" +
                    $"Memória Total: ~{memoryUsed} MB";
         }
+        
+        #endregion
     }
 }

@@ -2,126 +2,155 @@ using UnityEngine;
 using System.Collections.Generic;
 
 namespace Voxel {
+    /// <summary>
+    /// Gerador de mesh para chunks de voxel.
+    /// 
+    /// Responsável por converter dados de voxel (ChunkData) em meshes renderizáveis.
+    /// Utiliza face culling para só desenhar faces visíveis (expostas ao ar).
+    /// 
+    /// Otimizações implementadas:
+    /// - Arrays estáticos para direções e vértices (evita GC)
+    /// - UV mapping via texture atlas 8x8
+    /// - Consulta cross-chunk para culling correto nas bordas
+    /// </summary>
     public static class ChunkMeshGenerator {
+        
+        #region Dados Estáticos (Evita Alocações)
+        
         /// <summary>
-        /// Gera a mesh do chunk sem greedy meshing: desenha todas as faces expostas de cada voxel.
+        /// Direções das 6 faces do cubo: X+, X-, Y+, Y-, Z+, Z-
         /// </summary>
+        private static readonly Vector3Int[] Directions = {
+            new Vector3Int(1, 0, 0),   // 0: X+ (direita)
+            new Vector3Int(-1, 0, 0),  // 1: X- (esquerda)
+            new Vector3Int(0, 1, 0),   // 2: Y+ (cima)
+            new Vector3Int(0, -1, 0),  // 3: Y- (baixo)
+            new Vector3Int(0, 0, 1),   // 4: Z+ (frente)
+            new Vector3Int(0, 0, -1)   // 5: Z- (trás)
+        };
+        
+        /// <summary>
+        /// Vértices para cada face do cubo (4 vértices por face).
+        /// Pré-calculados para evitar switch em runtime.
+        /// </summary>
+        private static readonly Vector3[][] FaceVertices = {
+            // Face X+ (direita)
+            new[] { new Vector3(1, 0, 0), new Vector3(1, 1, 0), new Vector3(1, 1, 1), new Vector3(1, 0, 1) },
+            // Face X- (esquerda)
+            new[] { new Vector3(0, 0, 1), new Vector3(0, 1, 1), new Vector3(0, 1, 0), new Vector3(0, 0, 0) },
+            // Face Y+ (cima)
+            new[] { new Vector3(0, 1, 1), new Vector3(1, 1, 1), new Vector3(1, 1, 0), new Vector3(0, 1, 0) },
+            // Face Y- (baixo)
+            new[] { new Vector3(0, 0, 0), new Vector3(1, 0, 0), new Vector3(1, 0, 1), new Vector3(0, 0, 1) },
+            // Face Z+ (frente)
+            new[] { new Vector3(0, 0, 1), new Vector3(1, 0, 1), new Vector3(1, 1, 1), new Vector3(0, 1, 1) },
+            // Face Z- (trás)
+            new[] { new Vector3(1, 0, 0), new Vector3(0, 0, 0), new Vector3(0, 1, 0), new Vector3(1, 1, 0) }
+        };
+        
+        /// <summary>
+        /// Configuração do texture atlas.
+        /// </summary>
+        private const int AtlasSize = 8;
+        private const float TileSize = 1.0f / AtlasSize;
+        private const float UVPadding = 0.001f; // Evita bleeding entre tiles
+        
+        #endregion
+        
+        /// <summary>
+        /// Gera a mesh do chunk renderizando todas as faces expostas.
+        /// Faces são consideradas expostas quando o voxel vizinho é ar (0).
+        /// </summary>
+        /// <param name="world">Referência ao TerrainWorld para consulta cross-chunk</param>
+        /// <param name="data">Dados do chunk a ser renderizado</param>
+        /// <param name="scale">Escala do voxel em metros</param>
+        /// <returns>Mesh pronta para renderização</returns>
         public static Mesh BuildMesh(TerrainWorld world, ChunkData data, float scale) {
-            List<Vector3> vertices = new List<Vector3>();
-            List<int> triangles = new List<int>();
-            List<Vector2> uvs = new List<Vector2>();
+            // Listas para construir a mesh
+            List<Vector3> vertices = new List<Vector3>(4096);  // Capacidade inicial estimada
+            List<int> triangles = new List<int>(6144);
+            List<Vector2> uvs = new List<Vector2>(4096);
 
             int w = ChunkData.Largura;
-            int h = data.Altura; // Usa altura dinâmica do chunk
+            int h = data.Altura;
             int d = ChunkData.Largura;
+            
+            // Posição global do chunk para consultas cross-chunk
+            int chunkGlobalX = data.pos.x * ChunkData.Largura;
+            int chunkGlobalZ = data.pos.y * ChunkData.Largura;
 
-            // Direções das 6 faces (X+, X-, Y+, Y-, Z+, Z-)
-            Vector3Int[] directions = new Vector3Int[] {
-                new Vector3Int(1, 0, 0), new Vector3Int(-1, 0, 0),
-                new Vector3Int(0, 1, 0), new Vector3Int(0, -1, 0),
-                new Vector3Int(0, 0, 1), new Vector3Int(0, 0, -1)
-            };
-
-            // Para cada voxel do chunk
+            // Itera sobre todos os voxels do chunk
             for (int x = 0; x < w; x++) {
                 for (int y = 0; y < h; y++) {
                     for (int z = 0; z < d; z++) {
-                        byte v = data.voxels[x, y, z];
-                        if (v == 0) continue; // Ar, não desenha
-                        Vector3Int pos = new Vector3Int(x, y, z);
-                        // Para cada face
+                        byte voxelType = data.voxels[x, y, z];
+                        if (voxelType == 0) continue; // Ar, pula
+                        
+                        // Verifica cada uma das 6 faces
                         for (int dir = 0; dir < 6; dir++) {
-                            Vector3Int offset = directions[dir];
-                            int nx = x + offset.x;
-                            int ny = y + offset.y;
-                            int nz = z + offset.z;
-                            bool faceExposta;
-                            
-                            // Checa se está dentro do chunk
-                            if (nx >= 0 && nx < w && ny >= 0 && ny < h && nz >= 0 && nz < d) {
-                                // Vizinho dentro do mesmo chunk
-                                faceExposta = (data.voxels[nx, ny, nz] == 0);
-                            } else {
-                                // Vizinho está em outro chunk ou fora dos limites Y
-                                // Consulta o TerrainWorld para culling entre chunks
-                                int gX = data.pos.x * ChunkData.Largura + x + offset.x;
-                                int gY = y + offset.y;
-                                int gZ = data.pos.y * ChunkData.Largura + z + offset.z;
-                                
-                                // GetVoxelAt retorna 0 (ar) se o chunk não existir ou coordenada inválida
-                                faceExposta = (world.GetVoxelAt(gX, gY, gZ) == 0);
-                            }
-                            
-                            if (faceExposta) {
-                                AddFace(vertices, triangles, uvs, pos, dir, scale, v);
+                            if (IsFaceExposed(data, world, x, y, z, dir, w, h, d, chunkGlobalX, chunkGlobalZ)) {
+                                AddFace(vertices, triangles, uvs, x, y, z, dir, scale, voxelType);
                             }
                         }
                     }
                 }
             }
 
+            // Cria e configura a mesh
             Mesh mesh = new Mesh();
-            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-            mesh.vertices = vertices.ToArray();
-            mesh.triangles = triangles.ToArray();
-            mesh.uv = uvs.ToArray();
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32; // Suporta meshes grandes
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(triangles, 0);
+            mesh.SetUVs(0, uvs);
             mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            
             return mesh;
         }
-
-        // Adiciona uma face do cubo na direção dir
-        // blockType: tipo do bloco para definir UV mapping
-        private static void AddFace(List<Vector3> vertices, List<int> triangles, List<Vector2> uvs, Vector3Int pos, int dir, float scale, byte blockType) {
-            // Posições dos vértices de um cubo unitário
-            Vector3[] faceVerts = new Vector3[4];
-            switch (dir) {
-                case 0: // X+
-                    faceVerts[0] = new Vector3(1, 0, 0);
-                    faceVerts[1] = new Vector3(1, 1, 0);
-                    faceVerts[2] = new Vector3(1, 1, 1);
-                    faceVerts[3] = new Vector3(1, 0, 1);
-                    break;
-                case 1: // X-
-                    faceVerts[0] = new Vector3(0, 0, 1);
-                    faceVerts[1] = new Vector3(0, 1, 1);
-                    faceVerts[2] = new Vector3(0, 1, 0);
-                    faceVerts[3] = new Vector3(0, 0, 0);
-                    break;
-                case 2: // Y+
-                    faceVerts[0] = new Vector3(0, 1, 1);
-                    faceVerts[1] = new Vector3(1, 1, 1);
-                    faceVerts[2] = new Vector3(1, 1, 0);
-                    faceVerts[3] = new Vector3(0, 1, 0);
-                    break;
-                case 3: // Y-
-                    faceVerts[0] = new Vector3(0, 0, 0);
-                    faceVerts[1] = new Vector3(1, 0, 0);
-                    faceVerts[2] = new Vector3(1, 0, 1);
-                    faceVerts[3] = new Vector3(0, 0, 1);
-                    break;
-                case 4: // Z+
-                    faceVerts[0] = new Vector3(0, 0, 1);
-                    faceVerts[1] = new Vector3(1, 0, 1);
-                    faceVerts[2] = new Vector3(1, 1, 1);
-                    faceVerts[3] = new Vector3(0, 1, 1);
-                    break;
-                case 5: // Z-
-                    faceVerts[0] = new Vector3(1, 0, 0);
-                    faceVerts[1] = new Vector3(0, 0, 0);
-                    faceVerts[2] = new Vector3(0, 1, 0);
-                    faceVerts[3] = new Vector3(1, 1, 0);
-                    break;
+        
+        /// <summary>
+        /// Verifica se uma face está exposta (vizinho é ar ou borda do chunk).
+        /// </summary>
+        private static bool IsFaceExposed(ChunkData data, TerrainWorld world, 
+            int x, int y, int z, int dir, int w, int h, int d, int chunkGlobalX, int chunkGlobalZ) {
+            
+            Vector3Int offset = Directions[dir];
+            int nx = x + offset.x;
+            int ny = y + offset.y;
+            int nz = z + offset.z;
+            
+            // Vizinho dentro do chunk?
+            if (nx >= 0 && nx < w && ny >= 0 && ny < h && nz >= 0 && nz < d) {
+                return data.voxels[nx, ny, nz] == 0;
             }
+            
+            // Vizinho fora do chunk - consulta TerrainWorld
+            int gX = chunkGlobalX + nx;
+            int gY = ny;
+            int gZ = chunkGlobalZ + nz;
+            
+            return world.GetVoxelAt(gX, gY, gZ) == 0;
+        }
+
+        /// <summary>
+        /// Adiciona uma face (quad) à mesh.
+        /// </summary>
+        private static void AddFace(List<Vector3> vertices, List<int> triangles, List<Vector2> uvs,
+            int x, int y, int z, int dir, float scale, byte blockType) {
+            
             int vCount = vertices.Count;
+            Vector3[] faceVerts = FaceVertices[dir];
+            Vector3 pos = new Vector3(x, y, z);
+            
+            // Adiciona os 4 vértices da face
             for (int i = 0; i < 4; i++) {
                 vertices.Add((pos + faceVerts[i]) * scale);
             }
             
-            // ==================== UV MAPPING POR BLOCKTYPE ====================
-            // Calcula UVs baseado em um Texture Atlas (grade de texturas)
-            // Exemplo: Atlas 8x8 = 64 texturas diferentes
+            // Adiciona UVs do texture atlas
             AddFaceUVs(uvs, blockType);
             
+            // Adiciona os 2 triângulos da face (quad)
             triangles.Add(vCount);
             triangles.Add(vCount + 1);
             triangles.Add(vCount + 2);
@@ -131,52 +160,31 @@ namespace Voxel {
         }
 
         /// <summary>
-        /// Calcula coordenadas UV para um bloco baseado em texture atlas.
-        /// Atlas configurado como grade 8x8 (64 texturas).
-        /// Cada BlockType mapeia para uma célula do atlas via índice sequencial.
+        /// Calcula e adiciona coordenadas UV para uma face baseado no texture atlas.
         /// 
-        /// Layout do Atlas (8x8):
-        ///   Linha 0: Ar, Grama, GramaDesgastada, Terra, CaminhoDeTerra, Argila, Areia, Cascalho
-        ///   Linha 1: Laterita, Lama, Turfa, Granito, Diorito, Andesito, Basalto, Gneiss
-        ///   Linha 2: Migmatito, Quartzito, Marmore, Arenito, Calcario, Xisto, Ardosia, Siltito
-        ///   Linha 3: Concreto, Asfalto, Paralelepipedo, CaminhoDePedra, Tijolo, Cimento, Piso, Madeira
-        ///   Linha 4: Agua, AguaRasa, Vegetacao, Musgo, Folhagem, Raiz, Neve, Gelo
-        ///   Linha 5: Rocha, Pedregulho, Minerio, Ferro, Cobre, Ouro, Carvao, Cristal
-        ///   Linha 6: Trilho, Ferrugem, Vidro, Metal, Ceramica, Plastico, Borracha, Tecido
-        ///   Linha 7: Reservado para expansão
+        /// O atlas é uma grade 8x8 (64 texturas).
+        /// BlockType mapeia diretamente para índice no atlas.
         /// </summary>
         private static void AddFaceUVs(List<Vector2> uvs, byte blockType) {
-            // Configuração do atlas: 8x8 texturas
-            const int atlasSize = 8;
-            const float tileSize = 1.0f / atlasSize;
+            // Calcula posição no atlas
+            int row = blockType / AtlasSize;
+            int col = blockType % AtlasSize;
             
-            // Padding para evitar bleeding entre tiles (ajuste conforme resolução do atlas)
-            // Para atlas 512x512 com tiles 64x64, use ~0.5 pixel = 0.001
-            // Para atlas 1024x1024 com tiles 128x128, use ~0.5 pixel = 0.0005
-            const float padding = 0.001f;
+            // UV base (canto inferior esquerdo)
+            float u = col * TileSize;
+            float v = row * TileSize;
             
-            // Mapeia blockType diretamente para posição no atlas (índices sequenciais 0-63)
-            int tileIndex = blockType;
-            int row = tileIndex / atlasSize;
-            int col = tileIndex % atlasSize;
+            // Aplica padding para evitar bleeding
+            float uMin = u + UVPadding;
+            float uMax = u + TileSize - UVPadding;
+            float vMin = v + UVPadding;
+            float vMax = v + TileSize - UVPadding;
             
-            // Calcula UV base (canto inferior esquerdo da textura)
-            // Unity usa Y=0 em baixo, então row 0 fica em v=0
-            float u = col * tileSize;
-            float v = row * tileSize;
-            
-            // Aplica padding para evitar bleeding nas bordas
-            float uMin = u + padding;
-            float uMax = u + tileSize - padding;
-            float vMin = v + padding;
-            float vMax = v + tileSize - padding;
-            
-            // Adiciona os 4 vértices da face (quad)
-            // Ordem deve corresponder à ordem dos vértices em AddFace
-            uvs.Add(new Vector2(uMin, vMin));  // 0: baixo-esquerdo
-            uvs.Add(new Vector2(uMin, vMax));  // 1: cima-esquerdo
-            uvs.Add(new Vector2(uMax, vMax));  // 2: cima-direito
-            uvs.Add(new Vector2(uMax, vMin));  // 3: baixo-direito
+            // 4 vértices do quad
+            uvs.Add(new Vector2(uMin, vMin));
+            uvs.Add(new Vector2(uMin, vMax));
+            uvs.Add(new Vector2(uMax, vMax));
+            uvs.Add(new Vector2(uMax, vMin));
         }
     }
 }
