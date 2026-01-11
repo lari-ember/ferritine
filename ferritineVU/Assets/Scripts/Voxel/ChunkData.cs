@@ -6,6 +6,11 @@ namespace Voxel {
         public int Altura { get; private set; }
         public Vector2Int pos;
         public byte[,,] voxels;
+        
+        /// <summary>
+        /// Indica se o chunk foi modificado e precisa ter sua mesh regenerada.
+        /// </summary>
+        public bool IsDirty;
 
         public ChunkData(Vector2Int p, int altura = 256) {
             pos = p;

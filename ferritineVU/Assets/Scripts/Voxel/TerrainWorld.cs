@@ -103,6 +103,55 @@ namespace Voxel {
             return (globalY < heightVoxels) ? (byte)1 : (byte)0;
         }
 
+        /// <summary>
+        /// Define o valor de um voxel em coordenadas GLOBAIS (mundo).
+        /// Cria o chunk se não existir. Notifica observadores da mudança.
+        /// </summary>
+        /// <param name="globalX">Coordenada X global</param>
+        /// <param name="globalY">Coordenada Y global (altura)</param>
+        /// <param name="globalZ">Coordenada Z global</param>
+        /// <param name="value">Novo valor do voxel (BlockType)</param>
+        /// <returns>True se a modificação foi bem-sucedida</returns>
+        public bool SetVoxelAt(int globalX, int globalY, int globalZ, byte value) {
+            // Calcula qual chunk contém esta coordenada
+            int chunkX = Mathf.FloorToInt((float)globalX / ChunkData.Largura);
+            int chunkZ = Mathf.FloorToInt((float)globalZ / ChunkData.Largura);
+            Vector2Int chunkPos = new Vector2Int(chunkX, chunkZ);
+            
+            // Garante que o chunk existe
+            ChunkData chunk = GetGarantirChunk(chunkPos);
+            
+            // Converte coordenada global para local do chunk
+            int localX = globalX - (chunkX * ChunkData.Largura);
+            int localZ = globalZ - (chunkZ * ChunkData.Largura);
+            
+            // Verifica limites
+            int maxY = Mathf.Min(AlturaMaximaVoxels, 512);
+            if (localX < 0 || localX >= ChunkData.Largura || 
+                globalY < 0 || globalY >= maxY || 
+                localZ < 0 || localZ >= ChunkData.Largura) {
+                Debug.LogWarning($"[TerrainWorld] SetVoxelAt: Coordenadas fora dos limites ({globalX}, {globalY}, {globalZ})");
+                return false;
+            }
+            
+            // Define o voxel
+            chunk.voxels[localX, globalY, localZ] = value;
+            
+            // Marca o chunk como modificado (para regenerar mesh)
+            chunk.IsDirty = true;
+            
+            // Notifica observers
+            OnVoxelChanged?.Invoke(new Vector3Int(globalX, globalY, globalZ), value);
+            
+            return true;
+        }
+        
+        /// <summary>
+        /// Evento disparado quando um voxel é modificado.
+        /// Útil para sistemas que precisam reagir a mudanças no terreno.
+        /// </summary>
+        public event System.Action<Vector3Int, byte> OnVoxelChanged;
+
         // Retorna a altura em metros numa posição (X, Z) em coordenadas de voxel
         // IMPORTANTE: Esta função interpola o heightmap quando o fator de densidade > 1
         // NOTA: Coordenadas negativas são tratadas como fora do mapa (retorna 0)

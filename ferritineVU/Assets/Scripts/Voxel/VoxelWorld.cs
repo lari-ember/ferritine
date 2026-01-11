@@ -29,6 +29,9 @@ namespace Voxel {
         private Dictionary<Vector2Int, GameObject> _chunkObjects = new Dictionary<Vector2Int, GameObject>();
         private Transform _cam;
 
+        // Controle para evitar spam de warnings
+        private bool _terrainLayerWarningShown = false;
+
         // Centro do chunk atualmente considerado para preload
         private Vector2Int _currentChunkCenter = new Vector2Int(int.MinValue, int.MinValue);
 
@@ -107,6 +110,11 @@ namespace Voxel {
             if (Camera.main != null) _cam = Camera.main.transform;
             InicializarPool();
             
+            // Subscreve ao evento de mudança de voxel para regenerar meshes
+            if (terrain != null) {
+                terrain.OnVoxelChanged += OnVoxelModificado;
+            }
+            
             // Força carregamento inicial de chunks ao redor da origem ou da câmera
             // Isso garante que haja terreno visível imediatamente
             Vector2Int initialCenter = new Vector2Int(0, 0);
@@ -141,6 +149,9 @@ namespace Voxel {
                 _currentChunkCenter = center;
                 AtualizarChunks(center);
             }
+            
+            // Verifica e regenera chunks com voxels modificados (IsDirty)
+            RegenerarChunksSujos();
 
             // Periodicamente agendamos descarte de chunks distantes
             var (_, _, interval) = GetParametrosDescarte();
@@ -161,6 +172,128 @@ namespace Voxel {
                 
                 System.GC.Collect();
                 _chunksDescartadosDesdeUltimoGC = 0;
+            }
+        }
+        
+        /// <summary>
+        /// Verifica todos os chunks visíveis e regenera a mesh dos que foram modificados.
+        /// Chamado a cada frame no Update.
+        /// </summary>
+        private void RegenerarChunksSujos() {
+            // Lista temporária para evitar modificar dicionário durante iteração
+            List<Vector2Int> chunksSujos = null;
+            
+            foreach (var kvp in _chunkObjects) {
+                Vector2Int pos = kvp.Key;
+                
+                // Busca os dados do chunk no TerrainWorld
+                // GetGarantirChunk retorna o chunk existente se já foi criado
+                if (_knownChunkData.Contains(pos)) {
+                    ChunkData dados = terrain.GetGarantirChunk(pos);
+                    if (dados != null && dados.IsDirty) {
+                        if (chunksSujos == null) {
+                            chunksSujos = new List<Vector2Int>();
+                        }
+                        chunksSujos.Add(pos);
+                    }
+                }
+            }
+            
+            // Regenera os chunks sujos
+            if (chunksSujos != null) {
+                foreach (var pos in chunksSujos) {
+                    RegenerarMeshChunk(pos);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Regenera a mesh de um chunk específico.
+        /// Chamado quando voxels são modificados via SetVoxelAt.
+        /// </summary>
+        private void RegenerarMeshChunk(Vector2Int pos) {
+            if (!_chunkObjects.ContainsKey(pos)) return;
+            
+            ChunkData dados = terrain.GetGarantirChunk(pos);
+            if (dados == null) return;
+            
+            GameObject obj = _chunkObjects[pos];
+            var mf = obj.GetComponent<MeshFilter>();
+            var mc = obj.GetComponent<MeshCollider>();
+            
+            // Destrói a mesh antiga para liberar memória
+            if (mf.sharedMesh != null) {
+                Destroy(mf.sharedMesh);
+            }
+            
+            // Gera nova mesh
+            Mesh novaMesh = ChunkMeshGenerator.BuildMesh(terrain, dados, terrain.escalaVoxel);
+            mf.mesh = novaMesh;
+            mc.sharedMesh = novaMesh;
+            
+            // Limpa a flag
+            dados.IsDirty = false;
+            
+            Debug.Log($"[VoxelWorld] Mesh do chunk {pos} regenerada");
+        }
+        
+        /// <summary>
+        /// Handler chamado quando um voxel é modificado no TerrainWorld.
+        /// Regenera imediatamente a mesh do chunk afetado.
+        /// </summary>
+        private void OnVoxelModificado(Vector3Int posicaoVoxel, byte novoValor) {
+            // Calcula qual chunk contém este voxel
+            int chunkX = Mathf.FloorToInt((float)posicaoVoxel.x / ChunkData.Largura);
+            int chunkZ = Mathf.FloorToInt((float)posicaoVoxel.z / ChunkData.Largura);
+            Vector2Int chunkPos = new Vector2Int(chunkX, chunkZ);
+            
+            // Regenera a mesh do chunk se ele estiver visível
+            if (_chunkObjects.ContainsKey(chunkPos)) {
+                RegenerarMeshChunk(chunkPos);
+            }
+            
+            // Verifica se o voxel está na borda do chunk (pode afetar chunks vizinhos)
+            int localX = posicaoVoxel.x - (chunkX * ChunkData.Largura);
+            int localZ = posicaoVoxel.z - (chunkZ * ChunkData.Largura);
+            
+            // Borda X- (primeiro voxel do chunk)
+            if (localX == 0) {
+                var vizinho = new Vector2Int(chunkX - 1, chunkZ);
+                if (_chunkObjects.ContainsKey(vizinho)) {
+                    var dadosVizinho = terrain.GetGarantirChunk(vizinho);
+                    if (dadosVizinho != null) dadosVizinho.IsDirty = true;
+                }
+            }
+            // Borda X+ (último voxel do chunk)
+            if (localX == ChunkData.Largura - 1) {
+                var vizinho = new Vector2Int(chunkX + 1, chunkZ);
+                if (_chunkObjects.ContainsKey(vizinho)) {
+                    var dadosVizinho = terrain.GetGarantirChunk(vizinho);
+                    if (dadosVizinho != null) dadosVizinho.IsDirty = true;
+                }
+            }
+            // Borda Z-
+            if (localZ == 0) {
+                var vizinho = new Vector2Int(chunkX, chunkZ - 1);
+                if (_chunkObjects.ContainsKey(vizinho)) {
+                    var dadosVizinho = terrain.GetGarantirChunk(vizinho);
+                    if (dadosVizinho != null) dadosVizinho.IsDirty = true;
+                }
+            }
+            // Borda Z+
+            if (localZ == ChunkData.Largura - 1) {
+                var vizinho = new Vector2Int(chunkX, chunkZ + 1);
+                if (_chunkObjects.ContainsKey(vizinho)) {
+                    var dadosVizinho = terrain.GetGarantirChunk(vizinho);
+                    if (dadosVizinho != null) dadosVizinho.IsDirty = true;
+                }
+            }
+        }
+        
+        void OnDestroy() {
+            // Desinscreve do evento
+            if (terrain != null) {
+                terrain.OnVoxelChanged -= OnVoxelModificado;
             }
         }
         
@@ -263,6 +396,18 @@ namespace Voxel {
             obj.name = $"Chunk_{p.x}_{p.y}";
             obj.transform.SetParent(terrainHolder);
             obj.transform.position = new Vector3(p.x * ChunkData.Largura * terrain.escalaVoxel, 0, p.y * ChunkData.Largura * terrain.escalaVoxel);
+
+            // Configura a layer "Terrain" para permitir raycasting com Physics
+            int terrainLayerIndex = LayerMask.NameToLayer("Terrain");
+            if (terrainLayerIndex != -1) {
+                obj.layer = terrainLayerIndex;
+            } else {
+                // Fallback: criar log apenas uma vez para evitar spam
+                if (!_terrainLayerWarningShown) {
+                    Debug.LogWarning("[VoxelWorld] Layer 'Terrain' não encontrada. Crie-a em Edit > Project Settings > Tags and Layers para habilitar raycasting de voxels via Physics.");
+                    _terrainLayerWarningShown = true;
+                }
+            }
 
             var mf = obj.GetComponent<MeshFilter>();
             var mr = obj.GetComponent<MeshRenderer>();
