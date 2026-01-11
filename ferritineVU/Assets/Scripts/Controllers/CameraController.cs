@@ -62,7 +62,7 @@ public class CameraController : MonoBehaviour
     #region Zoom Settings
     [Header("Zoom Settings")]
     [Tooltip("Speed of camera zoom (Mouse wheel)")]
-    public float zoomSpeed = 10f;
+    public float zoomSpeed = 5f;
     
     [Tooltip("Minimum camera height")]
     public float minHeight = 5f;
@@ -72,6 +72,14 @@ public class CameraController : MonoBehaviour
     
     [Tooltip("Height adjust speed (+/- keys)")]
     public float heightAdjustSpeed = 15f;
+    
+    [Tooltip("Suavização do zoom (0 = instantâneo, maior = mais suave)")]
+    [Range(0.01f, 0.5f)]
+    public float zoomSmoothing = 0.15f;
+    
+    [Tooltip("Multiplicador de sensibilidade do scroll")]
+    [Range(0.1f, 2f)]
+    public float zoomSensitivity = 0.5f;
     #endregion
 
     #region Edge Scrolling
@@ -98,6 +106,33 @@ public class CameraController : MonoBehaviour
     public LayerMask collisionLayer;
     public float collisionBuffer = 2f;
     public bool enableTerrainCollision = true;
+    
+    [Tooltip("Usa raycast para detectar altura do terreno voxel")]
+    public bool useVoxelTerrainCollision = true;
+    
+    [Tooltip("Layer do terreno voxel para colisão")]
+    public LayerMask voxelTerrainLayer;
+    #endregion
+
+    #region First Person Settings
+    [Header("First Person Mode (V key)")]
+    [Tooltip("Altura dos olhos em primeira pessoa")]
+    public float fpsEyeHeight = 1.7f;
+    
+    [Tooltip("Velocidade de movimento em FPS")]
+    public float fpsMovementSpeed = 5f;
+    
+    [Tooltip("Sensibilidade do mouse em FPS")]
+    public float fpsSensitivity = 2f;
+    
+    [Tooltip("Limite de pitch em FPS (olhar para cima/baixo)")]
+    public float fpsMaxPitch = 85f;
+    
+    [Tooltip("Colisão com paredes em FPS")]
+    public bool fpsEnableWallCollision = true;
+    
+    [Tooltip("Raio do collider em FPS")]
+    public float fpsCollisionRadius = 0.3f;
     #endregion
 
     #region Follow Settings
@@ -145,6 +180,10 @@ public class CameraController : MonoBehaviour
     private float currentYaw;
     private float currentPitch;
     
+    // Zoom suave
+    private float targetZoomDistance;
+    private float currentZoomVelocity;
+    
     // Follow mode
     private bool isFollowing = false;
     private Transform followTarget;
@@ -165,6 +204,13 @@ public class CameraController : MonoBehaviour
     // Pan
     private bool isPanning = false;
     private Vector2 lastMousePosition;
+    
+    // First Person mode
+    private bool isFirstPerson = false;
+    private Vector3 fpsReturnPosition;
+    private Quaternion fpsReturnRotation;
+    private float fpsPitch;
+    private float fpsYaw;
     
     // Bookmarks
     private Dictionary<int, CameraBookmark> bookmarks = new Dictionary<int, CameraBookmark>();
@@ -363,7 +409,7 @@ public class CameraController : MonoBehaviour
         }
         
         // Camera movement (always works)
-        if (!isFollowing && !isPreviewing)
+        if (!isFollowing && !isPreviewing && !isFirstPerson)
         {
             HandleMovement();
             HandleRotation();
@@ -376,6 +422,18 @@ public class CameraController : MonoBehaviour
             {
                 HandleEdgeScrolling();
             }
+        }
+        
+        // First Person mode
+        if (isFirstPerson)
+        {
+            UpdateFirstPersonMode();
+        }
+        
+        // Toggle First Person with V
+        if (Input.GetKeyDown(KeyCode.V))
+        {
+            ToggleFirstPerson();
         }
         
         // Bookmarks
@@ -563,10 +621,34 @@ public class CameraController : MonoBehaviour
             scroll = Input.mouseScrollDelta.y * 120f; // Old system returns smaller values
         }
         
-        if (Mathf.Abs(scroll) < 0.01f) return;
+        // Acumular input de zoom no target
+        if (Mathf.Abs(scroll) > 0.01f)
+        {
+            // Aplicar sensibilidade reduzida para movimento mais sutil
+            float zoomDelta = scroll * zoomSpeed * zoomSensitivity * 0.01f;
+            targetZoomDistance += zoomDelta;
+        }
         
-        Vector3 zoomDir = transform.forward * scroll * zoomSpeed * 0.1f;
-        transform.position += zoomDir;
+        // Interpolar suavemente para o target
+        if (Mathf.Abs(targetZoomDistance) > 0.001f)
+        {
+            // Calcular quanto mover este frame
+            float smoothedZoom = Mathf.SmoothDamp(0f, targetZoomDistance, ref currentZoomVelocity, zoomSmoothing, Mathf.Infinity, Time.unscaledDeltaTime);
+            
+            // Aplicar movimento na direção forward
+            Vector3 zoomMove = transform.forward * smoothedZoom;
+            transform.position += zoomMove;
+            
+            // Reduzir o target pelo que já foi aplicado
+            targetZoomDistance -= smoothedZoom;
+            
+            // Reset quando muito pequeno para evitar drift
+            if (Mathf.Abs(targetZoomDistance) < 0.001f)
+            {
+                targetZoomDistance = 0f;
+                currentZoomVelocity = 0f;
+            }
+        }
     }
     
     void HandleHeight()
@@ -735,13 +817,28 @@ public class CameraController : MonoBehaviour
     
     void EnforceHeightLimits()
     {
+        // Em modo FPS, a altura é controlada pelo modo FPS
+        if (isFirstPerson) return;
+        
         Vector3 pos = transform.position;
         
         // Get terrain height
         float terrainHeight = 0f;
+        
+        // Método 1: Unity Terrain (se existir)
         if (enableTerrainCollision && Terrain.activeTerrain != null)
         {
             terrainHeight = Terrain.activeTerrain.SampleHeight(pos) + Terrain.activeTerrain.transform.position.y;
+        }
+        
+        // Método 2: Voxel Terrain via Raycast (prioridade)
+        if (useVoxelTerrainCollision)
+        {
+            float voxelHeight = GetVoxelTerrainHeight(pos);
+            if (voxelHeight > terrainHeight)
+            {
+                terrainHeight = voxelHeight;
+            }
         }
         
         float minAllowed = Mathf.Max(minHeight, terrainHeight + collisionBuffer);
@@ -756,6 +853,25 @@ public class CameraController : MonoBehaviour
             pos.y = maxHeight;
             transform.position = pos;
         }
+    }
+    
+    /// <summary>
+    /// Obtém a altura do terreno de voxels usando raycast para baixo.
+    /// </summary>
+    float GetVoxelTerrainHeight(Vector3 position)
+    {
+        // Raycast de cima para baixo para encontrar o terreno
+        Vector3 rayOrigin = new Vector3(position.x, position.y + 100f, position.z);
+        
+        // Usa voxelTerrainLayer se configurada, senão usa collisionLayer
+        LayerMask layerToUse = voxelTerrainLayer.value != 0 ? voxelTerrainLayer : collisionLayer;
+        
+        if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, 500f, layerToUse))
+        {
+            return hit.point.y;
+        }
+        
+        return 0f;
     }
     #endregion
 
@@ -1044,6 +1160,228 @@ public class CameraController : MonoBehaviour
     {
         enableEdgeScrolling = value;
     }
+    #endregion
+
+    #region First Person Mode
+    /// <summary>
+    /// Alterna entre modo normal e primeira pessoa.
+    /// </summary>
+    public void ToggleFirstPerson()
+    {
+        if (isFirstPerson)
+        {
+            ExitFirstPerson();
+        }
+        else
+        {
+            EnterFirstPerson();
+        }
+    }
+    
+    /// <summary>
+    /// Entra no modo primeira pessoa na posição atual.
+    /// </summary>
+    public void EnterFirstPerson()
+    {
+        if (isFirstPerson) return;
+        
+        // Salvar posição para retornar
+        fpsReturnPosition = transform.position;
+        fpsReturnRotation = transform.rotation;
+        
+        // Parar outros modos
+        StopFollowing();
+        StopPreview();
+        StopOrbiting();
+        
+        // Calcular posição no chão
+        Vector3 groundPos = transform.position;
+        float terrainHeight = GetVoxelTerrainHeight(groundPos);
+        groundPos.y = terrainHeight + fpsEyeHeight;
+        
+        transform.position = groundPos;
+        
+        // Configurar rotação
+        fpsYaw = transform.eulerAngles.y;
+        fpsPitch = 0f; // Olhando para frente
+        transform.rotation = Quaternion.Euler(fpsPitch, fpsYaw, 0f);
+        
+        // Travar cursor
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+        
+        isFirstPerson = true;
+        currentMode = CameraMode.FirstPerson;
+        OnCameraModeChanged?.Invoke(currentMode);
+        
+        Debug.Log("[CameraController] Entered First Person mode (V to exit)");
+    }
+    
+    /// <summary>
+    /// Entra no modo primeira pessoa em uma posição específica.
+    /// </summary>
+    public void EnterFirstPersonAt(Vector3 worldPosition)
+    {
+        fpsReturnPosition = transform.position;
+        fpsReturnRotation = transform.rotation;
+        
+        StopFollowing();
+        StopPreview();
+        StopOrbiting();
+        
+        float terrainHeight = GetVoxelTerrainHeight(worldPosition);
+        Vector3 fpsPosition = new Vector3(worldPosition.x, terrainHeight + fpsEyeHeight, worldPosition.z);
+        
+        transform.position = fpsPosition;
+        fpsYaw = transform.eulerAngles.y;
+        fpsPitch = 0f;
+        transform.rotation = Quaternion.Euler(fpsPitch, fpsYaw, 0f);
+        
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+        
+        isFirstPerson = true;
+        currentMode = CameraMode.FirstPerson;
+        OnCameraModeChanged?.Invoke(currentMode);
+        
+        Debug.Log($"[CameraController] Entered First Person at {fpsPosition:F1}");
+    }
+    
+    /// <summary>
+    /// Sai do modo primeira pessoa e retorna à posição anterior.
+    /// </summary>
+    public void ExitFirstPerson()
+    {
+        if (!isFirstPerson) return;
+        
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        
+        isFirstPerson = false;
+        currentMode = CameraMode.Free;
+        OnCameraModeChanged?.Invoke(currentMode);
+        
+        // Retornar suavemente
+        StartCoroutine(TransitionFromFirstPerson());
+        
+        Debug.Log("[CameraController] Exited First Person mode");
+    }
+    
+    System.Collections.IEnumerator TransitionFromFirstPerson()
+    {
+        float duration = 0.5f;
+        float elapsed = 0f;
+        Vector3 startPos = transform.position;
+        Quaternion startRot = transform.rotation;
+        
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.SmoothStep(0, 1, elapsed / duration);
+            
+            transform.position = Vector3.Lerp(startPos, fpsReturnPosition, t);
+            transform.rotation = Quaternion.Slerp(startRot, fpsReturnRotation, t);
+            
+            yield return null;
+        }
+        
+        transform.position = fpsReturnPosition;
+        transform.rotation = fpsReturnRotation;
+        currentYaw = fpsReturnRotation.eulerAngles.y;
+        currentPitch = fpsReturnRotation.eulerAngles.x;
+    }
+    
+    /// <summary>
+    /// Atualiza o modo primeira pessoa (chamado no Update).
+    /// </summary>
+    void UpdateFirstPersonMode()
+    {
+        // ESC para sair
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            ExitFirstPerson();
+            return;
+        }
+        
+        // Rotação com mouse
+        float mouseX = Input.GetAxis("Mouse X") * fpsSensitivity;
+        float mouseY = Input.GetAxis("Mouse Y") * fpsSensitivity;
+        
+        fpsYaw += mouseX;
+        fpsPitch -= mouseY;
+        fpsPitch = Mathf.Clamp(fpsPitch, -fpsMaxPitch, fpsMaxPitch);
+        
+        transform.rotation = Quaternion.Euler(fpsPitch, fpsYaw, 0f);
+        
+        // Movimento WASD
+        float horizontal = 0f, vertical = 0f;
+        if (Input.GetKey(KeyCode.W)) vertical = 1f;
+        if (Input.GetKey(KeyCode.S)) vertical = -1f;
+        if (Input.GetKey(KeyCode.A)) horizontal = -1f;
+        if (Input.GetKey(KeyCode.D)) horizontal = 1f;
+        
+        if (Mathf.Abs(horizontal) > 0.01f || Mathf.Abs(vertical) > 0.01f)
+        {
+            // Sprint
+            bool sprinting = Input.GetKey(KeyCode.LeftShift);
+            float speed = fpsMovementSpeed * (sprinting ? sprintMultiplier : 1f);
+            
+            // Direção baseada na rotação (apenas yaw, não pitch)
+            Vector3 forward = Quaternion.Euler(0, fpsYaw, 0) * Vector3.forward;
+            Vector3 right = Quaternion.Euler(0, fpsYaw, 0) * Vector3.right;
+            
+            Vector3 moveDir = (forward * vertical + right * horizontal).normalized;
+            Vector3 targetPos = transform.position + moveDir * speed * Time.deltaTime;
+            
+            // Colisão com paredes
+            if (fpsEnableWallCollision)
+            {
+                targetPos = CheckFPSWallCollision(transform.position, targetPos);
+            }
+            
+            // Manter altura do terreno
+            float terrainHeight = GetVoxelTerrainHeight(targetPos);
+            targetPos.y = terrainHeight + fpsEyeHeight;
+            
+            transform.position = targetPos;
+        }
+        else
+        {
+            // Mesmo parado, ajustar altura ao terreno
+            Vector3 pos = transform.position;
+            float terrainHeight = GetVoxelTerrainHeight(pos);
+            pos.y = Mathf.Lerp(pos.y, terrainHeight + fpsEyeHeight, Time.deltaTime * 10f);
+            transform.position = pos;
+        }
+    }
+    
+    /// <summary>
+    /// Verifica colisão com paredes em modo FPS.
+    /// </summary>
+    Vector3 CheckFPSWallCollision(Vector3 from, Vector3 to)
+    {
+        Vector3 direction = to - from;
+        float distance = direction.magnitude;
+        
+        if (distance < 0.001f) return to;
+        
+        // SphereCast na direção do movimento
+        if (Physics.SphereCast(from, fpsCollisionRadius, direction.normalized, out RaycastHit hit, distance, collisionLayer))
+        {
+            // Parar antes da parede
+            float safeDistance = hit.distance - 0.1f;
+            if (safeDistance < 0) safeDistance = 0;
+            
+            return from + direction.normalized * safeDistance;
+        }
+        
+        return to;
+    }
+    
+    /// <summary>
+    /// Retorna se está em modo primeira pessoa.
+    /// </summary>
+    public bool IsFirstPerson => isFirstPerson;
     #endregion
 
     #region Cleanup
