@@ -1476,6 +1476,20 @@ Transform:
   - {fileID: 1268409430}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &807082997
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc1515ab76e54f068e2f2207940fab32, type: 3}
+  m_Name: Player/Click
+  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.InputActionReference
+  m_Asset: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_ActionId: a3d17635-1dbf-409d-9e43-ac0adf39b102
 --- !u!1 &833517774
 GameObject:
   m_ObjectHideFlags: 0
@@ -1529,7 +1543,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Systems.TimeManager
   cycleLength: 720
-  startTimeOfDay: 6
+  startTimeOfDay: 2
   speedMultipliers:
   - 1
   - 2
@@ -1793,6 +1807,8 @@ GameObject:
   - component: {fileID: 1005049084}
   - component: {fileID: 1005049085}
   - component: {fileID: 1005049086}
+  - component: {fileID: 1005049087}
+  - component: {fileID: 1005049088}
   m_Layer: 3
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -1868,7 +1884,7 @@ Transform:
   m_GameObject: {fileID: 1005049080}
   serializedVersion: 2
   m_LocalRotation: {x: 0.095845714, y: 0, z: 0, w: 0.99539626}
-  m_LocalPosition: {x: 0, y: 40, z: 0}
+  m_LocalPosition: {x: 0, y: 42, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1934,10 +1950,10 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   selectionPinPrefab: {fileID: 8209387655246770484, guid: f3fb339bbbd7e48328d331946350d25d, type: 3}
-  movementSpeed: 200
+  movementSpeed: 100
   sprintMultiplier: 2.5
   movementSmoothing: 0.2
-  rotationSpeed: 90
+  rotationSpeed: 45
   pitchSpeed: 45
   minPitch: 10
   maxPitch: 80
@@ -1945,6 +1961,8 @@ MonoBehaviour:
   minHeight: 5
   maxHeight: 200
   heightAdjustSpeed: 15
+  zoomSmoothing: 0.15
+  zoomSensitivity: 0.5
   enableEdgeScrolling: 0
   edgeScrollBorder: 20
   edgeScrollSpeed: 1
@@ -1957,6 +1975,16 @@ MonoBehaviour:
     m_Bits: 4294967295
   collisionBuffer: 2
   enableTerrainCollision: 1
+  useVoxelTerrainCollision: 1
+  voxelTerrainLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  fpsEyeHeight: 1.7
+  fpsMovementSpeed: 5
+  fpsSensitivity: 2
+  fpsMaxPitch: 85
+  fpsEnableWallCollision: 1
+  fpsCollisionRadius: 0.3
   followSmoothTime: 0.5
   followOffset: {x: 0, y: 10, z: -10}
   followRotationSpeed: 50
@@ -2086,7 +2114,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1005049080}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2075a72d30e64fe8a2a0e4d269f32472, type: 3}
   m_Name: 
@@ -2105,6 +2133,59 @@ MonoBehaviour:
   continuousAutoFocus: 1
   focusSmoothTime: 0.3
   postProcessVolume: {fileID: 894723153}
+--- !u!114 &1005049087
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1005049080}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 678e71d4e31a47bcaef2e818c6cc361f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Voxel.VoxelInteractionController
+  terrainWorld: {fileID: 1320172704}
+  mainCamera: {fileID: 1005049082}
+  clickAction: {fileID: 807082997}
+  secondaryClickAction: {fileID: 0}
+  mousePositionAction: {fileID: 1315380907}
+  maxRaycastDistance: 100
+  terrainLayerMask:
+    serializedVersion: 2
+    m_Bits: 64
+  blockToPlace: 3
+  useVoxelRaycast: 1
+  previewPrefab: {fileID: 0}
+  destroyPreviewColor: {r: 1, g: 0.3, b: 0.3, a: 0.5}
+  placePreviewColor: {r: 0.3, g: 1, b: 0.3, a: 0.5}
+--- !u!114 &1005049088
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1005049080}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a3b57f12a2d4258a7937a9dd292dcc2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Controllers.CityCursor
+  mainCamera: {fileID: 1005049082}
+  terrainWorld: {fileID: 1320172704}
+  cameraController: {fileID: 0}
+  lightIntensity: 3
+  lightRange: 8
+  lightSpotAngle: 60
+  normalColor: {r: 1, g: 0.95, b: 0.8, a: 1}
+  hoverColor: {r: 1, g: 0.8, b: 0.3, a: 1}
+  maxRaycastDistance: 100
+  fpsInteractionDistance: 1
+  crosshairColor: {r: 1, g: 1, b: 1, a: 1}
+  crosshairSize: 20
+  crosshairThickness: 2
+  crosshairGap: 4
+  showDebugLogs: 0
 --- !u!1 &1012835290
 GameObject:
   m_ObjectHideFlags: 0
@@ -2784,6 +2865,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1561920175}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1315380907
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc1515ab76e54f068e2f2207940fab32, type: 3}
+  m_Name: Player/MousePosition
+  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.InputActionReference
+  m_Asset: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_ActionId: d36bd390-5443-4719-9248-3cb4077e2165
 --- !u!1 &1320172702
 GameObject:
   m_ObjectHideFlags: 0
