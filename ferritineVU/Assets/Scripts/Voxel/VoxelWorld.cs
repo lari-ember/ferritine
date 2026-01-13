@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Voxel.GreedyMeshing;
 
 namespace Voxel {
     /// <summary>
@@ -54,6 +55,13 @@ namespace Voxel {
         
         [Tooltip("Limite máximo de raio em chunks")]
         [Range(4, 64)] public int maxChunkRadius = 24;
+        
+        [Header("Otimização de Mesh")]
+        [Tooltip("Usar Greedy Meshing para otimização de malha (reduz triângulos em 50-80%)")]
+        public bool useGreedyMeshing = true;
+        
+        [Tooltip("Mostrar estatísticas de otimização no console")]
+        public bool showMeshStats = false;
         
         #endregion
         
@@ -274,15 +282,29 @@ namespace Voxel {
                 Destroy(mf.sharedMesh);
             }
             
-            // Gera nova mesh
-            Mesh novaMesh = ChunkMeshGenerator.BuildMesh(terrain, dados, terrain.escalaVoxel);
+            // Gera nova mesh (padrão ou greedy)
+            Mesh novaMesh;
+            if (useGreedyMeshing) {
+                if (showMeshStats) {
+                    var (mesh, stats) = ChunkMeshGeneratorGreedy.BuildMeshWithStats(terrain, dados, terrain.escalaVoxel);
+                    novaMesh = mesh;
+                    Debug.Log($"[VoxelWorld] Greedy Mesh {pos}: {stats}");
+                }
+                else {
+                    novaMesh = ChunkMeshGeneratorGreedy.BuildMesh(terrain, dados, terrain.escalaVoxel);
+                }
+            }
+            else {
+                novaMesh = ChunkMeshGenerator.BuildMesh(terrain, dados, terrain.escalaVoxel);
+            }
+            
             mf.mesh = novaMesh;
             mc.sharedMesh = novaMesh;
             
             // Limpa a flag
             dados.IsDirty = false;
             
-            Debug.Log($"[VoxelWorld] Mesh do chunk {pos} regenerada");
+            Debug.Log($"[VoxelWorld] Mesh do chunk {pos} regenerada" + (useGreedyMeshing ? " (Greedy)" : ""));
         }
         
         /// <summary>
@@ -468,7 +490,22 @@ namespace Voxel {
             var mf = obj.GetComponent<MeshFilter>();
             var mr = obj.GetComponent<MeshRenderer>();
             var mc = obj.GetComponent<MeshCollider>();
-            mf.mesh = ChunkMeshGenerator.BuildMesh(terrain, dados, terrain.escalaVoxel);
+            
+            // Gera mesh (padrão ou greedy)
+            if (useGreedyMeshing) {
+                if (showMeshStats) {
+                    var (mesh, stats) = ChunkMeshGeneratorGreedy.BuildMeshWithStats(terrain, dados, terrain.escalaVoxel);
+                    mf.mesh = mesh;
+                    Debug.Log($"[VoxelWorld] Greedy Mesh {p}: {stats}");
+                }
+                else {
+                    mf.mesh = ChunkMeshGeneratorGreedy.BuildMesh(terrain, dados, terrain.escalaVoxel);
+                }
+            }
+            else {
+                mf.mesh = ChunkMeshGenerator.BuildMesh(terrain, dados, terrain.escalaVoxel);
+            }
+            
             // --- Propaga o material do TerrainWorld ---
             if (terrain.voxelMaterial != null) {
                 mr.material = terrain.voxelMaterial;

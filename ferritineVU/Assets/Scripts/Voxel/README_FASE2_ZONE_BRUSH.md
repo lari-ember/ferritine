@@ -133,6 +133,40 @@ O HashSet garante unicidade: mesmo chunk tocado 10 vezes = adicionado 1 vez.
 
 ## 🔗 Como Usar
 
+### Onde Adicionar ZoneBrush + ZoneBrushUI?
+
+Recomenda-se adicionar estes componentes a um **GameObject dedicado** na hierarquia:
+
+```
+📂 Hierarquia Recomendada:
+├── GameManager (ou Main)
+│   ├── CityLayer           ← Autoridade de zoneamento
+│   └── ZoneBrushController ← CRIE ESTE OBJETO!
+│       └── Componentes:
+│           ├── ZoneBrush
+│           └── ZoneBrushUI
+├── VoxelWorld
+│   └── TerrainHolder (chunks)
+└── Main Camera
+```
+
+**Passo a Passo:**
+
+1. Crie um GameObject vazio: `GameObject > Create Empty`
+2. Renomeie para "ZoneBrushController"
+3. Posicione como filho do GameManager (opcional, mas organizado)
+4. Adicione os componentes:
+   - `Add Component > Voxel > Zone Brush`
+   - `Add Component > Voxel > Zone Brush UI`
+5. Configure as referências no Inspector:
+   - **ZoneBrush**:
+     - CityLayer → arraste o objeto com CityLayer
+     - TerrainWorld → arraste o TerrainWorld
+     - VoxelWorld → arraste o VoxelWorld
+     - MainCamera → arraste a Main Camera (ou deixe vazio para auto-detectar)
+   - **ZoneBrushUI**:
+     - ZoneBrush → será preenchido automaticamente se estiver no mesmo objeto
+
 ### No Unity:
 
 1. Adicione o componente `ZoneBrush` a um GameObject (ex: GameManager)
