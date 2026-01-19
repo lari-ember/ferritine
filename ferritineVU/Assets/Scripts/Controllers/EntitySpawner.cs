@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using API.Models;
 
 public class EntitySpawner : MonoBehaviour
 {

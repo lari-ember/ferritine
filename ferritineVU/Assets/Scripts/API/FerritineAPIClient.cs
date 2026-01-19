@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 using System.Collections;
 using System;
+using API.Models;
 
 public class FerritineAPIClient : MonoBehaviour
 {

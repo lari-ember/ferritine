@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using Entities;
 using Utils;
+using API.Models;
 
 namespace Controllers
 {

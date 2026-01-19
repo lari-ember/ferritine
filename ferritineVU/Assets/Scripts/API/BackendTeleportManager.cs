@@ -21,7 +21,7 @@ public class BackendTeleportManager : MonoBehaviour
     
     [Header("Teleport Settings")]
     // Reserved for future use (suppress CS0414 warning)
-    [SerializeField] private float teleportDuration = 0.5f; // Used for future teleport animation features
+    [SerializeField, System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Reserved for future teleport animation features")] private float teleportDuration = 0.5f;
     
     [Header("Events")]
     public Action<bool, string> OnTeleportCompleted; // (success, message)
@@ -65,7 +65,7 @@ public class BackendTeleportManager : MonoBehaviour
     /// <param name="locationId">UUID do destino</param>
     /// <param name="onComplete">Callback quando a operação terminar (success, message)</param>
     public void TeleportAgent(string agentId, string locationType, string locationId, 
-                              System.Action<bool, string> onComplete = null)
+                              Action<bool, string> onComplete = null)
     {
         if (string.IsNullOrEmpty(agentId) || string.IsNullOrEmpty(locationId))
         {
@@ -81,15 +81,15 @@ public class BackendTeleportManager : MonoBehaviour
     /// Corrotina que executa o teleporte.
     /// </summary>
     IEnumerator TeleportAgentCoroutine(string agentId, string locationType, string locationId,
-                                       System.Action<bool, string> onComplete)
+                                       Action<bool, string> onComplete)
     {
         string url = $"{apiBaseUrl}/api/agents/{agentId}/teleport";
         
         // Criar request body
         TeleportRequest request = new TeleportRequest
         {
-            location_type = locationType,
-            location_id = locationId
+            locationType = locationType,
+            locationID = locationId
         };
         
         string json = JsonUtility.ToJson(request);
@@ -107,14 +107,13 @@ public class BackendTeleportManager : MonoBehaviour
             {
                 try
                 {
-                    string responseText = webRequest.downloadHandler.text;
-                    TeleportResponse response = JsonUtility.FromJson<TeleportResponse>(responseText);
+                    // TeleportResponse response = JsonUtility.FromJson<TeleportResponse>(webRequest.downloadHandler.text); // Removido: variável não usada
                     
                     Debug.Log($"[BackendTeleportManager] ✓ Teleporte confirmado para {agentId}");
                     GameEventManager.RaiseBackendOnline();
                     onComplete?.Invoke(true, "Teleporte realizado com sucesso");
                 }
-                catch (System.Exception e)
+                catch (Exception e)
                 {
                     Debug.LogError($"[BackendTeleportManager] ✗ Erro ao parsear resposta: {e.Message}");
                     GameEventManager.RaiseBackendError(500, "Erro ao processar resposta");
@@ -140,23 +139,23 @@ public class BackendTeleportManager : MonoBehaviour
     /// <summary>
     /// Serialização para request do teleporte.
     /// </summary>
-    [System.Serializable]
+    [Serializable]
     public class TeleportRequest
     {
-        public string location_type;
-        public string location_id;
+        [SerializeField] public string locationType;
+        [SerializeField] public string locationID;
     }
     
     /// <summary>
     /// Estrutura de resposta do teleporte.
     /// </summary>
-    [System.Serializable]
+    [Serializable]
     public class TeleportResponse
     {
-        public string agent_id;
-        public string location_type;
-        public string location_id;
-        public string status;
-        public string message;
+        [SerializeField] public string agentID;
+        [SerializeField] public string locationType;
+        [SerializeField] public string locationID;
+        [SerializeField] public string status;
+        [SerializeField] public string message;
     }
 }
