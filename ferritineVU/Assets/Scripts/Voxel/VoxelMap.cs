@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Voxel {
+namespace Voxe {
     public class VoxelMap : MonoBehaviour {
         public Texture2D heightmap; // Arraste seu PNG de Curitiba aqui
         public Material voxelMaterial; // Crie um material simples e arraste aqui
