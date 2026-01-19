@@ -33,6 +33,12 @@ Bem-vindo à documentação completa do projeto Ferritine! Esta página serve co
 - **[PLANNING_STRUCTURE.md](architecture/PLANNING_STRUCTURE.md)** - Estrutura de planejamento
 - **[ISSUES_MILESTONES_TAGS.md](architecture/ISSUES_MILESTONES_TAGS.md)** - Issues, milestones e tags
 
+## 🎵 Sistema de Áudio (Planejamento Futuro)
+
+- **[AUDIO_ROADMAP.md](issues/AUDIO_ROADMAP.md)** - 🗺️ Roadmap completo do sistema de áudio
+- **[AUDIO_LEVEL_2_FUTURE.md](issues/AUDIO_LEVEL_2_FUTURE.md)** - 🔮 Nível 2: Features do futuro próximo
+- **[AUDIO_LEVEL_3_FUTURE.md](issues/AUDIO_LEVEL_3_FUTURE.md)** - 🔮 Nível 3: Features avançadas
+
 ## 💾 Banco de Dados
 
 - **[DATABASE_GUIDE.md](database/DATABASE_GUIDE.md)** - Guia completo do banco de dados
@@ -116,6 +122,11 @@ docs/
 │   ├── PLANNING_STRUCTURE.md
 │   └── ISSUES_MILESTONES_TAGS.md
 │
+├── issues/                      # Planejamento de issues futuras
+│   ├── AUDIO_ROADMAP.md         # Roadmap completo do sistema de áudio
+│   ├── AUDIO_LEVEL_2_FUTURE.md  # Features de áudio - Nível 2
+│   └── AUDIO_LEVEL_3_FUTURE.md  # Features de áudio - Nível 3
+│
 ├── database/                    # Documentação do banco de dados
 │   ├── DATABASE_GUIDE.md
 │   ├── DATABASE_BUILDING_USAGE.md
@@ -139,8 +150,9 @@ docs/
 2. **Quer contribuir?** Leia [CONTRIBUTING.md](guides/CONTRIBUTING.md)
 3. **Entendendo a arquitetura?** Veja [GDD_FERRITINE.md](architecture/GDD_FERRITINE.md)
 4. **Trabalhando com Unity?** Confira [unity/](unity/)
-5. **Problemas com banco de dados?** Consulte [database/](database/)
-6. **Desenvolvimento?** Acesse [development/](development/)
+5. **Planejando features de áudio?** Veja [AUDIO_ROADMAP.md](issues/AUDIO_ROADMAP.md)
+6. **Problemas com banco de dados?** Consulte [database/](database/)
+7. **Desenvolvimento?** Acesse [development/](development/)
 
 ## 📝 Contribuindo com a Documentação
 
@@ -160,4 +172,4 @@ Por favor, abra uma issue ou envie um pull request!
 
 ---
 
-**Última atualização**: 2025-12-22
+**Última atualização**: 2025-12-24
