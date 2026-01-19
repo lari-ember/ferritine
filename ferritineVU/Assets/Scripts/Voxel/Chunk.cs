@@ -1,16 +1,19 @@
-public struct Voxel
+namespace Voxel
 {
-    public byte type;
-}
-
-public class Chunk
-{
-    public const int Size = 16;
-
-    private Voxel[,,] voxels;
-    
-    public Chunk()
+    public struct Voxel
     {
-        voxels = new Voxel[Size, Size, Size];
+        public byte type;
+    }
+
+    public class Chunk
+    {
+        public const int Size = 16;
+
+        private Voxel[,,] voxels;
+        
+        public Chunk()
+        {
+            voxels = new Voxel[Size, Size, Size];
+        }
     }
 }
